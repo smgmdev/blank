@@ -33,8 +33,6 @@ export default function Dashboard() {
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [credentials, setCredentials] = useState({ username: "", password: "" });
-  const [twoFACode, setTwoFACode] = useState("");
-  const [requiresTwoFA, setRequiresTwoFA] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [favicons, setFavicons] = useState<{ [key: string]: string }>({});
@@ -130,8 +128,6 @@ export default function Dashboard() {
 
       setAuthDialogOpen(false);
       setCredentials({ username: "", password: "" });
-      setTwoFACode("");
-      setRequiresTwoFA(false);
       setSelectedSiteId(null);
     } catch (error: any) {
       const errorMsg = error.message;
@@ -260,10 +256,14 @@ export default function Dashboard() {
           <DialogHeader>
             <DialogTitle>Authenticate to {selectedSite?.name}</DialogTitle>
             <DialogDescription>
-              Enter your credentials to verify publishing rights.
+              Enter your WordPress account credentials to verify you have publishing access.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mb-4">
+              <p className="font-medium mb-2">Use Your WordPress Account</p>
+              <p className="text-xs">Enter the username and password for your WordPress account on this site.</p>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="auth-username" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
@@ -271,10 +271,11 @@ export default function Dashboard() {
               </Label>
               <Input 
                 id="auth-username" 
-                placeholder="Your WordPress username or email" 
+                placeholder="Your WordPress username" 
                 value={credentials.username}
                 onChange={e => setCredentials({...credentials, username: e.target.value})}
                 disabled={isVerifying}
+                data-testid="input-wp-username"
               />
             </div>
             <div className="space-y-2">
@@ -285,20 +286,13 @@ export default function Dashboard() {
               <Input 
                 id="auth-password" 
                 type="password"
-                placeholder="Your WordPress password or app password" 
+                placeholder="Your WordPress password" 
                 value={credentials.password}
                 onChange={e => setCredentials({...credentials, password: e.target.value})}
                 disabled={isVerifying}
+                data-testid="input-wp-password"
                 onKeyDown={(e) => e.key === 'Enter' && handleVerifyCredentials()}
               />
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-              <p className="font-medium mb-1">📌 WordPress REST API Authentication</p>
-              <ul className="space-y-1 text-xs">
-                <li>✓ Use Application Password (recommended)</li>
-                <li>✓ Format: WordPress username and app password</li>
-                <li>✓ Create in WordPress: Settings → App Passwords</li>
-              </ul>
             </div>
           </div>
           <DialogFooter>
@@ -306,25 +300,26 @@ export default function Dashboard() {
               variant="outline" 
               onClick={() => {
                 setAuthDialogOpen(false);
-                setRequiresTwoFA(false);
                 setCredentials({ username: "", password: "" });
-                setTwoFACode("");
               }} 
               disabled={isVerifying}
+              data-testid="button-cancel-auth"
             >
-              {requiresTwoFA ? 'Back' : 'Cancel'}
+              Cancel
             </Button>
-            <Button onClick={handleVerifyCredentials} disabled={isVerifying} className="gap-2">
+            <Button 
+              onClick={handleVerifyCredentials} 
+              disabled={isVerifying} 
+              className="gap-2"
+              data-testid="button-authenticate"
+            >
               {isVerifying ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {requiresTwoFA ? 'Verifying...' : 'Verifying...'}
+                  Verifying...
                 </>
               ) : (
-                <>
-                  <Lock className="w-4 h-4" />
-                  {requiresTwoFA ? 'Verify & Authenticate' : 'Authenticate'}
-                </>
+                'Authenticate'
               )}
             </Button>
           </DialogFooter>
