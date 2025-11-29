@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useStore } from "@/lib/store";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import {
@@ -24,23 +23,66 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 export default function MyArticles() {
-  const { articles, sites, deleteArticle } = useStore();
   const { toast } = useToast();
+  const userId = localStorage.getItem('userId');
+  const [articles, setArticles] = useState<any[]>([]);
+  const [sites, setSites] = useState<any[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch real articles and sites
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!userId) return;
+      setIsLoading(true);
+      try {
+        const [articlesRes, sitesRes] = await Promise.all([
+          fetch(`/api/articles`),
+          fetch(`/api/sites`)
+        ]);
+        
+        if (articlesRes.ok) {
+          const allArticles = await articlesRes.json();
+          // Filter to only this user's articles
+          const userArticles = allArticles.filter((a: any) => a.userId === userId);
+          setArticles(userArticles);
+        }
+        
+        if (sitesRes.ok) {
+          const allSites = await sitesRes.json();
+          setSites(allSites);
+        }
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to load articles" });
+      }
+      setIsLoading(false);
+    };
+    fetchData();
+  }, [userId]);
 
   const handleDeleteClick = (id: string) => {
     setSelectedArticleId(id);
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedArticleId) {
-      deleteArticle(selectedArticleId);
-      toast({
-        title: "Article Deleted",
-        description: "The article has been removed from the list and WordPress.",
-      });
+      try {
+        const res = await fetch(`/api/articles/${selectedArticleId}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          setArticles(articles.filter(a => a.id !== selectedArticleId));
+          toast({
+            title: "Article Deleted",
+            description: "The article has been removed from the list and WordPress.",
+          });
+        }
+      } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to delete article" });
+      }
       setDeleteDialogOpen(false);
       setSelectedArticleId(null);
     }
@@ -69,7 +111,14 @@ export default function MyArticles() {
         </Link>
       </div>
 
-      {articles.length === 0 ? (
+      {isLoading ? (
+        <div className="border border-dashed rounded-lg p-12 text-center space-y-4">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+            <FileText className="w-8 h-8 text-muted-foreground animate-pulse" />
+          </div>
+          <p className="text-muted-foreground text-sm">Loading articles...</p>
+        </div>
+      ) : articles.length === 0 ? (
         <div className="border border-dashed rounded-lg p-12 text-center space-y-4">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
             <FileText className="w-8 h-8 text-muted-foreground" />
@@ -95,7 +144,7 @@ export default function MyArticles() {
                     <h3 className="font-semibold text-base break-words">{article.title}</h3>
                     <div className="flex flex-wrap gap-2 mt-2">
                       <Badge variant="outline" className="text-xs">{article.category}</Badge>
-                      {article.tags.slice(0, 3).map(tag => (
+                      {article.tags?.slice(0, 3).map((tag: any) => (
                         <Badge key={tag} variant="secondary" className="text-xs text-muted-foreground">{tag}</Badge>
                       ))}
                       {article.tags.length > 3 && (

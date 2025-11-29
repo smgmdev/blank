@@ -40,16 +40,7 @@ import {
   Palette
 } from "lucide-react";
 
-// Mock Data for Categories based on sites
-const MOCK_CATEGORIES = {
-  'default': ['Uncategorized', 'News', 'Updates'],
-  '1': ['Tech', 'Startups', 'Venture Capital', 'Gadgets'],
-  '2': ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Vegan'],
-  '3': ['Projects', 'Case Studies', 'Thoughts'],
-};
-
 export default function Editor() {
-  const { sites, addArticle } = useStore();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -472,7 +463,7 @@ export default function Editor() {
                     <SelectValue placeholder="Select a site" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sites.filter(s => s.isConnected).map(site => (
+                    {sites_user.map((site: any) => (
                       <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
                     ))}
                   </SelectContent>
