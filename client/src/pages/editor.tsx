@@ -1120,7 +1120,7 @@ export default function Editor() {
               <CardTitle>Review & Publish</CardTitle>
               <CardDescription>Double check everything before going live.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-3">
               {/* Top Row: Destination and SEO Plugin */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
@@ -1147,7 +1147,7 @@ export default function Editor() {
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="my-2" />
 
               {/* Middle Row: Title and Slug */}
               <div className="grid md:grid-cols-2 gap-6">
@@ -1161,7 +1161,7 @@ export default function Editor() {
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="my-2" />
 
               {/* Bottom Row: Categories and Tags */}
               <div className="grid md:grid-cols-2 gap-6">
@@ -1182,7 +1182,7 @@ export default function Editor() {
                 </div>
               </div>
               
-              <Separator />
+              <Separator className="my-2" />
               
               <div className="space-y-2">
                 <Label>Content Preview</Label>

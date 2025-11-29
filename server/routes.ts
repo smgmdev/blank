@@ -652,12 +652,22 @@ export async function registerRoutes(
           const imageBuffer = Buffer.from(base64Data, 'base64');
           const mediaUrl = `${site.apiUrl}/wp/v2/media`;
           
+          // Detect image type from base64 header (data URL format)
+          let contentType = "image/jpeg";
+          if (featuredImageBase64.includes("data:image/png")) {
+            contentType = "image/png";
+          } else if (featuredImageBase64.includes("data:image/webp")) {
+            contentType = "image/webp";
+          } else if (featuredImageBase64.includes("data:image/gif")) {
+            contentType = "image/gif";
+          }
+          
           // Send image as binary with proper headers
           const mediaResponse = await fetch(mediaUrl, {
             method: "POST",
             headers: {
               Authorization: `Basic ${auth}`,
-              "Content-Type": "image/jpeg"
+              "Content-Type": contentType
             },
             body: imageBuffer
           });
