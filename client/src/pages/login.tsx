@@ -45,6 +45,9 @@ export default function Login() {
       }
 
       const user = await response.json();
+      // Store user ID for authenticated requests
+      localStorage.setItem('userId', user.id);
+      localStorage.setItem('userRole', user.role);
       login(user.role);
       setLocation(user.role === 'admin' ? '/admin/sites' : '/dashboard');
     } catch (error) {

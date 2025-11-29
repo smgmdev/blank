@@ -77,79 +77,71 @@ export default function Dashboard() {
     setAuthDialogOpen(true);
   };
 
-  const handleVerifyCredentials = () => {
+  const handleVerifyCredentials = async () => {
     if (!credentials.username || !credentials.password) {
       toast({
         variant: "destructive",
         title: "Missing Credentials",
-        description: "Please enter both username/email and password"
+        description: "Please enter both WordPress username and password"
       });
       return;
     }
 
-    // If 2FA is required, check 2FA code
-    if (requiresTwoFA) {
-      if (!twoFACode) {
-        toast({
-          variant: "destructive",
-          title: "Missing 2FA Code",
-          description: "Please enter your 2-factor authentication code"
-        });
-        return;
-      }
-    }
-
     setIsVerifying(true);
 
-    // Verify credentials and 2FA
-    setTimeout(() => {
-      const isValidUser = DEMO_CREDENTIALS.user.emails.includes(credentials.username) && 
-                         credentials.password === DEMO_CREDENTIALS.user.password;
-      const isValidAdmin = DEMO_CREDENTIALS.admin.emails.includes(credentials.username) && 
-                          credentials.password === DEMO_CREDENTIALS.admin.password;
-      
-      if (!isValidUser && !isValidAdmin) {
-        toast({
-          variant: "destructive",
-          title: "Authentication Failed",
-          description: "Invalid credentials. Try: demo@writer.com/writer or admin@system.com/admin"
-        });
-        setIsVerifying(false);
-        return;
+    try {
+      // Get current user ID from localStorage
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        throw new Error('User session not found. Please log in again.');
       }
 
-      // Check if 2FA is required but not yet provided
-      if (!requiresTwoFA) {
-        // Simulate 50% chance of requiring 2FA
-        const needs2FA = Math.random() > 0.5;
-        if (needs2FA) {
-          setRequiresTwoFA(true);
-          toast({
-            title: "2FA Required",
-            description: "Your account has 2-factor authentication enabled. Please enter your code."
-          });
-          setIsVerifying(false);
-          return;
+      // Call WordPress authentication endpoint
+      const authResponse = await fetch(
+        `/api/users/${userId}/sites/${selectedSiteId}/authenticate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wpUsername: credentials.username,
+            wpPassword: credentials.password
+          })
         }
+      );
+
+      if (!authResponse.ok) {
+        const error = await authResponse.json();
+        throw new Error(error.error || 'WordPress authentication failed');
       }
 
-      // If we get here, authentication is complete
-      if (selectedSiteId) {
-        connectSite(selectedSiteId);
-      }
-      
+      const result = await authResponse.json();
+
       toast({
         title: "Authenticated Successfully",
-        description: "You can now publish to this site."
+        description: "Your WordPress account is verified. You can now publish to this site."
       });
-      
+
+      // Refresh sites to show updated connection status
+      const sitesResponse = await fetch('/api/sites');
+      if (sitesResponse.ok) {
+        const updatedSites = await sitesResponse.json();
+        setSites(updatedSites);
+      }
+
       setAuthDialogOpen(false);
       setCredentials({ username: "", password: "" });
       setTwoFACode("");
       setRequiresTwoFA(false);
       setSelectedSiteId(null);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Failed",
+        description: error.message || "Failed to authenticate with WordPress. Check your credentials."
+      });
+    } finally {
       setIsVerifying(false);
-    }, 1500);
+    }
   };
 
   const handleRefresh = () => {
@@ -270,69 +262,41 @@ export default function Dashboard() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {!requiresTwoFA ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="auth-username" className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Email or Username
-                  </Label>
-                  <Input 
-                    id="auth-username" 
-                    placeholder="demo@writer.com or writer" 
-                    value={credentials.username}
-                    onChange={e => setCredentials({...credentials, username: e.target.value})}
-                    disabled={isVerifying}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="auth-password" className="flex items-center gap-2">
-                    <Lock className="w-4 h-4" />
-                    Password
-                  </Label>
-                  <Input 
-                    id="auth-password" 
-                    type="password"
-                    placeholder="password" 
-                    value={credentials.password}
-                    onChange={e => setCredentials({...credentials, password: e.target.value})}
-                    disabled={isVerifying}
-                    onKeyDown={(e) => e.key === 'Enter' && handleVerifyCredentials()}
-                  />
-                </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                  <p className="font-medium mb-1">Demo Credentials:</p>
-                  <ul className="space-y-1 text-xs">
-                    <li><strong>Creator:</strong> demo@writer.com or writer</li>
-                    <li><strong>Admin:</strong> admin@system.com or admin</li>
-                    <li><strong>Password:</strong> password</li>
-                  </ul>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 mb-2">
-                  <p className="font-medium">Two-Factor Authentication Required</p>
-                  <p className="text-xs mt-1">Your account has 2FA enabled. Enter the code from your authenticator app.</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="2fa-code" className="flex items-center gap-2">
-                    <Lock className="w-4 h-4" />
-                    2FA Code
-                  </Label>
-                  <Input 
-                    id="2fa-code" 
-                    placeholder="000000" 
-                    maxLength={6}
-                    value={twoFACode}
-                    onChange={e => setTwoFACode(e.target.value.replace(/[^0-9]/g, ''))}
-                    disabled={isVerifying}
-                    onKeyDown={(e) => e.key === 'Enter' && handleVerifyCredentials()}
-                    className="text-center text-lg tracking-widest"
-                  />
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="auth-username" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                WordPress Username
+              </Label>
+              <Input 
+                id="auth-username" 
+                placeholder="Your WordPress username or email" 
+                value={credentials.username}
+                onChange={e => setCredentials({...credentials, username: e.target.value})}
+                disabled={isVerifying}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="auth-password" className="flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                WordPress Password
+              </Label>
+              <Input 
+                id="auth-password" 
+                type="password"
+                placeholder="Your WordPress password or app password" 
+                value={credentials.password}
+                onChange={e => setCredentials({...credentials, password: e.target.value})}
+                disabled={isVerifying}
+                onKeyDown={(e) => e.key === 'Enter' && handleVerifyCredentials()}
+              />
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+              <p className="font-medium mb-1">WordPress Credentials Required</p>
+              <ul className="space-y-1 text-xs">
+                <li>Enter your WordPress username and password</li>
+                <li>For security, use an App Password if available in WordPress Settings</li>
+              </ul>
+            </div>
           </div>
           <DialogFooter>
             <Button 
