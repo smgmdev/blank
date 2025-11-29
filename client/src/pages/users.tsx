@@ -136,15 +136,15 @@ export default function Users() {
                 />
               </div>
             </div>
-            <DialogFooter className="justify-between">
+            <DialogFooter className="justify-between flex gap-2 flex-col sm:flex-row w-full">
               <Button 
                 variant="outline" 
                 onClick={() => setIsOpen(false)}
-                className="hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200"
+                className="hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button onClick={handleAdd}>Create User</Button>
+              <Button onClick={handleAdd} className="w-full sm:w-auto">Create User</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
