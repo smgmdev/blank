@@ -108,9 +108,9 @@ export default function PublishingProfile() {
 
   return (
     <div className="max-w-2xl space-y-8 pb-20">
-      <div>
+      <div className="hidden sm:block">
         <h2 className="text-2xl font-bold tracking-tight">Publishing Profile</h2>
-        <p className="text-muted-foreground mt-1">Manage how your articles appear when published to WordPress.</p>
+        <p className="text-muted-foreground mt-1">Manage how your profile appear on your published article.</p>
       </div>
 
       {/* Profile Preview */}

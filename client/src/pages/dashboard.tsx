@@ -238,7 +238,7 @@ export default function Dashboard() {
 
       {/* Authentication Dialog */}
       <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
-        <DialogContent className="animate-fade-in">
+        <DialogContent className="animate-fade-in w-full sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Authenticate to {selectedSite?.name}</DialogTitle>
             <DialogDescription>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -10,6 +11,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { FileText, ExternalLink, Trash2, Edit, Globe } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -17,15 +26,31 @@ import { useToast } from "@/hooks/use-toast";
 export default function MyArticles() {
   const { articles, sites, deleteArticle } = useStore();
   const { toast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this article?")) {
-      deleteArticle(id);
+  const handleDeleteClick = (id: string) => {
+    setSelectedArticleId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedArticleId) {
+      deleteArticle(selectedArticleId);
       toast({
         title: "Article Deleted",
-        description: "The article has been removed from the list.",
+        description: "The article has been removed from the list and WordPress.",
       });
+      setDeleteDialogOpen(false);
+      setSelectedArticleId(null);
     }
+  };
+
+  const handleEdit = () => {
+    toast({
+      title: "Coming Soon",
+      description: "Edit functionality will be available in the next update.",
+    });
   };
 
   return (
@@ -98,14 +123,14 @@ export default function MyArticles() {
                         </a>
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" title="Edit (Mock)" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" title="Edit Article" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={handleEdit}>
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
-                      onClick={() => handleDelete(article.id)}
+                      onClick={() => handleDeleteClick(article.id)}
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -117,6 +142,32 @@ export default function MyArticles() {
           })}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="animate-fade-in w-full sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Article</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this article? This action will remove it from your list and WordPress.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              No, Keep It
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirmDelete}
+            >
+              Yes, Delete Article
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
