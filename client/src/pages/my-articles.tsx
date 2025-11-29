@@ -137,35 +137,48 @@ export default function MyArticles() {
         fetch(`/api/sites`)
       ]);
       
-      if (articlesRes.ok) {
+      if (articlesRes.ok && sitesRes.ok) {
         const allArticles = await articlesRes.json();
+        const allSites = await sitesRes.json();
         const userArticles = allArticles.filter((a: any) => a.userId === userId);
         
         const articlesWithLinks = await Promise.all(userArticles.map(async (article: any) => {
-          if (article.status === 'published') {
+          if (article.status === 'published' && article.siteId) {
             try {
+              const site = allSites.find((s: any) => s.id === article.siteId);
               const publishRes = await fetch(`/api/articles/${article.id}/publishing`);
               if (publishRes.ok) {
                 const pubData = await publishRes.json();
-                return { ...article, wpLink: pubData.wpLink };
+                return { ...article, wpLink: pubData.wpLink, exists: true };
+              } else if (publishRes.status === 404) {
+                // Article doesn't exist on WordPress anymore - mark for deletion
+                return { ...article, exists: false };
               }
             } catch (e) {
-              // Silently fail
+              // Silently fail but keep article
             }
           }
-          return article;
+          return { ...article, exists: true };
         }));
         
-        setArticles(articlesWithLinks);
-        toast({
-          title: "Synced",
-          description: "Articles synced with WordPress. Any deleted articles have been removed."
-        });
-      }
-      
-      if (sitesRes.ok) {
-        const allSites = await sitesRes.json();
+        // Filter out deleted articles and update
+        const activeArticles = articlesWithLinks.filter(a => a.exists !== false);
+        const deletedCount = articlesWithLinks.length - activeArticles.length;
+        
+        setArticles(activeArticles);
         setSites(allSites);
+        
+        if (deletedCount > 0) {
+          toast({
+            title: "Synced",
+            description: `Articles synced with WordPress. ${deletedCount} deleted article(s) removed.`
+          });
+        } else {
+          toast({
+            title: "Synced",
+            description: "Articles are up to date with WordPress."
+          });
+        }
       }
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Failed to sync articles" });
@@ -173,8 +186,13 @@ export default function MyArticles() {
     setIsRefreshing(false);
   };
 
-  const publishedArticles = articles.filter(a => a.status === 'published');
-  const draftArticles = articles.filter(a => a.status === 'draft');
+  const publishedArticles = articles
+    .filter(a => a.status === 'published')
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  
+  const draftArticles = articles
+    .filter(a => a.status === 'draft')
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   const ArticleCard = ({ article }: { article: any }) => {
     const site = sites.find(s => s.id === article.siteId);
@@ -239,7 +257,7 @@ export default function MyArticles() {
                 <Globe className="w-3 h-3" />
                 <span>{site?.name || 'Unknown Site'}</span>
               </div>
-              <span>{format(new Date(article.publishedAt || new Date()), "MMM d, yyyy")}</span>
+              <span>{format(new Date(article.publishedAt || new Date()), "MMM d, yyyy · h:mm a")}</span>
             </div>
           </div>
           
