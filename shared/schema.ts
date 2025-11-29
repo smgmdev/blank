@@ -27,11 +27,24 @@ export const appUsers = pgTable("app_users", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// User WordPress Credentials (per user per site)
+export const userSiteCredentials = pgTable("user_site_credentials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => appUsers.id, { onDelete: "cascade" }),
+  siteId: varchar("site_id").notNull().references(() => wordPressSites.id, { onDelete: "cascade" }),
+  wpUsername: text("wp_username").notNull(),
+  wpPassword: text("wp_password").notNull(), // Encrypted in production
+  wpUserId: varchar("wp_user_id"), // WordPress user ID from API
+  isVerified: boolean("is_verified").default(false),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Publishing Profiles (which sites a user can publish to)
 export const publishingProfiles = pgTable("publishing_profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => appUsers.id, { onDelete: "cascade" }),
   siteId: varchar("site_id").notNull().references(() => wordPressSites.id, { onDelete: "cascade" }),
+  credentialId: varchar("credential_id").notNull().references(() => userSiteCredentials.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
@@ -70,6 +83,13 @@ export const insertAppUserSchema = createInsertSchema(appUsers).omit({
   createdAt: true,
 });
 
+export const insertUserSiteCredentialSchema = createInsertSchema(userSiteCredentials).omit({
+  id: true,
+  createdAt: true,
+  wpUserId: true,
+  isVerified: true,
+});
+
 export const insertPublishingProfileSchema = createInsertSchema(publishingProfiles).omit({
   id: true,
   createdAt: true,
@@ -93,6 +113,9 @@ export type InsertWordPressSite = z.infer<typeof insertWordPressSiteSchema>;
 
 export type AppUser = typeof appUsers.$inferSelect;
 export type InsertAppUser = z.infer<typeof insertAppUserSchema>;
+
+export type UserSiteCredential = typeof userSiteCredentials.$inferSelect;
+export type InsertUserSiteCredential = z.infer<typeof insertUserSiteCredentialSchema>;
 
 export type PublishingProfile = typeof publishingProfiles.$inferSelect;
 export type InsertPublishingProfile = z.infer<typeof insertPublishingProfileSchema>;

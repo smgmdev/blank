@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertWordPressSiteSchema, insertAppUserSchema, insertArticleSchema } from "@shared/schema";
+import { insertWordPressSiteSchema, insertAppUserSchema, insertArticleSchema, insertUserSiteCredentialSchema } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -178,6 +178,82 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete article" });
+    }
+  });
+
+  // WordPress Site User Authentication
+  app.post("/api/users/:userId/sites/:siteId/authenticate", async (req, res) => {
+    try {
+      const { wpUsername, wpPassword } = req.body;
+      const { userId, siteId } = req.params;
+
+      if (!wpUsername || !wpPassword) {
+        return res.status(400).json({ error: "WordPress credentials required" });
+      }
+
+      // Get site
+      const site = await storage.getWordPressSite(siteId);
+      if (!site) {
+        return res.status(404).json({ error: "Site not found" });
+      }
+
+      // Verify WordPress credentials by calling WordPress API
+      try {
+        const auth = Buffer.from(`${wpUsername}:${wpPassword}`).toString("base64");
+        const response = await fetch(`${site.apiUrl}/wp/v2/users/me`, {
+          headers: { Authorization: `Basic ${auth}` },
+        });
+
+        if (!response.ok) {
+          return res.status(401).json({ error: "Invalid WordPress credentials" });
+        }
+
+        const wpUser = await response.json();
+
+        // Store credentials
+        const credential = await storage.createUserSiteCredential({
+          userId,
+          siteId,
+          wpUsername,
+          wpPassword,
+        });
+
+        // Verify and update with WP user ID
+        await storage.updateUserSiteCredentialVerification(credential.id, wpUser.id);
+
+        // Create publishing profile
+        const profile = await storage.createPublishingProfile({
+          userId,
+          siteId,
+          credentialId: credential.id,
+        });
+
+        res.json({ success: true, profile });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to verify WordPress credentials" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to authenticate" });
+    }
+  });
+
+  // Get user's publishing profiles with site info
+  app.get("/api/users/:userId/publishing-profiles", async (req, res) => {
+    try {
+      const profiles = await storage.getPublishingProfilesByUserId(
+        req.params.userId
+      );
+      
+      const enriched = await Promise.all(
+        profiles.map(async (profile) => {
+          const site = await storage.getWordPressSite(profile.siteId);
+          return { ...profile, site };
+        })
+      );
+
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch publishing profiles" });
     }
   });
 

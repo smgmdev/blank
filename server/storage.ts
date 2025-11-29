@@ -2,6 +2,7 @@ import { db } from "./db";
 import {
   wordPressSites,
   appUsers,
+  userSiteCredentials,
   publishingProfiles,
   articles,
   articlePublishing,
@@ -9,6 +10,8 @@ import {
   type InsertWordPressSite,
   type AppUser,
   type InsertAppUser,
+  type UserSiteCredential,
+  type InsertUserSiteCredential,
   type PublishingProfile,
   type InsertPublishingProfile,
   type Article,
@@ -32,6 +35,19 @@ export interface IStorage {
   getAppUserByUsername(username: string): Promise<AppUser | undefined>;
   getAllAppUsers(): Promise<AppUser[]>;
   deleteAppUser(id: string): Promise<void>;
+
+  // User Site Credentials
+  createUserSiteCredential(
+    credential: InsertUserSiteCredential
+  ): Promise<UserSiteCredential>;
+  getUserSiteCredential(
+    userId: string,
+    siteId: string
+  ): Promise<UserSiteCredential | undefined>;
+  updateUserSiteCredentialVerification(
+    id: string,
+    wpUserId: string
+  ): Promise<void>;
 
   // Publishing Profiles
   createPublishingProfile(
@@ -122,6 +138,42 @@ export class Storage implements IStorage {
 
   async deleteAppUser(id: string): Promise<void> {
     await db.delete(appUsers).where(eq(appUsers.id, id));
+  }
+
+  // User Site Credentials
+  async createUserSiteCredential(
+    credential: InsertUserSiteCredential
+  ): Promise<UserSiteCredential> {
+    const [result] = await db
+      .insert(userSiteCredentials)
+      .values(credential)
+      .returning();
+    if (!result) throw new Error("Failed to create user site credential");
+    return result;
+  }
+
+  async getUserSiteCredential(
+    userId: string,
+    siteId: string
+  ): Promise<UserSiteCredential | undefined> {
+    const [credential] = await db
+      .select()
+      .from(userSiteCredentials)
+      .where(and(
+        eq(userSiteCredentials.userId, userId),
+        eq(userSiteCredentials.siteId, siteId)
+      ));
+    return credential;
+  }
+
+  async updateUserSiteCredentialVerification(
+    id: string,
+    wpUserId: string
+  ): Promise<void> {
+    await db
+      .update(userSiteCredentials)
+      .set({ isVerified: true, wpUserId })
+      .where(eq(userSiteCredentials.id, id));
   }
 
   // Publishing Profiles
