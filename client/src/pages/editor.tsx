@@ -169,6 +169,30 @@ export default function Editor() {
 
   const handleBack = () => setStep(s => s - 1);
 
+  const handleCancel = () => {
+    // Reset form data
+    setFormData({
+      title: "",
+      slug: "",
+      content: "",
+      image: null,
+      imagePreview: "",
+      categories: [],
+      tags: [],
+      currentTag: "",
+      seo: {
+        focusKeyword: "",
+        description: "",
+        indexed: true
+      }
+    });
+    setSelectedSiteId("");
+    setStep(1);
+    setIsEditorEmpty(true);
+    // Navigate back to dashboard
+    setLocation("/dashboard");
+  };
+
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && formData.currentTag) {
       e.preventDefault();
@@ -860,15 +884,22 @@ export default function Editor() {
       <div className="fixed bottom-0 left-0 w-full bg-background border-t border-border p-4 z-20 md:pl-64">
         <div className="max-w-4xl mx-auto flex items-center justify-between px-4 md:px-0">
           <Button 
-            variant="outline" 
-            onClick={handleBack} 
-            disabled={step === 1}
+            variant="destructive" 
+            onClick={handleCancel}
             className="gap-2"
           >
-            <ChevronLeft className="w-4 h-4" /> Back
+            Cancel Article
           </Button>
           
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleBack} 
+              disabled={step === 1}
+              className="gap-2"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back
+            </Button>
             {step < 4 ? (
               <Button onClick={handleNext} className="gap-2">
                 Next Step <ChevronRight className="w-4 h-4" />
