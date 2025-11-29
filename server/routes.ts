@@ -181,14 +181,14 @@ export async function registerRoutes(
     }
   });
 
-  // WordPress Site User Authentication (Check approved list)
+  // WordPress Site User Authentication (Validate credentials in real-time)
   app.post("/api/users/:userId/sites/:siteId/authenticate", async (req, res) => {
     try {
-      const { wpUsername } = req.body;
+      const { wpUsername, wpPassword } = req.body;
       const { userId, siteId } = req.params;
 
-      if (!wpUsername) {
-        return res.status(400).json({ error: "WordPress username required" });
+      if (!wpUsername || !wpPassword) {
+        return res.status(400).json({ error: "WordPress username and password required" });
       }
 
       // Get site
@@ -205,16 +205,31 @@ export async function registerRoutes(
         });
       }
 
-      // SECURITY: Check if user is in approved list
-      const approvedUser = await storage.getApprovedWpUser(siteId, wpUsername);
-      if (!approvedUser) {
-        return res.status(403).json({
-          error: "User not approved",
-          hint: `${wpUsername} is not approved to publish to this site. Contact admin.`
+      // SECURITY: Validate credentials against WordPress REST API
+      console.log(`[WP Auth] Validating ${wpUsername} credentials at ${site.apiUrl}`);
+      
+      const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
+      const auth = Buffer.from(`${wpUsername}:${wpPassword}`).toString("base64");
+      
+      const wpResponse = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/json"
+        },
+      });
+
+      console.log(`[WP Auth] WordPress validation response: ${wpResponse.status}`);
+
+      if (!wpResponse.ok) {
+        console.log(`[WP Auth] Invalid credentials for ${wpUsername}`);
+        return res.status(401).json({
+          error: "Invalid WordPress credentials",
+          hint: "Your WordPress username or password is incorrect"
         });
       }
 
-      console.log(`[WP Auth] Approved user ${wpUsername} authenticating to ${site.name}`);
+      const wpUser = await wpResponse.json();
+      console.log(`[WP Auth] User ${wpUsername} verified as WP user ID: ${wpUser.id}`);
 
       // Check if user already has credentials for this site
       const existing = await storage.getUserSiteCredential(userId, siteId);
@@ -230,8 +245,8 @@ export async function registerRoutes(
         wpUsername,
       });
 
-      // Mark as verified
-      await storage.updateUserSiteCredentialVerification(credential.id, wpUsername);
+      // Mark as verified with actual WP user ID
+      await storage.updateUserSiteCredentialVerification(credential.id, String(wpUser.id));
 
       // Create publishing profile
       const profile = await storage.createPublishingProfile({
@@ -247,45 +262,7 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       console.error(`[WP Auth] Auth error:`, error.message);
-      res.status(500).json({ error: "Failed to authenticate" });
-    }
-  });
-
-  // Admin: Get approved WP users for a site
-  app.get("/api/sites/:siteId/approved-users", async (req, res) => {
-    try {
-      const { siteId } = req.params;
-      const users = await storage.getApprovedWpUsersBySiteId(siteId);
-      res.json(users);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch approved users" });
-    }
-  });
-
-  // Admin: Approve a WP user for a site
-  app.post("/api/sites/:siteId/approve-user", async (req, res) => {
-    try {
-      const { siteId } = req.params;
-      const { wpUsername } = req.body;
-
-      if (!wpUsername) {
-        return res.status(400).json({ error: "wpUsername required" });
-      }
-
-      // Check if already approved
-      const existing = await storage.getApprovedWpUser(siteId, wpUsername);
-      if (existing) {
-        return res.json({ success: true, message: "User already approved", user: existing });
-      }
-
-      const approvedUser = await storage.createApprovedWpUser({
-        siteId,
-        wpUsername,
-      });
-
-      res.json({ success: true, message: "User approved", user: approvedUser });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to approve user" });
+      res.status(500).json({ error: "Failed to authenticate with WordPress" });
     }
   });
 

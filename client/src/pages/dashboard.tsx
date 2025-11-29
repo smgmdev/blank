@@ -76,11 +76,11 @@ export default function Dashboard() {
   };
 
   const handleVerifyCredentials = async () => {
-    if (!credentials.username) {
+    if (!credentials.username || !credentials.password) {
       toast({
         variant: "destructive",
-        title: "Missing Username",
-        description: "Please enter your WordPress username"
+        title: "Missing Credentials",
+        description: "Please enter both WordPress username and password"
       });
       return;
     }
@@ -101,7 +101,8 @@ export default function Dashboard() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            wpUsername: credentials.username
+            wpUsername: credentials.username,
+            wpPassword: credentials.password
           })
         }
       );
@@ -261,7 +262,7 @@ export default function Dashboard() {
           <div className="space-y-4 py-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mb-4">
               <p className="font-medium mb-2">Verify Your WordPress Account</p>
-              <p className="text-xs">Enter your WordPress username to authenticate.</p>
+              <p className="text-xs">Enter your WordPress login credentials to authenticate and start publishing.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="auth-username" className="flex items-center gap-2">
@@ -275,6 +276,21 @@ export default function Dashboard() {
                 onChange={e => setCredentials({...credentials, username: e.target.value})}
                 disabled={isVerifying}
                 data-testid="input-wp-username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="auth-password" className="flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                WordPress Password
+              </Label>
+              <Input 
+                id="auth-password" 
+                type="password"
+                placeholder="Your WordPress password" 
+                value={credentials.password}
+                onChange={e => setCredentials({...credentials, password: e.target.value})}
+                disabled={isVerifying}
+                data-testid="input-wp-password"
                 onKeyDown={(e) => e.key === 'Enter' && handleVerifyCredentials()}
               />
             </div>
