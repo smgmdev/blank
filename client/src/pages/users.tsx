@@ -80,7 +80,7 @@ export default function Users() {
               Create User
             </Button>
           </DialogTrigger>
-          <DialogContent className="animate-fade-in w-full sm:max-w-md">
+          <DialogContent className="animate-fade-in w-full sm:max-w-md flex flex-col">
             <DialogHeader>
               <DialogTitle>Create New User</DialogTitle>
               <DialogDescription>
@@ -136,8 +136,14 @@ export default function Users() {
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <DialogFooter className="justify-between">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsOpen(false)}
+                className="hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200"
+              >
+                Cancel
+              </Button>
               <Button onClick={handleAdd}>Create User</Button>
             </DialogFooter>
           </DialogContent>
