@@ -136,7 +136,7 @@ export default function Users() {
                 />
               </div>
             </div>
-            <DialogFooter className="justify-between flex gap-2 flex-col sm:flex-row w-full">
+            <DialogFooter className="justify-between flex gap-2 flex-col-reverse sm:flex-row w-full">
               <Button 
                 variant="outline" 
                 onClick={() => setIsOpen(false)}
