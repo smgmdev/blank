@@ -1149,6 +1149,18 @@ export default function Editor() {
 
               <Separator className="my-2" />
 
+              {/* Featured Image Preview */}
+              {formData.featuredImageBase64 && (
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Featured Image</Label>
+                  <div className="mt-2 rounded-lg border overflow-hidden bg-muted/20 p-2 max-w-xs">
+                    <img src={formData.featuredImageBase64} alt="Featured" className="w-full h-auto rounded" />
+                  </div>
+                </div>
+              )}
+
+              {formData.featuredImageBase64 && <Separator className="my-2" />}
+
               {/* Middle Row: Title and Slug */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>

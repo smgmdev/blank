@@ -652,14 +652,18 @@ export async function registerRoutes(
           const imageBuffer = Buffer.from(base64Data, 'base64');
           const mediaUrl = `${site.apiUrl}/wp/v2/media`;
           
-          // Detect image type from base64 header (data URL format)
+          // Detect image type and extension from base64 header (data URL format)
           let contentType = "image/jpeg";
+          let extension = "jpg";
           if (featuredImageBase64.includes("data:image/png")) {
             contentType = "image/png";
+            extension = "png";
           } else if (featuredImageBase64.includes("data:image/webp")) {
             contentType = "image/webp";
+            extension = "webp";
           } else if (featuredImageBase64.includes("data:image/gif")) {
             contentType = "image/gif";
+            extension = "gif";
           }
           
           // Send image as binary with proper headers
@@ -667,7 +671,8 @@ export async function registerRoutes(
             method: "POST",
             headers: {
               Authorization: `Basic ${auth}`,
-              "Content-Type": contentType
+              "Content-Type": contentType,
+              "Content-Disposition": `form-data; name="file"; filename="featured-image.${extension}"`
             },
             body: imageBuffer
           });
