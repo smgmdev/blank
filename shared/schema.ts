@@ -61,10 +61,13 @@ export const publishingProfiles = pgTable("publishing_profiles", {
 export const articles = pgTable("articles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => appUsers.id, { onDelete: "cascade" }),
+  siteId: varchar("site_id").references(() => wordPressSites.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   content: text("content").notNull(),
   htmlContent: text("html_content"),
   featuredImageUrl: text("featured_image_url"),
+  categories: jsonb("categories"),
+  tags: jsonb("tags"),
   status: varchar("status", { length: 20 }).default("draft"), // "draft", "published"
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),

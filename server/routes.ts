@@ -592,11 +592,14 @@ export async function registerRoutes(
         status: "published"
       });
 
-      // Update article status to published with featured image and site ID
+      // Update article status to published with featured image, site ID, and metadata
       await storage.updateArticle(articleId, {
         status: 'published',
         publishedAt: new Date(),
-        featuredImageUrl: featuredImageUrl || null
+        siteId,
+        featuredImageUrl: featuredImageUrl || null,
+        categories,
+        tags: tagIds
       });
 
       res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link });

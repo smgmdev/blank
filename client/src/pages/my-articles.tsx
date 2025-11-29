@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, ExternalLink, Trash2, Edit, Globe, PenTool } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -110,6 +111,79 @@ export default function MyArticles() {
     window.location.href = `/editor/${articleId}`;
   };
 
+  const publishedArticles = articles.filter(a => a.status === 'published');
+  const draftArticles = articles.filter(a => a.status === 'draft');
+
+  const ArticleCard = ({ article }: { article: any }) => {
+    const site = sites.find(s => s.id === article.siteId);
+    return (
+      <div className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+        <div className="flex flex-col sm:flex-row gap-0 sm:gap-4 sm:p-4">
+          {/* Featured Image on Left */}
+          {article.featuredImageUrl && (
+            <div className="w-full sm:w-40 h-40 flex-shrink-0 bg-muted overflow-hidden rounded-t sm:rounded-lg">
+              <img 
+                src={article.featuredImageUrl} 
+                alt={article.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          
+          {/* Content */}
+          <div className={`flex-1 min-w-0 ${article.featuredImageUrl ? 'p-4 sm:p-0' : 'p-4'}`}>
+            <h3 className="font-semibold text-base break-words">{article.title}</h3>
+            
+            {/* Category & Tags */}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {Array.isArray(article.categories) && article.categories.map((cat: any) => (
+                <Badge key={cat} variant="outline" className="text-xs">{cat}</Badge>
+              ))}
+              {Array.isArray(article.tags) && article.tags.slice(0, 3).map((tag: any) => (
+                <Badge key={tag} variant="secondary" className="text-xs text-muted-foreground">{tag}</Badge>
+              ))}
+              {Array.isArray(article.tags) && article.tags.length > 3 && (
+                <Badge variant="secondary" className="text-xs text-muted-foreground">+{article.tags.length - 3}</Badge>
+              )}
+            </div>
+            
+            {/* Meta Info */}
+            <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Globe className="w-3 h-3" />
+                <span>{site?.name || 'Unknown Site'}</span>
+              </div>
+              <span>{format(new Date(article.publishedAt || new Date()), "MMM d, yyyy")}</span>
+            </div>
+          </div>
+          
+          {/* Actions */}
+          <div className="flex gap-2 flex-shrink-0 p-4 sm:p-0 border-t sm:border-t-0">
+            {article.wpLink && (
+              <Button variant="ghost" size="icon" asChild title="View on WordPress" className="h-8 w-8">
+                <a href={article.wpLink} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 text-blue-600" />
+                </a>
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" title="Edit Article" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={() => handleEdit(article.id)}>
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+              onClick={() => handleDeleteClick(article.id)}
+              title="Delete"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -147,82 +221,44 @@ export default function MyArticles() {
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {articles.map((article) => {
-            const site = sites.find(s => s.id === article.siteId);
-            return (
-              <div key={article.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                <div className="flex flex-col sm:flex-row gap-0 sm:gap-4 sm:p-4">
-                  {/* Featured Image on Left */}
-                  {article.featuredImageUrl && (
-                    <div className="w-full sm:w-40 h-40 flex-shrink-0 bg-muted overflow-hidden rounded-t sm:rounded-lg">
-                      <img 
-                        src={article.featuredImageUrl} 
-                        alt={article.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Content */}
-                  <div className={`flex-1 min-w-0 ${article.featuredImageUrl ? 'p-4 sm:p-0' : 'p-4'}`}>
-                    <h3 className="font-semibold text-base break-words">{article.title}</h3>
-                    
-                    {/* Category & Tags */}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {article.category && (
-                        <Badge variant="outline" className="text-xs">{article.category}</Badge>
-                      )}
-                      {article.tags?.slice(0, 3).map((tag: any) => (
-                        <Badge key={tag} variant="secondary" className="text-xs text-muted-foreground">{tag}</Badge>
-                      ))}
-                      {(article.tags?.length ?? 0) > 3 && (
-                        <Badge variant="secondary" className="text-xs text-muted-foreground">+{(article.tags?.length ?? 0) - 3}</Badge>
-                      )}
-                    </div>
-                    
-                    {/* Meta Info */}
-                    <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Globe className="w-3 h-3" />
-                        <span>{site?.name || 'Unknown Site'}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Badge className={article.status === 'published' ? 'bg-green-100 text-green-800 hover:bg-green-100 text-xs' : 'bg-yellow-100 text-yellow-800 text-xs'}>
-                          {article.status}
-                        </Badge>
-                      </div>
-                      <span>{format(new Date(article.publishedAt || new Date()), "MMM d, yyyy")}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="flex gap-2 flex-shrink-0 p-4 sm:p-0 border-t sm:border-t-0">
-                    {article.wpLink && (
-                      <Button variant="ghost" size="icon" asChild title="View on WordPress" className="h-8 w-8">
-                        <a href={article.wpLink} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="w-4 h-4 text-blue-600" />
-                        </a>
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" title="Edit Article" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={() => handleEdit(article.id)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
-                      onClick={() => handleDeleteClick(article.id)}
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+        <Tabs defaultValue="published" className="w-full">
+          <TabsList>
+            <TabsTrigger value="published" className="flex items-center gap-2">
+              Published <Badge variant="secondary" className="ml-2">{publishedArticles.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="drafts" className="flex items-center gap-2">
+              Drafts <Badge variant="secondary" className="ml-2">{draftArticles.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="published" className="space-y-4">
+            {publishedArticles.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No published articles yet.</p>
               </div>
-            );
-          })}
-        </div>
+            ) : (
+              <div className="grid gap-4">
+                {publishedArticles.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="drafts" className="space-y-4">
+            {draftArticles.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No draft articles yet.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {draftArticles.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* Delete Confirmation Dialog */}
