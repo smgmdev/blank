@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStore, DEMO_CREDENTIALS } from "@/lib/store";
+import { useStore, DEMO_CREDENTIALS, SeoPlugin } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,16 @@ import {
 } from "@/components/ui/dialog";
 import { CheckCircle2, Loader2, Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+// Helper function to display SEO plugin names
+const getSeoPluginName = (plugin: SeoPlugin): string => {
+  switch(plugin) {
+    case 'rankmath': return 'Rank Math';
+    case 'aioseo': return 'AIO SEO PRO';
+    case 'none': return 'Standard';
+    default: return plugin;
+  }
+};
 
 export default function Dashboard() {
   const { sites, connectSite, disconnectSite } = useStore();
@@ -124,8 +134,8 @@ export default function Dashboard() {
                 </div>
                 <h3 className="font-semibold text-sm mb-1 line-clamp-1">{site.name}</h3>
                 <p className="text-xs text-muted-foreground line-clamp-1 mb-3">{site.url}</p>
-                <div className="text-xs text-muted-foreground capitalize">
-                  {site.seoPlugin === 'none' ? 'Standard' : site.seoPlugin}
+                <div className="text-xs text-muted-foreground">
+                  {getSeoPluginName(site.seoPlugin)}
                 </div>
               </CardContent>
               <CardFooter className="gap-2">

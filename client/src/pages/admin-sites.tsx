@@ -30,6 +30,26 @@ import {
 import { Plus, Globe, Trash2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Helper function to display SEO plugin names
+const getSeoPluginName = (plugin: SeoPlugin): string => {
+  switch(plugin) {
+    case 'rankmath': return 'Rank Math';
+    case 'aioseo': return 'AIO SEO PRO';
+    case 'none': return 'Standard';
+    default: return plugin;
+  }
+};
+
+// Helper function to fetch favicon
+const getFavicon = (url: string): string => {
+  try {
+    const domain = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+  } catch (e) {
+    return '';
+  }
+};
+
 export default function AdminSites() {
   const { sites, addSite } = useStore();
   const { toast } = useToast();
@@ -99,9 +119,8 @@ export default function AdminSites() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None / Default</SelectItem>
-                    <SelectItem value="aioseo">All in One SEO (AIOSEO)</SelectItem>
+                    <SelectItem value="aioseo">AIO SEO PRO</SelectItem>
                     <SelectItem value="rankmath">Rank Math</SelectItem>
-                    <SelectItem value="yoast">Yoast SEO</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -136,22 +155,27 @@ export default function AdminSites() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sites.map((site) => (
+            {sites.map((site) => {
+              const favicon = getFavicon(site.url);
+              return (
               <TableRow key={site.id}>
                 <TableCell className="font-medium flex items-center gap-2">
-                  <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center text-primary">
-                    <Globe className="w-4 h-4" />
-                  </div>
+                  {favicon ? (
+                    <img src={favicon} alt={site.name} className="w-6 h-6 rounded" />
+                  ) : (
+                    <div className="w-6 h-6 bg-primary/10 rounded flex items-center justify-center text-primary">
+                      <Globe className="w-4 h-4" />
+                    </div>
+                  )}
                   {site.name}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{site.url}</TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                     ${site.seoPlugin === 'rankmath' ? 'bg-purple-100 text-purple-800' : 
                       site.seoPlugin === 'aioseo' ? 'bg-green-100 text-green-800' : 
-                      site.seoPlugin === 'yoast' ? 'bg-amber-100 text-amber-800' : 
                       'bg-gray-100 text-gray-800'}`}>
-                    {site.seoPlugin === 'none' ? 'Standard' : site.seoPlugin}
+                    {getSeoPluginName(site.seoPlugin)}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
@@ -171,7 +195,8 @@ export default function AdminSites() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            );
+            })}
           </TableBody>
         </Table>
       </div>
