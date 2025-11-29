@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Upload } from "lucide-react";
+import { Save, Upload, Loader2 } from "lucide-react";
+
+// Mock function to fetch WP profile data
+const fetchWPProfile = async () => {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve({
+        displayName: "John Smith - WordPress User",
+        profilePicture: "https://api.dicebear.com/7.x/avataaars/svg?seed=wordpress-user"
+      });
+    }, 500);
+  });
+};
 
 export default function PublishingProfile() {
   const { publishingProfile, users, updatePublishingProfile } = useStore();
@@ -15,9 +27,33 @@ export default function PublishingProfile() {
   const [displayName, setDisplayName] = useState(publishingProfile?.displayName || "");
   const [profilePicture, setProfilePicture] = useState(publishingProfile?.profilePicture || "");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState(profilePicture);
 
   const currentUser = users[0]; // Demo: using first user
+
+  // Fetch WP profile data on mount
+  useEffect(() => {
+    const loadWPProfile = async () => {
+      setIsLoading(true);
+      try {
+        const wpData = await fetchWPProfile();
+        if (wpData && typeof wpData === 'object') {
+          const { displayName: wpDisplayName, profilePicture: wpProfilePicture } = wpData as { displayName: string; profilePicture: string };
+          // If no profile is saved yet, use WP data
+          if (!publishingProfile?.displayName) {
+            setDisplayName(wpDisplayName);
+            setPreviewUrl(wpProfilePicture);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch WP profile', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadWPProfile();
+  }, [publishingProfile]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,6 +94,17 @@ export default function PublishingProfile() {
       setIsSaving(false);
     }, 1500);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl space-y-8 pb-20">

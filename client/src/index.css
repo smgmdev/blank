@@ -70,4 +70,22 @@
   button, input, select, textarea {
     @apply transition-all duration-200;
   }
+
+  /* Fade in animation for dialogs and modals */
+  [data-state="open"] {
+    animation: fadeIn 300ms ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 300ms ease-out;
+  }
 }

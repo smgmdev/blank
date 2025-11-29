@@ -72,19 +72,19 @@ export default function Users() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">User Management</h2>
           <p className="text-muted-foreground text-sm">Create and manage platform users.</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Create User
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="animate-fade-in w-full sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Create New User</DialogTitle>
               <DialogDescription>
@@ -149,47 +149,49 @@ export default function Users() {
       </div>
 
       <div className="border rounded-md bg-card overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="min-w-[150px]">Full Name</TableHead>
-              <TableHead className="hidden md:table-cell min-w-[150px]">Username</TableHead>
-              <TableHead className="hidden sm:table-cell min-w-[180px]">Email</TableHead>
-              <TableHead className="hidden lg:table-cell">Company</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs font-bold">
-                      {user.fullName.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium">{user.fullName}</p>
-                      <p className="text-xs text-muted-foreground md:hidden">{user.username}</p>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="hidden md:table-cell text-sm">{user.username}</TableCell>
-                <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{user.email}</TableCell>
-                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">{user.companyName || '-'}</TableCell>
-                <TableCell className="text-right">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
-                    onClick={() => handleDelete(user.id, user.fullName)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[120px]">Name</TableHead>
+                <TableHead className="hidden sm:table-cell min-w-[120px]">Username</TableHead>
+                <TableHead className="hidden md:table-cell min-w-[160px]">Email</TableHead>
+                <TableHead className="hidden lg:table-cell min-w-[120px]">Company</TableHead>
+                <TableHead className="text-right min-w-[60px]">Action</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
+                        {user.fullName.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{user.fullName}</p>
+                        <p className="text-xs text-muted-foreground truncate sm:hidden">{user.username}</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-sm truncate">{user.username}</TableCell>
+                  <TableCell className="hidden md:table-cell text-sm text-muted-foreground truncate">{user.email}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm text-muted-foreground truncate">{user.companyName || '-'}</TableCell>
+                  <TableCell className="text-right">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                      onClick={() => handleDelete(user.id, user.fullName)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );

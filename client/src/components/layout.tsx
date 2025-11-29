@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useStore } from "@/lib/store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { 
   LayoutDashboard, 
   Settings, 
@@ -10,7 +10,8 @@ import {
   User,
   FileText,
   Users,
-  Camera
+  Menu,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +27,7 @@ import {
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useStore();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -43,14 +45,48 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { label: "Write Article", icon: PenTool, href: "/editor", show: true },
     { label: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
     { label: "User Management", icon: Users, href: "/admin/users", show: isAdmin },
-    { label: "Publishing Profile", icon: Camera, href: "/publishing-profile", show: !isAdmin },
+    { label: "Publishing Profile", icon: User, href: "/publishing-profile", show: !isAdmin },
   ];
 
+  const handleNavClick = () => {
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-muted/30 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-background border-r border-border flex flex-col fixed h-full z-10">
-        <div className="h-16 flex items-center px-6 border-b border-border">
+    <div className="min-h-screen bg-muted/30 flex flex-col lg:flex-row">
+      {/* Mobile Header */}
+      <div className="lg:hidden h-16 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-20">
+        <div className="flex items-center gap-2">
+          <img 
+            src="https://www.worldimpactmedia.org/images/wimb.png" 
+            alt="WIMB Logo" 
+            className="w-8 h-8 rounded-lg"
+          />
+          <div className="flex flex-col text-primary font-bold text-xs leading-tight">
+            <span>Media</span>
+            <span>Manager</span>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="lg:hidden"
+        >
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </Button>
+      </div>
+
+      {/* Sidebar / Mobile Menu */}
+      <aside className={`
+        fixed lg:relative inset-0 lg:inset-auto w-64 bg-background border-r border-border flex flex-col z-10 lg:z-auto
+        lg:w-64 lg:h-screen
+        transition-opacity duration-300
+        ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none lg:opacity-100 lg:pointer-events-auto'}
+        lg:opacity-100
+      `}>
+        {/* Logo - Hidden on mobile, shown on desktop */}
+        <div className="hidden lg:flex h-16 items-center px-6 border-b border-border">
           <div className="flex items-center gap-3">
             <img 
               src="https://www.worldimpactmedia.org/images/wimb.png" 
@@ -64,17 +100,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        {/* Mobile Menu Header */}
+        <div className="lg:hidden h-16 flex items-center px-6 border-b border-border">
+          <div className="flex items-center gap-3">
+            <img 
+              src="https://www.worldimpactmedia.org/images/wimb.png" 
+              alt="WIMB Logo" 
+              className="w-8 h-8 rounded-lg"
+            />
+            <div className="flex flex-col text-primary font-bold text-xs leading-tight">
+              <span>Media</span>
+              <span>Manager</span>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.filter(item => item.show && item.href !== "/publishing-profile").map((item) => {
             const isActive = location === item.href;
             return (
               <Link key={item.href} href={item.href}>
-                <div className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer
-                  ${isActive 
-                    ? "bg-primary/10 text-primary" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"}
-                `}>
+                <div 
+                  onClick={handleNavClick}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer
+                    ${isActive 
+                      ? "bg-primary/10 text-primary" 
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+                  `}
+                >
                   <item.icon className="w-4 h-4" />
                   {item.label}
                 </div>
@@ -87,13 +141,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {!isAdmin && (
           <div className="p-4 border-t border-border">
             <Link href="/publishing-profile">
-              <div className={`
-                flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer
-                ${location === "/publishing-profile"
-                  ? "bg-primary/10 text-primary" 
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"}
-              `}>
-                <Camera className="w-4 h-4" />
+              <div 
+                onClick={handleNavClick}
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer
+                  ${location === "/publishing-profile"
+                    ? "bg-primary/10 text-primary" 
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+                `}
+              >
+                <User className="w-4 h-4" />
                 Publishing Profile
               </div>
             </Link>
@@ -104,18 +161,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="w-full justify-start px-2 hover:bg-muted">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-8 h-8 border">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="w-8 h-8 border flex-shrink-0">
                     <AvatarFallback>{isAdmin ? 'AD' : 'US'}</AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col items-start text-xs">
+                  <div className="flex flex-col items-start text-xs min-w-0">
                     <span className="font-medium">{isAdmin ? 'Administrator' : 'Content Creator'}</span>
                     <span className="text-muted-foreground">System Account</span>
                   </div>
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 animate-fade-in">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <Link href="/settings">
@@ -133,14 +190,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-0"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 ml-64">
-        <header className="h-16 border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10 flex items-center justify-between px-8">
+      <main className="flex-1 flex flex-col min-h-screen lg:h-screen">
+        <header className="h-16 border-b border-border bg-background/50 backdrop-blur-sm sticky top-16 lg:top-0 z-10 flex items-center justify-between px-4 lg:px-8">
           <h1 className="font-semibold text-lg">
             {navItems.find(i => i.href === location)?.label || 'Dashboard'}
           </h1>
         </header>
-        <div className="p-8 max-w-6xl mx-auto animate-fade-in">
+        <div className="flex-1 p-4 lg:p-8 max-w-6xl mx-auto w-full animate-fade-in overflow-y-auto">
           {children}
         </div>
       </main>
