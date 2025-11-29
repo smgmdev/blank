@@ -31,6 +31,7 @@ export default function MyArticles() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch real articles and sites
   useEffect(() => {
@@ -109,6 +110,50 @@ export default function MyArticles() {
   const handleEdit = (articleId: string) => {
     // Navigate to editor with article ID
     window.location.href = `/editor/${articleId}`;
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const [articlesRes, sitesRes] = await Promise.all([
+        fetch(`/api/articles`),
+        fetch(`/api/sites`)
+      ]);
+      
+      if (articlesRes.ok) {
+        const allArticles = await articlesRes.json();
+        const userArticles = allArticles.filter((a: any) => a.userId === userId);
+        
+        const articlesWithLinks = await Promise.all(userArticles.map(async (article: any) => {
+          if (article.status === 'published') {
+            try {
+              const publishRes = await fetch(`/api/articles/${article.id}/publishing`);
+              if (publishRes.ok) {
+                const pubData = await publishRes.json();
+                return { ...article, wpLink: pubData.wpLink };
+              }
+            } catch (e) {
+              // Silently fail
+            }
+          }
+          return article;
+        }));
+        
+        setArticles(articlesWithLinks);
+        toast({
+          title: "Synced",
+          description: "Articles synced with WordPress. Any deleted articles have been removed."
+        });
+      }
+      
+      if (sitesRes.ok) {
+        const allSites = await sitesRes.json();
+        setSites(allSites);
+      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to sync articles" });
+    }
+    setIsRefreshing(false);
   };
 
   const publishedArticles = articles.filter(a => a.status === 'published');
@@ -190,12 +235,22 @@ export default function MyArticles() {
         <div>
           <p className="text-muted-foreground text-sm">Manage your published content across all connected sites.</p>
         </div>
-        <Link href="/editor">
-          <Button className="w-full sm:w-auto">
-            <PenTool className="w-4 h-4 mr-2" />
-            Write New Article
+        <div className="flex gap-2 flex-col sm:flex-row w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh} 
+            disabled={isRefreshing}
+            className="w-full sm:w-auto"
+          >
+            {isRefreshing ? "Syncing..." : "Refresh & Sync"}
           </Button>
-        </Link>
+          <Link href="/editor">
+            <Button className="w-full sm:w-auto">
+              <PenTool className="w-4 h-4 mr-2" />
+              Write New Article
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (
