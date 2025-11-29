@@ -10,6 +10,7 @@ export const wordPressSites = pgTable("wordpress_sites", {
   url: text("url").notNull().unique(),
   apiUrl: text("api_url").notNull(),
   apiToken: text("api_token").notNull(), // Encrypted in production
+  adminUsername: text("admin_username"), // Admin username who created the Application Password
   seoPlugin: varchar("seo_plugin", { length: 50 }).notNull(), // "Rank Math" or "AIO SEO PRO"
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
   isConnected: boolean("is_connected").default(false),
