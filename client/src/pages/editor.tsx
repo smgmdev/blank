@@ -892,21 +892,24 @@ export default function Editor() {
       {/* Footer Controls */}
       <div className="fixed bottom-0 left-0 w-full bg-background border-t border-border p-4 z-30 md:pl-64 md:z-20">
         <div className="max-w-4xl mx-auto flex items-center gap-2 px-4 md:px-0 flex-col sm:flex-row justify-end">
-          <Button 
-            variant="outline" 
-            onClick={() => setShowCancelConfirm(true)}
-            className="gap-2 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 w-full sm:w-auto justify-start"
-          >
-            Cancel Article
-          </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={handleSaveDraft}
-            className="gap-2 w-full sm:w-auto hover:bg-black hover:text-white transition-all duration-200"
-          >
-            <Save className="w-4 h-4" /> Save Draft
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCancelConfirm(true)}
+              className="gap-2 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 flex-1 sm:flex-none sm:w-auto justify-start"
+            >
+              <span className="sm:hidden">Cancel</span>
+              <span className="hidden sm:inline">Cancel Article</span>
+            </Button>
+            
+            <Button 
+              variant="outline"
+              onClick={handleSaveDraft}
+              className="gap-2 hover:bg-black hover:text-white transition-all duration-200 flex-1 sm:flex-none sm:w-auto"
+            >
+              <Save className="w-4 h-4" /> <span className="sm:inline">Save Draft</span>
+            </Button>
+          </div>
           
           <div className="flex gap-2 w-full sm:w-auto">
             <Button 
