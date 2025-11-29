@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useStore, Site } from "@/lib/store";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,17 @@ export default function Editor() {
   const selectedSite = sites.find(s => s.id === selectedSiteId);
   const plugin = selectedSite?.seoPlugin || 'none';
   const categories = MOCK_CATEGORIES[selectedSiteId as keyof typeof MOCK_CATEGORIES] || MOCK_CATEGORIES['default'];
+
+  // Restore editor content when returning to step 1
+  useEffect(() => {
+    if (step === 1 && editorRef.current && formData.content) {
+      editorRef.current.innerHTML = formData.content;
+      // Update empty state
+      const text = editorRef.current.innerText || editorRef.current.textContent || '';
+      const cleanText = text.replace(/Start typing here\.\.\./, '').trim();
+      setIsEditorEmpty(cleanText.length === 0);
+    }
+  }, [step]);
 
   const generateSlug = (title: string) => {
     return title
