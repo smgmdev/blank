@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Globe, Trash2, ExternalLink, LogIn, Lock, User, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DEMO_CREDENTIALS } from "@/lib/store";
 
 export default function AdminSites() {
   const { sites, addSite, disconnectSite, connectSite } = useStore();
@@ -69,12 +70,15 @@ export default function AdminSites() {
 
     setIsVerifying(true);
 
-    // Mock API call to WordPress
+    // Verify credentials against demo accounts
     setTimeout(() => {
-      // Simulate credential verification
-      const isValid = loginCredentials.username.length > 0 && loginCredentials.password.length > 0;
+      // Check if credentials match demo user or admin
+      const isValidUser = loginCredentials.username === DEMO_CREDENTIALS.user.email && 
+                         loginCredentials.password === DEMO_CREDENTIALS.user.password;
+      const isValidAdmin = loginCredentials.username === DEMO_CREDENTIALS.admin.email && 
+                          loginCredentials.password === DEMO_CREDENTIALS.admin.password;
       
-      if (isValid) {
+      if (isValidUser || isValidAdmin) {
         // Connect the site
         if (selectedSiteForLogin) {
           connectSite(selectedSiteForLogin);
@@ -82,7 +86,7 @@ export default function AdminSites() {
         
         toast({
           title: "Connected Successfully",
-          description: `You have been authenticated with publishing rights`
+          description: `Account authenticated with publishing rights`
         });
         
         setLoginDialogOpen(false);
@@ -92,7 +96,7 @@ export default function AdminSites() {
         toast({
           variant: "destructive",
           title: "Authentication Failed",
-          description: "Invalid WordPress credentials or insufficient publishing rights"
+          description: "Invalid credentials. Use demo@writer.com or admin@system.com"
         });
       }
       
@@ -245,20 +249,20 @@ export default function AdminSites() {
       <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Connect to WordPress Site</DialogTitle>
+            <DialogTitle>Authenticate User Account</DialogTitle>
             <DialogDescription>
-              Enter your WordPress credentials to authenticate and verify publishing rights.
+              Enter your system credentials to authenticate and verify publishing rights.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="wp-username" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
-                WordPress Username
+                Email Address
               </Label>
               <Input 
                 id="wp-username" 
-                placeholder="your-username" 
+                placeholder="demo@writer.com" 
                 value={loginCredentials.username}
                 onChange={e => setLoginCredentials({...loginCredentials, username: e.target.value})}
                 disabled={isVerifying}
@@ -267,12 +271,12 @@ export default function AdminSites() {
             <div className="space-y-2">
               <Label htmlFor="wp-password" className="flex items-center gap-2">
                 <Lock className="w-4 h-4" />
-                WordPress Password
+                Password
               </Label>
               <Input 
                 id="wp-password" 
                 type="password"
-                placeholder="your-password" 
+                placeholder="password" 
                 value={loginCredentials.password}
                 onChange={e => setLoginCredentials({...loginCredentials, password: e.target.value})}
                 disabled={isVerifying}
@@ -280,11 +284,10 @@ export default function AdminSites() {
               />
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-              <p className="font-medium mb-1">What we check:</p>
-              <ul className="list-disc list-inside space-y-1 text-xs">
-                <li>Valid WordPress credentials via REST API</li>
-                <li>User has "Editor" or "Administrator" role</li>
-                <li>Publishing permissions verified</li>
+              <p className="font-medium mb-1">Demo Credentials:</p>
+              <ul className="space-y-1 text-xs">
+                <li><strong>User:</strong> demo@writer.com / password</li>
+                <li><strong>Admin:</strong> admin@system.com / password</li>
               </ul>
             </div>
           </div>

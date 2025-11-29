@@ -23,12 +23,19 @@ export interface Article {
   wpLink?: string; // Mock link to WP
 }
 
+// Demo credentials
+export const DEMO_CREDENTIALS = {
+  user: { email: 'demo@writer.com', password: 'password' },
+  admin: { email: 'admin@system.com', password: 'password' }
+};
+
 interface AppState {
   user: 'admin' | 'user' | null;
   sites: Site[];
   articles: Article[];
   login: (type: 'admin' | 'user') => void;
   logout: () => void;
+  initializeFromStorage: () => void;
   addSite: (site: Omit<Site, 'id' | 'isConnected' | 'authCode'>, authCode: string) => void;
   connectSite: (siteId: string) => void;
   disconnectSite: (siteId: string) => void;
@@ -56,8 +63,41 @@ export const useStore = create<AppState>((set) => ({
       wpLink: 'https://yummy.food/top-10-vegan-breakfasts'
     }
   ],
-  login: (type) => set({ user: type }),
-  logout: () => set({ user: null }),
+  login: (type) => {
+    // Store session with 7-day expiry
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 7);
+    localStorage.setItem('userSession', JSON.stringify({
+      user: type,
+      expiryDate: expiryDate.toISOString()
+    }));
+    set({ user: type });
+  },
+  logout: () => {
+    localStorage.removeItem('userSession');
+    set({ user: null });
+  },
+  initializeFromStorage: () => set((state) => {
+    const session = localStorage.getItem('userSession');
+    if (session) {
+      try {
+        const { user, expiryDate } = JSON.parse(session);
+        const now = new Date();
+        const expiry = new Date(expiryDate);
+        // Check if session is still valid
+        if (now < expiry && user) {
+          return { user };
+        } else {
+          localStorage.removeItem('userSession');
+          return { user: null };
+        }
+      } catch (e) {
+        localStorage.removeItem('userSession');
+        return { user: null };
+      }
+    }
+    return { user: null };
+  }),
   addSite: (site, authCode) => set((state) => ({
     sites: [...state.sites, { ...site, authCode, id: Math.random().toString(36).substr(2, 9), isConnected: false }]
   })),
