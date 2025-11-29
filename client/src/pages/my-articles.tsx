@@ -30,95 +30,93 @@ export default function MyArticles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">My Articles</h2>
-          <p className="text-muted-foreground">Manage your published content across all connected sites.</p>
+          <p className="text-muted-foreground text-sm mt-1">Manage your published content across all connected sites.</p>
         </div>
         <Link href="/editor">
-          <Button>
+          <Button className="w-full sm:w-auto">
             <FileText className="w-4 h-4 mr-2" />
-            Write New
+            Write New Article
           </Button>
         </Link>
       </div>
 
-      <div className="border rounded-md bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[400px]">Article Details</TableHead>
-              <TableHead>Site</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Published Date</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {articles.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center h-32 text-muted-foreground">
-                  No articles published yet. Start writing!
-                </TableCell>
-              </TableRow>
-            ) : (
-              articles.map((article) => {
-                const site = sites.find(s => s.id === article.siteId);
-                return (
-                  <TableRow key={article.id}>
-                    <TableCell>
-                      <div className="font-medium text-base">{article.title}</div>
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs font-normal">{article.category}</Badge>
-                        {article.tags.slice(0, 2).map(tag => (
-                          <Badge key={tag} variant="secondary" className="text-xs font-normal text-muted-foreground">{tag}</Badge>
-                        ))}
+      {articles.length === 0 ? (
+        <div className="border border-dashed rounded-lg p-12 text-center space-y-4">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+            <FileText className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <div>
+            <h3 className="font-medium text-lg">No articles yet</h3>
+            <p className="text-muted-foreground text-sm">Start writing your first article to see it here.</p>
+          </div>
+          <Link href="/editor">
+            <Button variant="outline" size="sm">
+              Write Your First Article
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {articles.map((article) => {
+            const site = sites.find(s => s.id === article.siteId);
+            return (
+              <div key={article.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-base break-words">{article.title}</h3>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge variant="outline" className="text-xs">{article.category}</Badge>
+                      {article.tags.slice(0, 3).map(tag => (
+                        <Badge key={tag} variant="secondary" className="text-xs text-muted-foreground">{tag}</Badge>
+                      ))}
+                      {article.tags.length > 3 && (
+                        <Badge variant="secondary" className="text-xs text-muted-foreground">+{article.tags.length - 3}</Badge>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Globe className="w-3 h-3" />
+                        <span>{site?.name || 'Unknown Site'}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Globe className="w-3 h-3 text-muted-foreground" />
-                        {site?.name || 'Unknown Site'}
+                      <div className="flex items-center gap-1">
+                        <Badge className={article.status === 'published' ? 'bg-green-100 text-green-800 hover:bg-green-100 text-xs' : 'bg-yellow-100 text-yellow-800 text-xs'}>
+                          {article.status}
+                        </Badge>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={article.status === 'published' ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-yellow-100 text-yellow-800'}>
-                        {article.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(article.publishedAt), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {article.wpLink && (
-                          <Button variant="ghost" size="icon" asChild title="View on WordPress">
-                            <a href={article.wpLink} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="w-4 h-4 text-blue-600" />
-                            </a>
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="icon" title="Edit (Mock)">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDelete(article.id)}
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                      <span>{format(new Date(article.publishedAt), "MMM d, yyyy")}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 flex-shrink-0">
+                    {article.wpLink && (
+                      <Button variant="ghost" size="icon" asChild title="View on WordPress" className="h-8 w-8">
+                        <a href={article.wpLink} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-4 h-4 text-blue-600" />
+                        </a>
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" title="Edit (Mock)" className="h-8 w-8">
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                      onClick={() => handleDelete(article.id)}
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

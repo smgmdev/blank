@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useStore, Site } from "@/lib/store";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -21,14 +20,16 @@ import {
   Send, 
   Save, 
   FileText, 
-  Image as ImageIcon, 
-  Tags, 
   Search, 
   CheckCircle2, 
   ChevronRight,
   ChevronLeft,
   UploadCloud,
-  Globe
+  Globe,
+  Bold,
+  Italic,
+  List,
+  Link as LinkIcon
 } from "lucide-react";
 
 // Mock Data for Categories based on sites
@@ -43,6 +44,8 @@ export default function Editor() {
   const { sites, addArticle } = useStore();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedSites = sites.filter(s => s.isConnected);
   
   // Wizard State
@@ -53,8 +56,10 @@ export default function Editor() {
   const [selectedSiteId, setSelectedSiteId] = useState<string>(connectedSites[0]?.id || "");
   const [formData, setFormData] = useState({
     title: "",
+    slug: "",
     content: "",
     image: null as File | null,
+    imagePreview: "",
     category: "",
     tags: [] as string[],
     currentTag: "",
@@ -68,6 +73,58 @@ export default function Editor() {
   const selectedSite = sites.find(s => s.id === selectedSiteId);
   const plugin = selectedSite?.seoPlugin || 'none';
   const categories = MOCK_CATEGORIES[selectedSiteId as keyof typeof MOCK_CATEGORIES] || MOCK_CATEGORIES['default'];
+
+  // Generate slug from title
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const title = e.target.value;
+    setFormData({
+      ...formData,
+      title,
+      slug: generateSlug(title)
+    });
+  };
+
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        setFormData({
+          ...formData,
+          image: file,
+          imagePreview: URL.createObjectURL(file)
+        });
+        toast({
+          title: "Image Uploaded",
+          description: `"${file.name}" has been added as featured image.`
+        });
+      }
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      setFormData({
+        ...formData,
+        image: file,
+        imagePreview: URL.createObjectURL(file)
+      });
+    }
+  };
 
   const handleNext = () => {
     if (step === 1 && (!formData.title || !selectedSiteId)) {
@@ -99,14 +156,21 @@ export default function Editor() {
     });
   };
 
+  const applyFormat = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    editorRef.current?.focus();
+  };
+
   const handlePublish = () => {
+    if (!editorRef.current) return;
+    
     setIsPublishing(true);
     
     setTimeout(() => {
       addArticle({
         siteId: selectedSiteId,
         title: formData.title,
-        content: formData.content,
+        content: editorRef.current?.innerHTML || "",
         category: formData.category || "Uncategorized",
         tags: formData.tags,
         status: 'published'
@@ -173,7 +237,7 @@ export default function Editor() {
           <Card>
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Choose where to publish and write your content.</CardDescription>
+              <CardDescription>Choose where to publish and write your content with rich formatting.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -191,34 +255,102 @@ export default function Editor() {
               </div>
 
               <div className="space-y-2">
-                <Label>Article Title</Label>
+                <Label htmlFor="title">Article Title</Label>
                 <Input 
+                  id="title"
                   placeholder="Enter a catchy title..." 
                   value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
+                  onChange={handleTitleChange}
                   className="text-lg font-medium"
                 />
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="slug">Slug (Auto-generated)</Label>
+                <Input 
+                  id="slug"
+                  value={formData.slug}
+                  disabled
+                  className="bg-muted text-muted-foreground cursor-not-allowed"
+                  placeholder="auto-generated-from-title"
+                />
+                <p className="text-xs text-muted-foreground">The URL-friendly version of your title. Auto-updated as you change the title.</p>
+              </div>
+
+              <div className="space-y-2">
                 <Label>Featured Image</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer group">
-                  <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                    <UploadCloud className="w-6 h-6" />
-                  </div>
-                  <p className="text-sm font-medium">Drag & drop or click to upload</p>
-                  <p className="text-xs text-muted-foreground mt-1">Supports JPG, PNG, WEBP</p>
+                <div 
+                  className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer group"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={handleImageDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {formData.imagePreview ? (
+                    <div className="space-y-2">
+                      <img src={formData.imagePreview} alt="Preview" className="w-32 h-32 object-cover mx-auto rounded" />
+                      <p className="text-sm font-medium text-green-600">Image selected: {formData.image?.name}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                        <UploadCloud className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm font-medium">Drag & drop or click to upload</p>
+                      <p className="text-xs text-muted-foreground mt-1">Supports JPG, PNG, WEBP</p>
+                    </>
+                  )}
+                  <input 
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label>Content</Label>
-                <Textarea 
-                  placeholder="Start writing your masterpiece..." 
-                  className="min-h-[300px] font-mono text-sm"
-                  value={formData.content}
-                  onChange={e => setFormData({...formData, content: e.target.value})}
-                />
+                <div className="border border-border rounded-lg overflow-hidden">
+                  {/* Editor Toolbar */}
+                  <div className="bg-muted/50 border-b border-border p-2 flex flex-wrap gap-1">
+                    <Button size="sm" variant="outline" onClick={() => applyFormat('bold')} title="Bold">
+                      <Bold className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => applyFormat('italic')} title="Italic">
+                      <Italic className="w-4 h-4" />
+                    </Button>
+                    <Separator orientation="vertical" className="h-6" />
+                    <Button size="sm" variant="outline" onClick={() => applyFormat('formatBlock', '<h2>')} title="Heading 2">
+                      H2
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => applyFormat('formatBlock', '<h3>')} title="Heading 3">
+                      H3
+                    </Button>
+                    <Separator orientation="vertical" className="h-6" />
+                    <Button size="sm" variant="outline" onClick={() => applyFormat('insertUnorderedList')} title="Bullet List">
+                      <List className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => applyFormat('createLink', prompt('Enter URL:') || '')} title="Add Link">
+                      <LinkIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Editor */}
+                  <div
+                    ref={editorRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="min-h-[400px] p-4 focus:outline-none font-[Helvetica,Arial,sans-serif] text-base leading-relaxed"
+                    style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                  >
+                    <p style={{ color: '#999' }}>Start typing here...</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Use the toolbar to format your text with headings, bold, italic, links, and more.</p>
               </div>
             </CardContent>
           </Card>
@@ -309,11 +441,7 @@ export default function Editor() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-purple-600 font-medium">Focus Keyword</Label>
-                    <Input 
-                      placeholder="Main keyword..." 
-                      value={formData.seo.focusKeyword}
-                      onChange={e => setFormData({...formData, seo: { ...formData.seo, focusKeyword: e.target.value }})}
-                    />
+                    <Input placeholder="Main keyword..." />
                   </div>
                   <div className="space-y-2">
                     <Label>SEO Title</Label>
@@ -336,7 +464,7 @@ export default function Editor() {
                   </div>
                   <div className="space-y-2">
                     <Label>Meta Description</Label>
-                    <Textarea className="h-24" />
+                    <Input placeholder="Keep it under 160 characters..." />
                   </div>
                 </>
               )}
@@ -369,7 +497,7 @@ export default function Editor() {
       {/* Step 4: Review */}
       {step === 4 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-           <Card>
+          <Card>
             <CardHeader>
               <CardTitle>Review & Publish</CardTitle>
               <CardDescription>Double check everything before going live.</CardDescription>
@@ -388,6 +516,10 @@ export default function Editor() {
                   <div>
                     <Label className="text-xs text-muted-foreground uppercase tracking-wider">Title</Label>
                     <div className="font-medium text-lg mt-1">{formData.title || "Untitled Article"}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Slug</Label>
+                    <div className="font-mono text-sm mt-1 text-muted-foreground">{formData.slug}</div>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground uppercase tracking-wider">Category</Label>
@@ -410,11 +542,13 @@ export default function Editor() {
               
               <Separator />
               
-              <div className="bg-muted/30 p-4 rounded-lg border text-sm text-muted-foreground">
-                <p className="font-mono text-xs mb-2 uppercase">Content Preview (Snippet)</p>
-                <p className="line-clamp-3 italic">
-                  {formData.content || "No content written yet..."}
-                </p>
+              <div className="bg-muted/30 p-4 rounded-lg border text-sm text-muted-foreground max-h-60 overflow-y-auto">
+                <p className="font-mono text-xs mb-2 uppercase text-foreground font-bold">Content Preview</p>
+                {editorRef.current?.textContent ? (
+                  <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: editorRef.current?.innerHTML || "" }} />
+                ) : (
+                  <p className="italic">No content written yet...</p>
+                )}
               </div>
             </CardContent>
           </Card>

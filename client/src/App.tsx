@@ -11,6 +11,7 @@ import AdminSites from "@/pages/admin-sites";
 import Editor from "@/pages/editor";
 
 import MyArticles from "@/pages/my-articles";
+import Settings from "@/pages/settings";
 
 function Router() {
   return (
@@ -39,6 +40,12 @@ function Router() {
       <Route path="/editor">
         <Layout>
           <Editor />
+        </Layout>
+      </Route>
+
+      <Route path="/settings">
+        <Layout>
+          <Settings />
         </Layout>
       </Route>
 
