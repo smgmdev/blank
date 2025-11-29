@@ -643,6 +643,9 @@ export async function registerRoutes(
 
       const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
       
+      // Use admin credentials for media upload (requires file upload permission)
+      const adminAuth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+      
       let featuredMediaId = null;
       
       // Upload featured image if provided
@@ -666,11 +669,11 @@ export async function registerRoutes(
             extension = "gif";
           }
           
-          // Send image as binary with proper headers
+          // Send image as binary with proper headers using admin credentials
           const mediaResponse = await fetch(mediaUrl, {
             method: "POST",
             headers: {
-              Authorization: `Basic ${auth}`,
+              Authorization: `Basic ${adminAuth}`,
               "Content-Type": contentType,
               "Content-Disposition": `form-data; name="file"; filename="featured-image.${extension}"`
             },
@@ -682,8 +685,8 @@ export async function registerRoutes(
             featuredMediaId = mediaData.id;
             console.log(`Image uploaded successfully with ID: ${featuredMediaId}`);
           } else {
-            const errorText = await mediaResponse.text();
-            console.error(`Image upload failed: ${mediaResponse.status}`, errorText);
+            const errorData = await mediaResponse.json();
+            console.error(`Image upload failed: ${mediaResponse.status}`, errorData);
           }
         } catch (imgError) {
           console.error("Image upload error:", imgError);
