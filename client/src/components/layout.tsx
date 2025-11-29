@@ -40,7 +40,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isAdmin = user === 'admin';
 
   const navItems = [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", show: true },
+    { label: "Media Network", icon: LayoutDashboard, href: "/dashboard", show: true },
     { label: "My Articles", icon: FileText, href: "/my-articles", show: true },
     { label: "Write New Article", icon: PenTool, href: "/editor", show: true },
     { label: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
