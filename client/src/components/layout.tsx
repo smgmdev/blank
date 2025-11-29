@@ -53,7 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col lg:flex-row">
+    <div className="h-screen bg-muted/30 flex flex-col lg:flex-row overflow-hidden">
       {/* Mobile Header */}
       <div className="lg:hidden h-16 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-30">
         <Link href="/dashboard">
@@ -209,8 +209,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-screen lg:h-screen">
-        <header className="h-16 border-b border-border bg-background/50 backdrop-blur-sm sticky top-16 lg:top-0 z-10 flex items-center justify-between px-4 lg:px-8">
+      <main className="flex-1 flex flex-col h-screen lg:h-full overflow-hidden">
+        <header className="h-16 border-b border-border bg-background/50 backdrop-blur-sm z-10 flex items-center justify-between px-4 lg:px-8 flex-shrink-0">
           <h1 className="font-semibold text-lg">
             {navItems.find(i => i.href === location)?.label || 'Dashboard'}
           </h1>
