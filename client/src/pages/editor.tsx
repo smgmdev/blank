@@ -722,9 +722,9 @@ export default function Editor() {
                   ) : categories.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4">No categories available</p>
                   ) : (
-                    <div className="space-y-2 mt-4">
+                    <div className="space-y-1.5 mt-4">
                       {categories.map((cat: any) => (
-                        <div key={cat.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                        <div key={cat.id} className="flex items-center gap-2 p-1.5 rounded border border-transparent hover:border-border hover:bg-muted/30 cursor-pointer transition-colors"
                           onClick={() => {
                             if (formData.categories.includes(cat.id)) {
                               setFormData({
@@ -739,18 +739,18 @@ export default function Editor() {
                             }
                           }}
                         >
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          <div className={`w-4 h-4 rounded border border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                             formData.categories.includes(cat.id) 
                               ? 'bg-primary border-primary' 
                               : 'border-border hover:border-primary'
                           }`}>
                             {formData.categories.includes(cat.id) && (
-                              <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 20 20" fill="currentColor">
+                              <svg className="w-2.5 h-2.5 text-primary-foreground" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
                             )}
                           </div>
-                          <Label htmlFor={`cat-${cat.id}`} className="font-normal cursor-pointer text-sm flex-1">{cat.name}</Label>
+                          <Label htmlFor={`cat-${cat.id}`} className="font-normal cursor-pointer text-xs flex-1 m-0">{cat.name}</Label>
                         </div>
                       ))}
                     </div>
@@ -784,10 +784,10 @@ export default function Editor() {
                               .filter((tag: any) => tag.name.toLowerCase().includes(formData.currentTag.toLowerCase()))
                               .slice(0, 5)
                               .map((tag: any) => (
-                                <Badge key={tag.id} variant="outline" className="text-xs cursor-pointer hover:bg-primary/10"
+                                <Badge key={tag.id} variant="outline" className="text-xs cursor-pointer hover:bg-primary/10" style={{maxWidth: '150px', wordBreak: 'break-word', whiteSpace: 'normal', display: 'inline-flex'}}
                                   onClick={() => setFormData({...formData, tags: [...formData.tags, tag.id], currentTag: ""})}
                                 >
-                                  {tag.name}
+                                  <span style={{wordBreak: 'break-word'}}>{tag.name}</span>
                                 </Badge>
                               ))}
                             {availableTags.filter((tag: any) => tag.name.toLowerCase().includes(formData.currentTag.toLowerCase())).length === 0 && (
