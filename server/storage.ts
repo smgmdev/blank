@@ -66,6 +66,9 @@ export interface IStorage {
   getPublishingProfilesBySiteId(siteId: string): Promise<PublishingProfile[]>;
   deletePublishingProfile(id: string): Promise<void>;
 
+  // Delete credentials
+  deleteUserSiteCredential(credentialId: string): Promise<void>;
+
   // Articles
   createArticle(article: InsertArticle): Promise<Article>;
   getArticle(id: string): Promise<Article | undefined>;
@@ -248,6 +251,12 @@ export class Storage implements IStorage {
     await db
       .delete(publishingProfiles)
       .where(eq(publishingProfiles.id, id));
+  }
+
+  async deleteUserSiteCredential(credentialId: string): Promise<void> {
+    await db
+      .delete(userSiteCredentials)
+      .where(eq(userSiteCredentials.id, credentialId));
   }
 
   // Articles

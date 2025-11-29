@@ -27,8 +27,8 @@ const getSeoPluginName = (plugin: SeoPlugin): string => {
 };
 
 export default function Dashboard() {
-  const { connectSite, disconnectSite } = useStore();
   const { toast } = useToast();
+  const userId = localStorage.getItem('userId');
   const [sites, setSites] = useState<any[]>([]);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
@@ -41,7 +41,9 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchSites = async () => {
       try {
-        const response = await fetch('/api/sites');
+        if (!userId) return;
+        
+        const response = await fetch(`/api/users/${userId}/sites-with-auth`);
         if (response.ok) {
           const data = await response.json();
           setSites(data);
@@ -57,7 +59,9 @@ export default function Dashboard() {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const response = await fetch('/api/sites');
+        if (!userId) return;
+        
+        const response = await fetch(`/api/users/${userId}/sites-with-auth`);
         if (response.ok) {
           const data = await response.json();
           setSites(data);
@@ -120,10 +124,12 @@ export default function Dashboard() {
       });
 
       // Refresh sites to show updated connection status
-      const sitesResponse = await fetch('/api/sites');
-      if (sitesResponse.ok) {
-        const updatedSites = await sitesResponse.json();
-        setSites(updatedSites);
+      if (userId) {
+        const sitesResponse = await fetch(`/api/users/${userId}/sites-with-auth`);
+        if (sitesResponse.ok) {
+          const updatedSites = await sitesResponse.json();
+          setSites(updatedSites);
+        }
       }
 
       setAuthDialogOpen(false);
@@ -154,16 +160,32 @@ export default function Dashboard() {
     }, 1000);
   };
 
-  const handleDisconnect = (siteId: string) => {
-    disconnectSite(siteId);
-    // Update local state to show disconnected
-    setSites(sites.map(site => 
-      site.id === siteId ? { ...site, isConnected: false } : site
-    ));
-    toast({
-      title: "Disconnected",
-      description: "You have been disconnected from this site.",
-    });
+  const handleDisconnect = async (siteId: string) => {
+    try {
+      if (!userId) throw new Error('User session not found');
+
+      const response = await fetch(
+        `/api/users/${userId}/sites/${siteId}/disconnect`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+      );
+
+      if (!response.ok) throw new Error('Failed to disconnect');
+
+      // Update local state to show disconnected
+      setSites(sites.map(site => 
+        site.id === siteId ? { ...site, userIsConnected: false } : site
+      ));
+      toast({
+        title: "Disconnected",
+        description: "You have been disconnected from this site.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Disconnection Failed",
+        description: error.message
+      });
+    }
   };
 
   // Function to fetch favicon
@@ -218,7 +240,7 @@ export default function Dashboard() {
                     )}
                     <h3 className="font-semibold text-xs truncate">{site.name}</h3>
                   </div>
-                  {site.isConnected && (
+                  {site.userIsConnected && (
                     <div className="flex-shrink-0">
                       <div className="bg-green-50 border border-green-200 rounded-full p-1">
                         <CheckCircle2 className="w-3 h-3 text-green-600" />
@@ -229,7 +251,7 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground line-clamp-1">{site.url}</p>
               </CardContent>
               <div className="px-4 pb-3 pt-0">
-                {site.isConnected ? (
+                {site.userIsConnected ? (
                   <Button 
                     variant="outline" 
                     size="sm"

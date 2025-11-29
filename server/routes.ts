@@ -330,6 +330,54 @@ export async function registerRoutes(
     }
   });
 
+  // Get sites with user's personal auth status
+  app.get("/api/users/:userId/sites-with-auth", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const sites = await storage.getAllWordPressSites();
+      
+      // For each site, check if user is authenticated
+      const sitesWithAuth = await Promise.all(
+        sites.map(async (site) => {
+          const credential = await storage.getUserSiteCredential(userId, site.id);
+          return {
+            ...site,
+            userIsConnected: !!credential && credential.isVerified
+          };
+        })
+      );
+
+      res.json(sitesWithAuth);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch sites" });
+    }
+  });
+
+  // Disconnect user from site (remove credentials)
+  app.post("/api/users/:userId/sites/:siteId/disconnect", async (req, res) => {
+    try {
+      const { userId, siteId } = req.params;
+      
+      // Get and delete user's credentials
+      const credential = await storage.getUserSiteCredential(userId, siteId);
+      if (credential) {
+        // Delete any publishing profiles for this user+site
+        const profiles = await storage.getPublishingProfilesBySiteId(siteId);
+        for (const profile of profiles) {
+          if (profile.userId === userId) {
+            await storage.deletePublishingProfile(profile.id);
+          }
+        }
+        // Delete the credential
+        await storage.deleteUserSiteCredential(credential.id);
+      }
+
+      res.json({ success: true, message: "Disconnected from site" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to disconnect" });
+    }
+  });
+
   // Get user's publishing profiles with site info
   app.get("/api/users/:userId/publishing-profiles", async (req, res) => {
     try {
