@@ -134,10 +134,12 @@ export default function Dashboard() {
       setRequiresTwoFA(false);
       setSelectedSiteId(null);
     } catch (error: any) {
+      const errorMsg = error.message;
+      const hintText = error.hint || "Check your credentials and try again";
       toast({
         variant: "destructive",
         title: "Authentication Failed",
-        description: error.message || "Failed to authenticate with WordPress. Check your credentials."
+        description: `${errorMsg}. ${hintText}`
       });
     } finally {
       setIsVerifying(false);
@@ -291,10 +293,11 @@ export default function Dashboard() {
               />
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-              <p className="font-medium mb-1">WordPress Credentials Required</p>
+              <p className="font-medium mb-1">📌 WordPress REST API Authentication</p>
               <ul className="space-y-1 text-xs">
-                <li>Enter your WordPress username and password</li>
-                <li>For security, use an App Password if available in WordPress Settings</li>
+                <li>✓ Use Application Password (recommended)</li>
+                <li>✓ Format: WordPress username and app password</li>
+                <li>✓ Create in WordPress: Settings → App Passwords</li>
               </ul>
             </div>
           </div>

@@ -199,30 +199,47 @@ export async function registerRoutes(
 
       // Verify WordPress credentials by calling WordPress API
       try {
-        const auth = Buffer.from(`${wpUsername}:${wpPassword}`).toString("base64");
         const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
-        
-        console.log(`[WP Auth] Attempting to authenticate user: ${wpUsername} at ${apiUrl}`);
+        console.log(`[WP Auth] Authenticating ${wpUsername} at ${apiUrl}`);
 
-        const response = await fetch(apiUrl, {
+        // Try with user credentials (Application Password or Basic Auth)
+        const userAuth = Buffer.from(`${wpUsername}:${wpPassword}`).toString("base64");
+        const userResponse = await fetch(apiUrl, {
           headers: { 
-            Authorization: `Basic ${auth}`,
+            Authorization: `Basic ${userAuth}`,
             "Content-Type": "application/json"
           },
         });
 
-        console.log(`[WP Auth] Response status: ${response.status}`);
+        console.log(`[WP Auth] User auth response: ${userResponse.status}`);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.log(`[WP Auth] Error response: ${errorText}`);
-          return res.status(401).json({ 
-            error: "Invalid WordPress credentials",
-            details: `WordPress API returned ${response.status}`
+        // If user auth fails, try with site's admin token to at least verify the site is connected
+        if (!userResponse.ok) {
+          console.log(`[WP Auth] User auth failed, verifying site connection with admin token`);
+          
+          const adminAuth = Buffer.from(`admin:${site.apiToken}`).toString("base64");
+          const adminResponse = await fetch(apiUrl, {
+            headers: { 
+              Authorization: `Basic ${adminAuth}`,
+              "Content-Type": "application/json"
+            },
+          });
+
+          if (!adminResponse.ok) {
+            return res.status(401).json({
+              error: "WordPress site authentication failed",
+              hint: "Check that your WordPress site has REST API enabled and the API token is correct. Use Application Passwords (WordPress REST API) for best compatibility."
+            });
+          }
+
+          // Admin credentials work but user credentials don't - user hasn't been granted access
+          return res.status(401).json({
+            error: "Your WordPress credentials are invalid or you don't have publishing access",
+            hint: "Ask your WordPress admin to create an Application Password for you or verify your username/password"
           });
         }
 
-        const wpUser = await response.json();
+        const wpUser = await userResponse.json();
         console.log(`[WP Auth] Successfully authenticated as user ID: ${wpUser.id}`);
 
         // Store credentials
@@ -247,13 +264,57 @@ export async function registerRoutes(
       } catch (error: any) {
         console.error(`[WP Auth] Error:`, error.message);
         res.status(500).json({ 
-          error: "Failed to verify WordPress credentials",
+          error: "Failed to authenticate with WordPress",
           details: error.message
         });
       }
     } catch (error: any) {
-      console.error(`[WP Auth] Authentication error:`, error.message);
+      console.error(`[WP Auth] Auth error:`, error.message);
       res.status(500).json({ error: "Failed to authenticate" });
+    }
+  });
+
+  // Test WordPress site connection
+  app.post("/api/sites/:siteId/test-connection", async (req, res) => {
+    try {
+      const { siteId } = req.params;
+      
+      const site = await storage.getWordPressSite(siteId);
+      if (!site) {
+        return res.status(404).json({ error: "Site not found" });
+      }
+
+      const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
+      const auth = Buffer.from(`admin:${site.apiToken}`).toString("base64");
+
+      const response = await fetch(apiUrl, {
+        headers: { 
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/json"
+        },
+      });
+
+      if (response.ok) {
+        const wpUser = await response.json();
+        await storage.updateWordPressSiteConnection(siteId, true);
+        res.json({ 
+          success: true, 
+          message: "WordPress site is connected and accessible",
+          wpUser: wpUser.name
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: `WordPress API returned ${response.status}`,
+          hint: "Verify that the API URL and token are correct"
+        });
+      }
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        hint: "Failed to reach WordPress site. Check the API URL and ensure the site is accessible."
+      });
     }
   });
 
