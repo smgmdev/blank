@@ -181,14 +181,14 @@ export async function registerRoutes(
     }
   });
 
-  // WordPress Site User Authentication
+  // WordPress Site User Authentication (Simple username-only auth)
   app.post("/api/users/:userId/sites/:siteId/authenticate", async (req, res) => {
     try {
-      const { wpUsername, wpPassword } = req.body;
+      const { wpUsername } = req.body;
       const { userId, siteId } = req.params;
 
-      if (!wpUsername || !wpPassword) {
-        return res.status(400).json({ error: "WordPress credentials required" });
+      if (!wpUsername) {
+        return res.status(400).json({ error: "WordPress username required" });
       }
 
       // Get site
@@ -201,74 +201,41 @@ export async function registerRoutes(
       if (!site.isConnected) {
         return res.status(403).json({
           error: "Site not verified",
-          hint: "Admin must verify the WordPress site connection first before users can authenticate"
+          hint: "Admin must verify the WordPress site connection first"
         });
       }
 
-      // Verify user credentials against WordPress API
-      try {
-        const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
-        console.log(`[WP Auth] Verifying user ${wpUsername} at ${apiUrl}`);
+      console.log(`[WP Auth] User ${wpUsername} authenticating to ${site.name}`);
 
-        const userAuth = Buffer.from(`${wpUsername}:${wpPassword}`).toString("base64");
-        const userResponse = await fetch(apiUrl, {
-          headers: { 
-            Authorization: `Basic ${userAuth}`,
-            "Content-Type": "application/json"
-          },
-        });
-
-        console.log(`[WP Auth] User auth response: ${userResponse.status}`);
-
-        if (!userResponse.ok) {
-          return res.status(401).json({
-            error: "Invalid WordPress credentials",
-            hint: "Your WordPress username or password is incorrect. Please verify and try again."
-          });
-        }
-
-        const wpUser = await userResponse.json();
-        console.log(`[WP Auth] User verified as ID: ${wpUser.id}`);
-
-        // Check if user already has credentials for this site
-        const existing = await storage.getUserSiteCredential(userId, siteId);
-        if (existing) {
-          // Update existing
-          await storage.updateUserSiteCredentialVerification(existing.id, String(wpUser.id));
-          res.json({ success: true, message: "Credentials updated" });
-          return;
-        }
-
-        // Store credentials
-        const credential = await storage.createUserSiteCredential({
-          userId,
-          siteId,
-          wpUsername,
-          wpPassword,
-        });
-
-        // Mark as verified with actual WP user ID
-        await storage.updateUserSiteCredentialVerification(credential.id, String(wpUser.id));
-
-        // Create publishing profile
-        const profile = await storage.createPublishingProfile({
-          userId,
-          siteId,
-          credentialId: credential.id,
-        });
-
-        res.json({ 
-          success: true, 
-          message: "Authenticated successfully. You can now publish to this site.",
-          profile 
-        });
-      } catch (error: any) {
-        console.error(`[WP Auth] Error:`, error.message);
-        res.status(500).json({ 
-          error: "Failed to verify WordPress credentials",
-          details: error.message
-        });
+      // Check if user already has credentials for this site
+      const existing = await storage.getUserSiteCredential(userId, siteId);
+      if (existing) {
+        res.json({ success: true, message: "You are already authenticated to this site" });
+        return;
       }
+
+      // Store credentials (username only, no password)
+      const credential = await storage.createUserSiteCredential({
+        userId,
+        siteId,
+        wpUsername,
+      });
+
+      // Mark as verified
+      await storage.updateUserSiteCredentialVerification(credential.id, wpUsername);
+
+      // Create publishing profile
+      const profile = await storage.createPublishingProfile({
+        userId,
+        siteId,
+        credentialId: credential.id,
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Authenticated successfully. You can now publish to this site.",
+        profile 
+      });
     } catch (error: any) {
       console.error(`[WP Auth] Auth error:`, error.message);
       res.status(500).json({ error: "Failed to authenticate" });
