@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -14,25 +13,32 @@ export default function Login() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
-  const [userEmail, setUserEmail] = useState("demo@writer.com");
-  const [userPassword, setUserPassword] = useState("password");
-  const [adminEmail, setAdminEmail] = useState("admin@system.com");
-  const [adminPassword, setAdminPassword] = useState("password");
+  const [email, setEmail] = useState("demo@writer.com");
+  const [password, setPassword] = useState("password");
 
-  const handleLogin = (type: 'admin' | 'user') => {
-    const email = type === 'admin' ? adminEmail : userEmail;
-    const password = type === 'admin' ? adminPassword : userPassword;
-    const creds = DEMO_CREDENTIALS[type];
+  const handleLogin = () => {
+    if (!email || !password) {
+      toast({
+        variant: "destructive",
+        title: "Missing Credentials",
+        description: "Please enter email/username and password"
+      });
+      return;
+    }
 
-    // Check if email/username and password match
-    const isValidEmail = creds.emails.includes(email);
-    const isValidPassword = password === creds.password;
+    // Check admin credentials
+    const isAdmin = DEMO_CREDENTIALS.admin.emails.includes(email) && 
+                    password === DEMO_CREDENTIALS.admin.password;
+    
+    // Check user credentials
+    const isUser = DEMO_CREDENTIALS.user.emails.includes(email) && 
+                   password === DEMO_CREDENTIALS.user.password;
 
-    if (!isValidEmail || !isValidPassword) {
+    if (!isAdmin && !isUser) {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: `Valid ${type === 'user' ? 'creator' : 'admin'} credentials required`
+        description: "Invalid credentials"
       });
       return;
     }
@@ -40,8 +46,9 @@ export default function Login() {
     setIsLoading(true);
     // Simulate network request
     setTimeout(() => {
+      const type = isAdmin ? 'admin' : 'user';
       login(type);
-      setLocation(type === 'admin' ? '/admin/sites' : '/dashboard');
+      setLocation(isAdmin ? '/admin/sites' : '/dashboard');
       setIsLoading(false);
     }, 800);
   };
@@ -62,84 +69,54 @@ export default function Login() {
 
         <Card className="border-border/50 shadow-xl">
           <CardHeader>
-            <CardTitle>Authentication</CardTitle>
-            <CardDescription>Choose your role to continue</CardDescription>
+            <CardTitle>Sign In</CardTitle>
+            <CardDescription>Enter your credentials to continue</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="user" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="user">Content Creator</TabsTrigger>
-                <TabsTrigger value="admin">Administrator</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="user" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email or Username</Label>
-                  <Input 
-                    id="email" 
-                    placeholder="demo@writer.com or writer" 
-                    value={userEmail}
-                    onChange={(e) => setUserEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    value={userPassword}
-                    onChange={(e) => setUserPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleLogin('user')}
-                  />
-                </div>
-                <Button 
-                  className="w-full" 
-                  onClick={() => handleLogin('user')}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Signing in..." : "Sign In as Creator"}
-                </Button>
-                <div className="text-xs text-muted-foreground text-center">
-                  Demo: demo@writer.com or writer / password
-                </div>
-              </TabsContent>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email or Username</Label>
+              <Input 
+                id="email" 
+                placeholder="demo@writer.com or admin@system.com" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              />
+            </div>
+            <Button 
+              className="w-full" 
+              onClick={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {isLoading ? "Signing In..." : "Sign In"}
+            </Button>
 
-              <TabsContent value="admin" className="space-y-4">
-                <div className="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md text-amber-600 dark:text-amber-400 text-sm flex items-center gap-2">
-                  <Lock className="w-4 h-4" />
-                  Admin area requires elevated privileges.
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-email">Admin Email or Username</Label>
-                  <Input 
-                    id="admin-email" 
-                    placeholder="admin@system.com or admin" 
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-password">Master Password</Label>
-                  <Input 
-                    id="admin-password" 
-                    type="password" 
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleLogin('admin')}
-                  />
-                </div>
-                <Button 
-                  className="w-full variant-default" 
-                  onClick={() => handleLogin('admin')}
-                  disabled={isLoading}
-                >
-                   {isLoading ? "Verifying..." : "Access Admin Console"}
-                </Button>
-                <div className="text-xs text-muted-foreground text-center">
-                  Demo: admin@system.com or admin / password
-                </div>
-              </TabsContent>
-            </Tabs>
+            {/* Demo Credentials */}
+            <div className="mt-6 pt-4 border-t border-border space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">Demo Testing Accounts:</p>
+              
+              <div className="bg-muted/50 p-3 rounded-md text-xs space-y-1">
+                <p className="font-semibold text-foreground">Content Creator</p>
+                <p className="text-muted-foreground">Email: demo@writer.com</p>
+                <p className="text-muted-foreground">Password: password</p>
+              </div>
+
+              <div className="bg-muted/50 p-3 rounded-md text-xs space-y-1">
+                <p className="font-semibold text-foreground">Administrator</p>
+                <p className="text-muted-foreground">Email: admin@system.com</p>
+                <p className="text-muted-foreground">Password: password</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
