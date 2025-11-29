@@ -10,6 +10,8 @@ import Dashboard from "@/pages/dashboard";
 import AdminSites from "@/pages/admin-sites";
 import Editor from "@/pages/editor";
 
+import MyArticles from "@/pages/my-articles";
+
 function Router() {
   return (
     <Switch>
@@ -19,6 +21,12 @@ function Router() {
       <Route path="/dashboard">
         <Layout>
           <Dashboard />
+        </Layout>
+      </Route>
+
+      <Route path="/my-articles">
+        <Layout>
+          <MyArticles />
         </Layout>
       </Route>
       

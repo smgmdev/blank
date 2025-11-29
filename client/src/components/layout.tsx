@@ -7,7 +7,8 @@ import {
   PenTool, 
   LogOut, 
   Globe,
-  User
+  User,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,6 +37,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", show: true },
+    { label: "My Articles", icon: FileText, href: "/my-articles", show: true },
     { label: "Write Article", icon: PenTool, href: "/editor", show: true },
     { label: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
   ];

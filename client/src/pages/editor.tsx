@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore, Site } from "@/lib/store";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,8 +40,9 @@ const MOCK_CATEGORIES = {
 };
 
 export default function Editor() {
-  const { sites } = useStore();
+  const { sites, addArticle } = useStore();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const connectedSites = sites.filter(s => s.isConnected);
   
   // Wizard State
@@ -99,13 +101,24 @@ export default function Editor() {
 
   const handlePublish = () => {
     setIsPublishing(true);
+    
     setTimeout(() => {
+      addArticle({
+        siteId: selectedSiteId,
+        title: formData.title,
+        content: formData.content,
+        category: formData.category || "Uncategorized",
+        tags: formData.tags,
+        status: 'published'
+      });
+
       setIsPublishing(false);
       toast({
         title: "Published Successfully!",
         description: `Article "${formData.title}" is now live on ${selectedSite?.name}`,
       });
-      // Reset or redirect could happen here
+      
+      setLocation("/my-articles");
     }, 2000);
   };
 
