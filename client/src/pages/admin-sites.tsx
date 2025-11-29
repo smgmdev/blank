@@ -271,24 +271,32 @@ export default function AdminSites() {
               <div className="border-t pt-4">
                 <Label className="text-sm font-semibold mb-3 block">Verify WordPress Connection</Label>
                 <div className="space-y-2">
+                  <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-800 mb-3">
+                    <p className="font-medium mb-1">⚠️ Use Application Password:</p>
+                    <p>Go to WordPress Admin → Settings → App Passwords</p>
+                    <p>Create one and use it below (not your regular password)</p>
+                  </div>
                   <Input 
                     placeholder="WordPress admin username" 
                     value={adminCreds.username}
                     onChange={e => setAdminCreds({...adminCreds, username: e.target.value})}
                     disabled={isVerifying}
+                    data-testid="input-admin-username"
                   />
                   <Input 
                     type="password"
-                    placeholder="WordPress admin password / app password" 
+                    placeholder="App Password (not regular password!)" 
                     value={adminCreds.password}
                     onChange={e => setAdminCreds({...adminCreds, password: e.target.value})}
                     disabled={isVerifying}
+                    data-testid="input-admin-app-password"
                   />
                   <Button 
                     onClick={handleVerifyConnection}
                     disabled={isVerifying}
                     className="w-full"
                     variant="outline"
+                    data-testid="button-test-connection"
                   >
                     {isVerifying ? "Verifying..." : "Test Connection"}
                   </Button>
