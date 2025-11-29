@@ -8,7 +8,9 @@ import {
   LogOut, 
   Globe,
   User,
-  FileText
+  FileText,
+  Users,
+  Camera
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -40,6 +42,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { label: "My Articles", icon: FileText, href: "/my-articles", show: true },
     { label: "Write Article", icon: PenTool, href: "/editor", show: true },
     { label: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
+    { label: "User Management", icon: Users, href: "/admin/users", show: isAdmin },
+    { label: "Publishing Profile", icon: Camera, href: "/publishing-profile", show: !isAdmin },
   ];
 
   return (
@@ -61,7 +65,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          {navItems.filter(item => item.show).map((item) => {
+          {navItems.filter(item => item.show && item.href !== "/publishing-profile").map((item) => {
             const isActive = location === item.href;
             return (
               <Link key={item.href} href={item.href}>
@@ -78,6 +82,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+
+        {/* Publishing Profile - shown only for creators, above My Account */}
+        {!isAdmin && (
+          <div className="p-4 border-t border-border">
+            <Link href="/publishing-profile">
+              <div className={`
+                flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer
+                ${location === "/publishing-profile"
+                  ? "bg-primary/10 text-primary" 
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+              `}>
+                <Camera className="w-4 h-4" />
+                Publishing Profile
+              </div>
+            </Link>
+          </div>
+        )}
 
         <div className="p-4 border-t border-border">
           <DropdownMenu>

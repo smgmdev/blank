@@ -1,15 +1,21 @@
 import { useState } from "react";
+import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Mail, Save } from "lucide-react";
+import { Lock, Mail, Save, User as UserIcon } from "lucide-react";
 
 export default function Settings() {
+  const { users } = useStore();
   const { toast } = useToast();
-  const [email, setEmail] = useState("user@example.com");
+  const currentUser = users[0]; // Demo: using first user
+  const [email, setEmail] = useState(currentUser?.email || "user@example.com");
+  const [username, setUsername] = useState(currentUser?.username || "");
+  const [fullName, setFullName] = useState(currentUser?.fullName || "");
+  const [companyName, setCompanyName] = useState(currentUser?.companyName || "");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -64,6 +70,61 @@ export default function Settings() {
         <h2 className="text-2xl font-bold tracking-tight">Account Settings</h2>
         <p className="text-muted-foreground mt-1">Manage your account information and security.</p>
       </div>
+
+      {/* Account Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserIcon className="w-5 h-5" />
+            Account Information
+          </CardTitle>
+          <CardDescription>
+            View your account details.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={username}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                value={fullName}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email2">Email</Label>
+              <Input
+                id="email2"
+                value={email}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="company">Company</Label>
+              <Input
+                id="company"
+                value={companyName || "-"}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
 
       {/* Email Settings */}
       <Card>

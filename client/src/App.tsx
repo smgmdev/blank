@@ -11,7 +11,8 @@ import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import AdminSites from "@/pages/admin-sites";
 import Editor from "@/pages/editor";
-
+import Users from "@/pages/users";
+import PublishingProfile from "@/pages/publishing-profile";
 import MyArticles from "@/pages/my-articles";
 import Settings from "@/pages/settings";
 
@@ -42,6 +43,18 @@ function Router() {
       <Route path="/admin/sites">
         <Layout>
           <AdminSites />
+        </Layout>
+      </Route>
+
+      <Route path="/admin/users">
+        <Layout>
+          <Users />
+        </Layout>
+      </Route>
+
+      <Route path="/publishing-profile">
+        <Layout>
+          <PublishingProfile />
         </Layout>
       </Route>
       

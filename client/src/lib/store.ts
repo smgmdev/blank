@@ -2,6 +2,22 @@ import { create } from 'zustand';
 
 export type SeoPlugin = 'aioseo' | 'rankmath' | 'yoast' | 'none';
 
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  password: string;
+  fullName: string;
+  companyName?: string;
+  createdAt: string;
+}
+
+export interface PublishingProfile {
+  userId: string;
+  displayName: string;
+  profilePicture?: string;
+}
+
 export interface Site {
   id: string;
   name: string;
@@ -39,6 +55,8 @@ interface AppState {
   user: 'admin' | 'user' | null;
   sites: Site[];
   articles: Article[];
+  users: User[];
+  publishingProfile: PublishingProfile | null;
   login: (type: 'admin' | 'user') => void;
   logout: () => void;
   initializeFromStorage: () => void;
@@ -47,10 +65,29 @@ interface AppState {
   disconnectSite: (siteId: string) => void;
   addArticle: (article: Omit<Article, 'id' | 'publishedAt' | 'wpLink'>) => void;
   deleteArticle: (id: string) => void;
+  addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
+  deleteUser: (id: string) => void;
+  updatePublishingProfile: (profile: PublishingProfile) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
   user: null, // Start logged out
+  users: [
+    {
+      id: '1',
+      username: 'writer',
+      email: 'demo@writer.com',
+      password: 'password',
+      fullName: 'John Smith',
+      companyName: 'Tech Media',
+      createdAt: new Date().toISOString()
+    }
+  ],
+  publishingProfile: {
+    userId: '1',
+    displayName: 'John Smith',
+    profilePicture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John'
+  },
   sites: [
     { id: '1', name: 'TechCrunch Clone', url: 'https://tech.blog', seoPlugin: 'rankmath', authCode: 'demo-auth-123', isConnected: false },
     { id: '2', name: 'Daily Recipes', url: 'https://yummy.food', seoPlugin: 'aioseo', authCode: 'demo-auth-456', isConnected: true },
@@ -131,4 +168,11 @@ export const useStore = create<AppState>((set) => ({
   deleteArticle: (id) => set((state) => ({
     articles: state.articles.filter(a => a.id !== id)
   })),
+  addUser: (user) => set((state) => ({
+    users: [...state.users, { ...user, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() }]
+  })),
+  deleteUser: (id) => set((state) => ({
+    users: state.users.filter(u => u.id !== id)
+  })),
+  updatePublishingProfile: (profile) => set({ publishingProfile: profile })
 }));

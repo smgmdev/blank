@@ -1,0 +1,169 @@
+import { useState } from "react";
+import { useStore } from "@/lib/store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { Save, Upload } from "lucide-react";
+
+export default function PublishingProfile() {
+  const { publishingProfile, users, updatePublishingProfile } = useStore();
+  const { toast } = useToast();
+  const [displayName, setDisplayName] = useState(publishingProfile?.displayName || "");
+  const [profilePicture, setProfilePicture] = useState(publishingProfile?.profilePicture || "");
+  const [isSaving, setIsSaving] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(profilePicture);
+
+  const currentUser = users[0]; // Demo: using first user
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setProfilePicture(result);
+        setPreviewUrl(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = () => {
+    if (!displayName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Missing Display Name",
+        description: "Please enter a display name"
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    setTimeout(() => {
+      updatePublishingProfile({
+        userId: currentUser.id,
+        displayName,
+        profilePicture: previewUrl || undefined
+      });
+
+      toast({
+        title: "Profile Updated",
+        description: "Your publishing profile has been saved successfully"
+      });
+
+      setIsSaving(false);
+    }, 1500);
+  };
+
+  return (
+    <div className="max-w-2xl space-y-8 pb-20">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Publishing Profile</h2>
+        <p className="text-muted-foreground mt-1">Manage how your articles appear when published to WordPress.</p>
+      </div>
+
+      {/* Profile Preview */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Preview</CardTitle>
+          <CardDescription>
+            This is how your articles will be attributed on WordPress.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <Avatar className="w-16 h-16 border-2">
+              <AvatarImage src={previewUrl} alt={displayName} />
+              <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-semibold text-lg">{displayName || "Your Display Name"}</p>
+              <p className="text-sm text-muted-foreground">Author Profile</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Display Name */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Display Name</CardTitle>
+          <CardDescription>
+            The name shown as the author on published articles.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="displayName">Display Name</Label>
+            <Input
+              id="displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="e.g. John Smith"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Profile Picture */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile Picture</CardTitle>
+          <CardDescription>
+            Upload a profile picture to appear with your articles on WordPress.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Profile Picture</Label>
+            <div className="flex items-center gap-4">
+              <Avatar className="w-20 h-20 border-2">
+                <AvatarImage src={previewUrl} alt={displayName} />
+                <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <input
+                  type="file"
+                  id="profilePicture"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById("profilePicture")?.click()}
+                  className="gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload Picture
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">JPG, PNG up to 5MB</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Save Button */}
+      <Button
+        onClick={handleSave}
+        disabled={isSaving}
+        size="lg"
+        className="gap-2"
+      >
+        <Save className="w-4 h-4" />
+        {isSaving ? "Saving..." : "Save Profile"}
+      </Button>
+    </div>
+  );
+}
