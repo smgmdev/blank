@@ -154,33 +154,27 @@ export async function registerRoutes(
               const pub = publishing[0];
               const site = await storage.getWordPressSite(pub.siteId);
               
-              if (site && pub.wpPostId) {
-                // Get admin username from approved wp users for this site
-                const adminUsers = await storage.getApprovedWpUsersBySiteId(pub.siteId);
-                const adminUser = adminUsers.length > 0 ? adminUsers[0] : null;
+              if (site && pub.wpPostId && site.adminUsername) {
+                // Make sure wpPostId is treated as integer for the URL
+                const postId = parseInt(pub.wpPostId, 10);
+                const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
                 
-                if (adminUser) {
-                  // Make sure wpPostId is treated as integer for the URL
-                  const postId = parseInt(pub.wpPostId, 10);
-                  const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
+                try {
+                  // Use admin username with application password token
+                  const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+                  const checkRes = await fetch(checkUrl, {
+                    headers: { Authorization: `Basic ${auth}` }
+                  });
                   
-                  try {
-                    // Use admin username with application password token
-                    const auth = Buffer.from(`${adminUser.wpUsername}:${site.apiToken}`).toString("base64");
-                    const checkRes = await fetch(checkUrl, {
-                      headers: { Authorization: `Basic ${auth}` }
-                    });
-                    
-                    console.log(`Sync check for article ${article.id} (WP post ${postId}): ${checkRes.status}`);
-                    
-                    // If post deleted on WordPress (404), delete from app
-                    if (checkRes.status === 404) {
-                      console.log(`Deleting article ${article.id} - not found on WordPress`);
-                      await storage.deleteArticle(article.id);
-                    }
-                  } catch (fetchError) {
-                    console.error(`Fetch error for post ${postId}:`, fetchError);
+                  console.log(`Sync check for article ${article.id} (WP post ${postId}): ${checkRes.status}`);
+                  
+                  // If post deleted on WordPress (404), delete from app
+                  if (checkRes.status === 404) {
+                    console.log(`Deleting article ${article.id} - not found on WordPress`);
+                    await storage.deleteArticle(article.id);
                   }
+                } catch (fetchError) {
+                  console.error(`Fetch error for post ${postId}:`, fetchError);
                 }
               }
             }
