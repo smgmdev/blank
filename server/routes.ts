@@ -652,19 +652,26 @@ export async function registerRoutes(
           const imageBuffer = Buffer.from(base64Data, 'base64');
           const mediaUrl = `${site.apiUrl}/wp/v2/media`;
           
+          // Use FormData for multipart/form-data upload
+          const formData = new FormData();
+          const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
+          formData.append('file', blob, 'featured-image.jpg');
+          
           const mediaResponse = await fetch(mediaUrl, {
             method: "POST",
             headers: {
-              Authorization: `Basic ${auth}`,
-              "Content-Type": "image/jpeg",
-              "Content-Disposition": 'form-data; filename="featured-image.jpg"'
+              Authorization: `Basic ${auth}`
             },
-            body: imageBuffer
+            body: formData
           });
           
           if (mediaResponse.ok) {
             const mediaData = await mediaResponse.json();
             featuredMediaId = mediaData.id;
+            console.log(`Image uploaded successfully with ID: ${featuredMediaId}`);
+          } else {
+            const errorText = await mediaResponse.text();
+            console.error(`Image upload failed: ${mediaResponse.status}`, errorText);
           }
         } catch (imgError) {
           console.error("Image upload error:", imgError);

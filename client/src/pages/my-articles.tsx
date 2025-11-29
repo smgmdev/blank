@@ -28,6 +28,7 @@ export default function MyArticles() {
   const userId = localStorage.getItem('userId');
   const [articles, setArticles] = useState<any[]>([]);
   const [sites, setSites] = useState<any[]>([]);
+  const [categoryMap, setCategoryMap] = useState<Record<string, Record<number, string>>>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,10 +45,31 @@ export default function MyArticles() {
           fetch(`/api/sites`)
         ]);
         
-        if (articlesRes.ok) {
+        if (articlesRes.ok && sitesRes.ok) {
           const allArticles = await articlesRes.json();
+          const allSites = await sitesRes.json();
+          setSites(allSites);
+          
           // Filter to only this user's articles
           const userArticles = allArticles.filter((a: any) => a.userId === userId);
+          
+          // Fetch category names for each site
+          const newCategoryMap: Record<string, Record<number, string>> = {};
+          for (const site of allSites) {
+            try {
+              const catRes = await fetch(`/api/sites/${site.id}/categories?userId=${userId}`);
+              if (catRes.ok) {
+                const categories = await catRes.json();
+                newCategoryMap[site.id] = {};
+                categories.forEach((cat: any) => {
+                  newCategoryMap[site.id][cat.id] = cat.name;
+                });
+              }
+            } catch (e) {
+              console.error(`Failed to fetch categories for site ${site.id}:`, e);
+            }
+          }
+          setCategoryMap(newCategoryMap);
           
           // Fetch WordPress links for published articles
           const articlesWithLinks = await Promise.all(userArticles.map(async (article: any) => {
@@ -66,11 +88,6 @@ export default function MyArticles() {
           }));
           
           setArticles(articlesWithLinks);
-        }
-        
-        if (sitesRes.ok) {
-          const allSites = await sitesRes.json();
-          setSites(allSites);
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -161,6 +178,23 @@ export default function MyArticles() {
 
   const ArticleCard = ({ article }: { article: any }) => {
     const site = sites.find(s => s.id === article.siteId);
+    
+    // Get category names from the categoryMap
+    const getCategoryNames = () => {
+      if (!Array.isArray(article.categories) || !site) return [];
+      const siteCategories = categoryMap[site.id] || {};
+      return article.categories.map((catId: any) => {
+        // If it's a number ID, look it up in the map
+        if (typeof catId === 'number') {
+          return siteCategories[catId] || `Category ${catId}`;
+        }
+        // If it's already an object with name, use it
+        if (typeof catId === 'object' && catId.name) return catId.name;
+        // Otherwise convert to string
+        return String(catId);
+      });
+    };
+    
     return (
       <div className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
         <div className="flex flex-col sm:flex-row gap-0 sm:gap-4 sm:p-4">
@@ -179,10 +213,17 @@ export default function MyArticles() {
           <div className={`flex-1 min-w-0 ${article.featuredImageUrl ? 'p-4 sm:p-0' : 'p-4'}`}>
             <h3 className="font-semibold text-base break-words">{article.title}</h3>
             
+            {/* Meta Description - 2 lines max */}
+            {article.content && (
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                {article.content.replace(/<[^>]*>/g, '').substring(0, 150)}
+              </p>
+            )}
+            
             {/* Category & Tags */}
             <div className="flex flex-wrap gap-2 mt-2">
-              {Array.isArray(article.categories) && article.categories.map((cat: any) => (
-                <Badge key={cat} variant="outline" className="text-xs">{cat}</Badge>
+              {getCategoryNames().map((catName: string) => (
+                <Badge key={catName} variant="outline" className="text-xs">{catName}</Badge>
               ))}
               {Array.isArray(article.tags) && article.tags.slice(0, 3).map((tag: any) => (
                 <Badge key={tag} variant="secondary" className="text-xs text-muted-foreground">{tag}</Badge>
