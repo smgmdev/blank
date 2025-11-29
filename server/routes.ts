@@ -221,7 +221,17 @@ export async function registerRoutes(
       console.log(`[WP Auth] WordPress validation response: ${wpResponse.status}`);
 
       if (!wpResponse.ok) {
-        console.log(`[WP Auth] Invalid credentials for ${wpUsername}`);
+        const errorBody = await wpResponse.text();
+        console.log(`[WP Auth] Invalid credentials for ${wpUsername}: ${errorBody}`);
+        
+        // Check if it's a 401 - likely Basic Auth not enabled
+        if (wpResponse.status === 401) {
+          return res.status(401).json({
+            error: "Authentication failed",
+            hint: "WordPress Basic Authentication (REST API) plugin may not be installed. Ask admin to install it, or check that username/password are correct."
+          });
+        }
+        
         return res.status(401).json({
           error: "Invalid WordPress credentials",
           hint: "Your WordPress username or password is incorrect"
