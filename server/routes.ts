@@ -144,7 +144,39 @@ export async function registerRoutes(
   app.get("/api/articles", async (req, res) => {
     try {
       const articles = await storage.getAllArticles();
-      res.json(articles);
+      
+      // Verify published articles still exist on WordPress (sync check)
+      for (const article of articles) {
+        if (article.status === 'published') {
+          try {
+            const publishing = await storage.getArticlePublishingByArticleId(article.id);
+            if (publishing.length > 0) {
+              const pub = publishing[0];
+              const site = await storage.getWordPressSite(pub.siteId);
+              
+              if (site) {
+                const auth = Buffer.from(`${site.apiToken}:WP-DEFAULT`).toString("base64");
+                const checkUrl = `${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`;
+                
+                const checkRes = await fetch(checkUrl, {
+                  headers: { Authorization: `Basic ${auth}` }
+                });
+                
+                // If post deleted on WordPress, delete from app
+                if (checkRes.status === 404) {
+                  await storage.deleteArticle(article.id);
+                }
+              }
+            }
+          } catch (error) {
+            // Silent fail - don't break the fetch
+          }
+        }
+      }
+      
+      // Re-fetch after potential sync deletions
+      const syncedArticles = await storage.getAllArticles();
+      res.json(syncedArticles);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch articles" });
     }
@@ -174,7 +206,36 @@ export async function registerRoutes(
 
   app.delete("/api/articles/:id", async (req, res) => {
     try {
-      await storage.deleteArticle(req.params.id);
+      const articleId = req.params.id;
+      
+      // Get publishing info to find WordPress post
+      const publishing = await storage.getArticlePublishingByArticleId(articleId);
+      
+      // Delete from WordPress if published
+      if (publishing.length > 0) {
+        for (const pub of publishing) {
+          try {
+            const site = await storage.getWordPressSite(pub.siteId);
+            const credential = await storage.getUserSiteCredential(req.body?.userId || '', pub.siteId);
+            
+            if (site && credential) {
+              const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+              const deleteUrl = `${site.apiUrl}/wp/v2/posts/${pub.wpPostId}?force=true`;
+              
+              await fetch(deleteUrl, {
+                method: "DELETE",
+                headers: { Authorization: `Basic ${auth}` }
+              });
+            }
+          } catch (wpError) {
+            console.error("WordPress deletion error:", wpError);
+            // Continue deleting from app even if WP deletion fails
+          }
+        }
+      }
+      
+      // Delete article from app
+      await storage.deleteArticle(articleId);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete article" });
