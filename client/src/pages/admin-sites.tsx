@@ -89,11 +89,11 @@ export default function AdminSites() {
   }, []);
 
   const handleVerifyConnection = async () => {
-    if (!newSite.apiUrl || !adminCreds.username || !adminCreds.password) {
+    if (!newSite.apiUrl || !adminCreds.username || !newSite.apiToken) {
       toast({
         variant: "destructive",
-        title: "Missing Credentials",
-        description: "Enter API URL and admin credentials"
+        title: "Missing Information",
+        description: "Enter API URL, username, and API token"
       });
       return;
     }
@@ -108,7 +108,7 @@ export default function AdminSites() {
           name: newSite.name,
           url: newSite.url,
           apiUrl: newSite.apiUrl,
-          apiToken: newSite.apiToken || "pending",
+          apiToken: newSite.apiToken,
           seoPlugin: newSite.seoPlugin
         })
       });
@@ -116,13 +116,13 @@ export default function AdminSites() {
       if (!siteResponse.ok) throw new Error('Failed to create site');
       const site = await siteResponse.json();
 
-      // Now verify the connection
+      // Now verify the connection using username + apiToken
       const verifyResponse = await fetch(`/api/sites/${site.id}/verify-connection`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           adminUsername: adminCreds.username,
-          adminPassword: adminCreds.password
+          adminPassword: newSite.apiToken
         })
       });
 
@@ -272,20 +272,13 @@ export default function AdminSites() {
                 <Label className="text-sm font-semibold mb-3 block">Verify WordPress Connection</Label>
                 <div className="space-y-2">
                   <Input 
-                    placeholder="WordPress username" 
+                    placeholder="WordPress admin username" 
                     value={adminCreds.username}
                     onChange={e => setAdminCreds({...adminCreds, username: e.target.value})}
                     disabled={isVerifying}
                     data-testid="input-admin-username"
                   />
-                  <Input 
-                    type="password"
-                    placeholder="WordPress password" 
-                    value={adminCreds.password}
-                    onChange={e => setAdminCreds({...adminCreds, password: e.target.value})}
-                    disabled={isVerifying}
-                    data-testid="input-admin-password"
-                  />
+                  <p className="text-xs text-muted-foreground">Will verify using the API token above</p>
                   <Button 
                     onClick={handleVerifyConnection}
                     disabled={isVerifying}
