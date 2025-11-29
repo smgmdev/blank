@@ -579,6 +579,12 @@ export async function registerRoutes(
         status: "published"
       });
 
+      // Update article status to published
+      await storage.updateArticle(articleId, {
+        status: 'published',
+        publishedAt: new Date()
+      });
+
       res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link });
     } catch (error: any) {
       console.error("Publish error:", error);
