@@ -789,15 +789,17 @@ export default function Editor() {
                       )}
                     </>
                   )}
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-3 w-full">
                     {formData.tags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="gap-1 pr-1">
-                        {typeof tag === 'number' 
-                          ? availableTags.find((t: any) => t.id === tag)?.name || tag
-                          : tag
-                        }
+                      <Badge key={tag} variant="secondary" className="gap-1 pr-1 break-words max-w-full">
+                        <span className="break-words">
+                          {typeof tag === 'number' 
+                            ? availableTags.find((t: any) => t.id === tag)?.name || tag
+                            : tag
+                          }
+                        </span>
                         <div 
-                          className="cursor-pointer hover:bg-destructive/20 rounded-full p-0.5"
+                          className="cursor-pointer hover:bg-destructive/20 rounded-full p-0.5 flex-shrink-0"
                           onClick={() => removeTag(tag)}
                           data-testid="button-remove-tag"
                         >
