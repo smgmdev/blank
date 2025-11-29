@@ -509,7 +509,7 @@ export default function Editor() {
           content: formData.content,
           categories: formData.categories,
           tags: tagIds,
-          featuredImageUrl: formData.imagePreview
+          featuredImageBase64: formData.imagePreview
         })
       });
 

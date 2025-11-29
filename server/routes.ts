@@ -546,7 +546,7 @@ export async function registerRoutes(
   app.post("/api/articles/:articleId/publish-to-site", async (req, res) => {
     try {
       const { articleId } = req.params;
-      const { siteId, userId, title, content, categories, tags, featuredMediaUrl, featuredImageUrl } = req.body;
+      const { siteId, userId, title, content, categories, tags, featuredImageBase64 } = req.body;
 
       const site = await storage.getWordPressSite(siteId);
       if (!site) return res.status(404).json({ error: "Site not found" });
@@ -557,8 +557,37 @@ export async function registerRoutes(
       }
 
       const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
-      const postUrl = `${site.apiUrl}/wp/v2/posts`;
+      
+      let featuredMediaId = null;
+      
+      // Upload featured image if provided
+      if (featuredImageBase64) {
+        try {
+          const base64Data = featuredImageBase64.split(',')[1] || featuredImageBase64;
+          const imageBuffer = Buffer.from(base64Data, 'base64');
+          const mediaUrl = `${site.apiUrl}/wp/v2/media`;
+          
+          const mediaResponse = await fetch(mediaUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${auth}`,
+              "Content-Type": "image/jpeg",
+              "Content-Disposition": 'form-data; filename="featured-image.jpg"'
+            },
+            body: imageBuffer
+          });
+          
+          if (mediaResponse.ok) {
+            const mediaData = await mediaResponse.json();
+            featuredMediaId = mediaData.id;
+          }
+        } catch (imgError) {
+          console.error("Image upload error:", imgError);
+          // Continue without featured image if upload fails
+        }
+      }
 
+      const postUrl = `${site.apiUrl}/wp/v2/posts`;
       const postData = {
         title,
         content,
@@ -566,6 +595,10 @@ export async function registerRoutes(
         categories: Array.isArray(categories) ? categories : [],
         tags: Array.isArray(tags) ? tags : []
       };
+      
+      if (featuredMediaId) {
+        postData.featured_media = featuredMediaId;
+      }
 
       const wpResponse = await fetch(postUrl, {
         method: "POST",
@@ -597,9 +630,9 @@ export async function registerRoutes(
         status: 'published',
         publishedAt: new Date(),
         siteId,
-        featuredImageUrl: featuredImageUrl || null,
+        featuredImageUrl: wpPost.featured_media ? wpPost._links?.wp?.featuredmedia?.[0]?.href : null,
         categories,
-        tags: tagIds
+        tags
       });
 
       res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link });
