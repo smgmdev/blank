@@ -63,19 +63,19 @@ export default function AdminSites() {
       toast({
         variant: "destructive",
         title: "Missing Credentials",
-        description: "Please enter both username and password"
+        description: "Please enter both username/email and password"
       });
       return;
     }
 
     setIsVerifying(true);
 
-    // Verify credentials against demo accounts
+    // Verify credentials against demo accounts (username or email)
     setTimeout(() => {
       // Check if credentials match demo user or admin
-      const isValidUser = loginCredentials.username === DEMO_CREDENTIALS.user.email && 
+      const isValidUser = DEMO_CREDENTIALS.user.emails.includes(loginCredentials.username) && 
                          loginCredentials.password === DEMO_CREDENTIALS.user.password;
-      const isValidAdmin = loginCredentials.username === DEMO_CREDENTIALS.admin.email && 
+      const isValidAdmin = DEMO_CREDENTIALS.admin.emails.includes(loginCredentials.username) && 
                           loginCredentials.password === DEMO_CREDENTIALS.admin.password;
       
       if (isValidUser || isValidAdmin) {
@@ -96,7 +96,7 @@ export default function AdminSites() {
         toast({
           variant: "destructive",
           title: "Authentication Failed",
-          description: "Invalid credentials. Use demo@writer.com or admin@system.com"
+          description: "Invalid credentials. Try: demo@writer.com/writer or admin@system.com/admin"
         });
       }
       
@@ -284,10 +284,11 @@ export default function AdminSites() {
               />
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-              <p className="font-medium mb-1">Demo Credentials:</p>
+              <p className="font-medium mb-1">Demo Credentials (email or username):</p>
               <ul className="space-y-1 text-xs">
-                <li><strong>User:</strong> demo@writer.com / password</li>
-                <li><strong>Admin:</strong> admin@system.com / password</li>
+                <li><strong>Creator:</strong> demo@writer.com or writer</li>
+                <li><strong>Admin:</strong> admin@system.com or admin</li>
+                <li><strong>Password:</strong> password</li>
               </ul>
             </div>
           </div>

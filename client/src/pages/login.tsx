@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStore } from "@/lib/store";
+import { useStore, DEMO_CREDENTIALS } from "@/lib/store";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +7,36 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Lock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
   const { login } = useStore();
+  const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState("demo@writer.com");
+  const [userPassword, setUserPassword] = useState("password");
+  const [adminEmail, setAdminEmail] = useState("admin@system.com");
+  const [adminPassword, setAdminPassword] = useState("password");
 
   const handleLogin = (type: 'admin' | 'user') => {
+    const email = type === 'admin' ? adminEmail : userEmail;
+    const password = type === 'admin' ? adminPassword : userPassword;
+    const creds = DEMO_CREDENTIALS[type];
+
+    // Check if email/username and password match
+    const isValidEmail = creds.emails.includes(email);
+    const isValidPassword = password === creds.password;
+
+    if (!isValidEmail || !isValidPassword) {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: `Valid ${type === 'user' ? 'creator' : 'admin'} credentials required`
+      });
+      return;
+    }
+
     setIsLoading(true);
     // Simulate network request
     setTimeout(() => {
@@ -48,12 +71,23 @@ export default function Login() {
               
               <TabsContent value="user" className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" placeholder="writer@company.com" defaultValue="demo@writer.com" />
+                  <Label htmlFor="email">Email or Username</Label>
+                  <Input 
+                    id="email" 
+                    placeholder="demo@writer.com or writer" 
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" defaultValue="password" />
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    value={userPassword}
+                    onChange={(e) => setUserPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLogin('user')}
+                  />
                 </div>
                 <Button 
                   className="w-full" 
@@ -62,6 +96,9 @@ export default function Login() {
                 >
                   {isLoading ? "Signing in..." : "Sign In as Creator"}
                 </Button>
+                <div className="text-xs text-muted-foreground text-center">
+                  Demo: demo@writer.com or writer / password
+                </div>
               </TabsContent>
 
               <TabsContent value="admin" className="space-y-4">
@@ -70,12 +107,23 @@ export default function Login() {
                   Admin area requires elevated privileges.
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="admin-email">Admin Email</Label>
-                  <Input id="admin-email" placeholder="admin@system.com" defaultValue="admin@system.com" />
+                  <Label htmlFor="admin-email">Admin Email or Username</Label>
+                  <Input 
+                    id="admin-email" 
+                    placeholder="admin@system.com or admin" 
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="admin-password">Master Password</Label>
-                  <Input id="admin-password" type="password" defaultValue="password" />
+                  <Input 
+                    id="admin-password" 
+                    type="password" 
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLogin('admin')}
+                  />
                 </div>
                 <Button 
                   className="w-full variant-default" 
@@ -84,6 +132,9 @@ export default function Login() {
                 >
                    {isLoading ? "Verifying..." : "Access Admin Console"}
                 </Button>
+                <div className="text-xs text-muted-foreground text-center">
+                  Demo: admin@system.com or admin / password
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

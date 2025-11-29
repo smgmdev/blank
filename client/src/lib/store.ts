@@ -23,10 +23,16 @@ export interface Article {
   wpLink?: string; // Mock link to WP
 }
 
-// Demo credentials
+// Demo credentials - accept both email and username
 export const DEMO_CREDENTIALS = {
-  user: { email: 'demo@writer.com', password: 'password' },
-  admin: { email: 'admin@system.com', password: 'password' }
+  user: { 
+    emails: ['demo@writer.com', 'writer'],
+    password: 'password' 
+  },
+  admin: { 
+    emails: ['admin@system.com', 'admin'],
+    password: 'password' 
+  }
 };
 
 interface AppState {
