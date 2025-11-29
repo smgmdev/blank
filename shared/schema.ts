@@ -67,6 +67,7 @@ export const articles = pgTable("articles", {
   content: text("content").notNull(),
   htmlContent: text("html_content"),
   featuredImageUrl: text("featured_image_url"),
+  featuredImageBase64: text("featured_image_base64"), // Store base64 for uploads
   categories: jsonb("categories"),
   tags: jsonb("tags"),
   status: varchar("status", { length: 20 }).default("draft"), // "draft", "published"

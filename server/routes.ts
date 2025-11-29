@@ -168,22 +168,21 @@ export async function registerRoutes(
                   
                   console.log(`Sync check for article ${article.id} (WP post ${postId}): ${checkRes.status}`);
                   
-                  // If post deleted on WordPress (404 or 400 - bad request could mean deleted), delete from app
-                  if (checkRes.status === 404 || checkRes.status === 400) {
+                  // If post not found (404), delete from app
+                  if (checkRes.status === 404) {
+                    console.log(`Deleting article ${article.id} - 404 response from WordPress`);
+                    await storage.deleteArticle(article.id);
+                  }
+                  // 400 errors with INVALID_PASSWORD are auth issues, not deletion - skip these
+                  else if (checkRes.status === 400) {
                     try {
                       const errorData = await checkRes.json();
-                      console.log(`Error response:`, errorData);
-                      // Check if it's a "not found" type error
-                      if (checkRes.status === 404 || (errorData.code && (errorData.code.includes('not_found') || errorData.code === 'rest_post_invalid_id'))) {
-                        console.log(`Deleting article ${article.id} - not found on WordPress`);
+                      if (errorData.code === 'rest_post_invalid_id' || errorData.code === 'rest_invalid_param') {
+                        console.log(`Deleting article ${article.id} - post not found on WordPress`);
                         await storage.deleteArticle(article.id);
                       }
                     } catch (e) {
-                      // If 404, assume it's deleted
-                      if (checkRes.status === 404) {
-                        console.log(`Deleting article ${article.id} - 404 response`);
-                        await storage.deleteArticle(article.id);
-                      }
+                      // Auth error - skip deletion
                     }
                   }
                 } catch (fetchError) {
@@ -669,6 +668,8 @@ export async function registerRoutes(
             extension = "gif";
           }
           
+          console.log(`Uploading featured image with Content-Type: ${contentType}`);
+          
           // Send image as binary with proper headers using admin credentials
           const mediaResponse = await fetch(mediaUrl, {
             method: "POST",
@@ -685,8 +686,8 @@ export async function registerRoutes(
             featuredMediaId = mediaData.id;
             console.log(`Image uploaded successfully with ID: ${featuredMediaId}`);
           } else {
-            const errorData = await mediaResponse.json();
-            console.error(`Image upload failed: ${mediaResponse.status}`, errorData);
+            const errorText = await mediaResponse.text();
+            console.error(`Image upload failed: ${mediaResponse.status}`, errorText);
           }
         } catch (imgError) {
           console.error("Image upload error:", imgError);
