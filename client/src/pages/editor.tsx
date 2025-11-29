@@ -49,6 +49,7 @@ export default function Editor() {
   const userId = localStorage.getItem('userId');
   
   const [sites_user, setSitesUser] = useState<any[]>([]);
+  const [loadingSites, setLoadingSites] = useState(true);
   const [step, setStep] = useState(1);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
@@ -79,6 +80,7 @@ export default function Editor() {
   useEffect(() => {
     const fetchSites = async () => {
       if (!userId) return;
+      setLoadingSites(true);
       try {
         const res = await fetch(`/api/users/${userId}/sites-with-auth`);
         if (res.ok) {
@@ -87,6 +89,8 @@ export default function Editor() {
         }
       } catch (error) {
         console.error('Failed to fetch sites:', error);
+      } finally {
+        setLoadingSites(false);
       }
     };
     fetchSites();
@@ -436,6 +440,49 @@ export default function Editor() {
       });
     }
   };
+
+  // Loading skeleton similar to LinkedIn style
+  if (loadingSites) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8 pb-20">
+        {/* Skeleton Progress Bar */}
+        <div className="space-y-4">
+          <div className="h-1.5 bg-muted rounded-full" />
+          <div className="flex items-center justify-between">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-2 flex-1">
+                <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+                <div className="h-2 w-12 bg-muted rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Skeleton Card Content */}
+        <div className="border rounded-lg p-6 space-y-6">
+          <div className="space-y-3">
+            <div className="h-6 w-48 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-80 bg-muted rounded animate-pulse" />
+          </div>
+
+          <div className="space-y-4">
+            <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-full bg-muted rounded-lg animate-pulse" />
+          </div>
+
+          <div className="space-y-4">
+            <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+            <div className="h-24 w-full bg-muted rounded-lg animate-pulse" />
+          </div>
+
+          <div className="flex gap-3 justify-end pt-4">
+            <div className="h-10 w-24 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-24 bg-muted rounded animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (sites_user.length === 0) {
     return (
