@@ -55,18 +55,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col lg:flex-row">
       {/* Mobile Header */}
-      <div className="lg:hidden h-16 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-20">
-        <div className="flex items-center gap-2">
-          <img 
-            src="https://www.worldimpactmedia.org/images/wimb.png" 
-            alt="WIMB Logo" 
-            className="w-8 h-8 rounded-lg"
-          />
-          <div className="flex flex-col text-primary font-bold text-xs leading-tight">
-            <span>Media</span>
-            <span>Manager</span>
+      <div className="lg:hidden h-16 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-30">
+        <Link href="/dashboard">
+          <div className="flex items-center gap-2 cursor-pointer">
+            <img 
+              src="https://www.worldimpactmedia.org/images/wimb.png" 
+              alt="WIMB Logo" 
+              className="w-8 h-8 rounded-lg"
+            />
+            <div className="flex flex-col text-primary font-bold text-xs leading-tight">
+              <span>Media</span>
+              <span>Manager</span>
+            </div>
           </div>
-        </div>
+        </Link>
         <Button
           variant="ghost"
           size="icon"
@@ -79,25 +81,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar / Mobile Menu */}
       <aside className={`
-        fixed lg:relative inset-0 lg:inset-auto w-64 bg-background border-r border-border flex flex-col z-10 lg:z-auto
-        lg:w-64 lg:h-screen
-        transition-opacity duration-300
-        ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none lg:opacity-100 lg:pointer-events-auto'}
-        lg:opacity-100
+        fixed lg:relative inset-y-16 lg:inset-auto left-0 w-64 bg-background border-r border-border flex flex-col z-20 lg:z-auto
+        lg:w-64 lg:h-screen lg:inset-y-0
+        transition-all duration-300
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Logo - Hidden on mobile, shown on desktop */}
         <div className="hidden lg:flex h-16 items-center px-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <img 
-              src="https://www.worldimpactmedia.org/images/wimb.png" 
-              alt="WIMB Logo" 
-              className="w-10 h-10 rounded-lg"
-            />
-            <div className="flex flex-col text-primary font-bold text-sm leading-tight">
-              <span>Media</span>
-              <span>Manager</span>
+          <Link href="/dashboard">
+            <div className="flex items-center gap-3 cursor-pointer">
+              <img 
+                src="https://www.worldimpactmedia.org/images/wimb.png" 
+                alt="WIMB Logo" 
+                className="w-10 h-10 rounded-lg"
+              />
+              <div className="flex flex-col text-primary font-bold text-sm leading-tight">
+                <span>Media</span>
+                <span>Manager</span>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Mobile Menu Header */}
@@ -193,7 +196,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-black/50 z-0"
+          className="lg:hidden fixed inset-0 bg-black/50 z-10 top-16"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}

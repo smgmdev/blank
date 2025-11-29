@@ -47,18 +47,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center py-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-muted/30 p-4">
+      <div className="w-full max-w-md space-y-6 flex-1 flex flex-col justify-center">
+        <div className="text-center space-y-2">
+          <div className="flex justify-center">
             <img 
               src="https://www.worldimpactmedia.org/images/wimb.png" 
               alt="WIMB Logo" 
-              className="w-20 h-20 rounded-xl shadow-lg shadow-primary/20"
+              className="w-16 h-16 rounded-xl shadow-lg shadow-primary/20"
             />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Media Manager</h1>
-          <p className="text-muted-foreground">Sign in to your publishing dashboard</p>
+          <p className="text-lg text-muted-foreground">Sign in to your Media Manager account</p>
         </div>
 
         <Card className="border-border/50 shadow-xl">
@@ -143,6 +142,11 @@ export default function Login() {
             </Tabs>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Footer */}
+      <div className="w-full py-6 text-center text-xs text-muted-foreground border-t border-border mt-8">
+        <p>&copy; {new Date().getFullYear()} World Impact Media Organization. All rights reserved.</p>
       </div>
     </div>
   );

@@ -182,36 +182,43 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {sites.map((site) => {
           const favicon = getFavicon(site.url);
           return (
-            <Card key={site.id} className={`transition-all hover:shadow-md ${site.isConnected ? 'border-primary/50 bg-primary/5' : ''}`}>
-              <CardContent className="pt-4">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  {favicon ? (
-                    <img src={favicon} alt={site.name} className="w-8 h-8 rounded" />
-                  ) : (
-                    <div className="w-8 h-8 rounded bg-primary/10" />
-                  )}
+            <Card 
+              key={site.id} 
+              className={`transition-all hover:shadow-lg border-0 shadow-sm ${site.isConnected ? 'bg-primary/5 border border-primary/30' : 'bg-card'}`}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {favicon ? (
+                      <img src={favicon} alt={site.name} className="w-6 h-6 rounded flex-shrink-0" />
+                    ) : (
+                      <div className="w-6 h-6 rounded bg-primary/10 flex-shrink-0" />
+                    )}
+                    <h3 className="font-semibold text-xs truncate">{site.name}</h3>
+                  </div>
                   {site.isConnected && (
-                    <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">
-                      <CheckCircle2 className="w-3 h-3 mr-1" /> Authenticated
-                    </Badge>
+                    <div className="flex-shrink-0">
+                      <div className="bg-green-50 border border-green-200 rounded-full p-1">
+                        <CheckCircle2 className="w-3 h-3 text-green-600" />
+                      </div>
+                    </div>
                   )}
                 </div>
-                <h3 className="font-semibold text-sm mb-1 line-clamp-1">{site.name}</h3>
-                <p className="text-xs text-muted-foreground line-clamp-1 mb-3">{site.url}</p>
-                <div className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground line-clamp-1 mb-2">{site.url}</p>
+                <div className="inline-block bg-muted px-2 py-0.5 rounded text-xs text-muted-foreground">
                   {getSeoPluginName(site.seoPlugin)}
                 </div>
               </CardContent>
-              <CardFooter className="gap-2">
+              <div className="px-4 pb-3 pt-0">
                 {site.isConnected ? (
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="w-full text-destructive hover:text-destructive text-xs"
+                    className="w-full h-8 text-xs text-destructive hover:text-destructive"
                     onClick={() => handleDisconnect(site.id)}
                   >
                     Disconnect
@@ -219,13 +226,13 @@ export default function Dashboard() {
                 ) : (
                   <Button 
                     size="sm"
-                    className="w-full text-xs"
+                    className="w-full h-8 text-xs"
                     onClick={() => handleAuthenticateClick(site.id)}
                   >
                     Authenticate
                   </Button>
                 )}
-              </CardFooter>
+              </div>
             </Card>
           );
         })}
@@ -233,7 +240,7 @@ export default function Dashboard() {
 
       {/* Authentication Dialog */}
       <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
-        <DialogContent>
+        <DialogContent className="animate-fade-in">
           <DialogHeader>
             <DialogTitle>Authenticate to {selectedSite?.name}</DialogTitle>
             <DialogDescription>
