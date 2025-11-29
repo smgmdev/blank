@@ -1168,7 +1168,10 @@ export default function Editor() {
                 <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Categories</Label>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {formData.categories.length > 0 ? formData.categories.map(c => <Badge key={c} variant="outline" className="text-xs">{c}</Badge>) : <span className="text-sm text-muted-foreground">-</span>}
+                    {formData.categories.length > 0 ? formData.categories.map(catId => {
+                      const catName = categories.find((c: any) => c.id === catId)?.name || `Category ${catId}`;
+                      return <Badge key={catId} variant="outline" className="text-xs">{catName}</Badge>;
+                    }) : <span className="text-sm text-muted-foreground">-</span>}
                   </div>
                 </div>
                 <div>

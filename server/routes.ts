@@ -657,8 +657,7 @@ export async function registerRoutes(
             method: "POST",
             headers: {
               Authorization: `Basic ${auth}`,
-              "Content-Type": "image/jpeg",
-              "Content-Disposition": 'form-data; name="file"; filename="featured-image.jpg"'
+              "Content-Type": "image/jpeg"
             },
             body: imageBuffer
           });
