@@ -29,7 +29,7 @@ interface AppState {
   articles: Article[];
   login: (type: 'admin' | 'user') => void;
   logout: () => void;
-  addSite: (site: Omit<Site, 'id' | 'isConnected'>, authCode: string) => void;
+  addSite: (site: Omit<Site, 'id' | 'isConnected' | 'authCode'>, authCode: string) => void;
   connectSite: (siteId: string) => void;
   disconnectSite: (siteId: string) => void;
   addArticle: (article: Omit<Article, 'id' | 'publishedAt' | 'wpLink'>) => void;

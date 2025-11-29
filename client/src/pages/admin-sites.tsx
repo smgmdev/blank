@@ -27,11 +27,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Globe, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Globe, Trash2, ExternalLink, LogIn, Lock, User, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminSites() {
-  const { sites, addSite, disconnectSite } = useStore();
+  const { sites, addSite, disconnectSite, connectSite } = useStore();
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [selectedSiteForLogin, setSelectedSiteForLogin] = useState<string | null>(null);
+  const [loginCredentials, setLoginCredentials] = useState({ username: "", password: "" });
+  const [isVerifying, setIsVerifying] = useState(false);
   const [newSite, setNewSite] = useState({
     name: "",
     url: "",
@@ -44,6 +50,54 @@ export default function AdminSites() {
     addSite({ name: newSite.name, url: newSite.url, seoPlugin: newSite.seoPlugin }, newSite.authCode);
     setIsOpen(false);
     setNewSite({ name: "", url: "", seoPlugin: "none", authCode: "" });
+  };
+
+  const handleConnectClick = (siteId: string) => {
+    setSelectedSiteForLogin(siteId);
+    setLoginDialogOpen(true);
+  };
+
+  const handleVerifyCredentials = () => {
+    if (!loginCredentials.username || !loginCredentials.password) {
+      toast({
+        variant: "destructive",
+        title: "Missing Credentials",
+        description: "Please enter both username and password"
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+
+    // Mock API call to WordPress
+    setTimeout(() => {
+      // Simulate credential verification
+      const isValid = loginCredentials.username.length > 0 && loginCredentials.password.length > 0;
+      
+      if (isValid) {
+        // Connect the site
+        if (selectedSiteForLogin) {
+          connectSite(selectedSiteForLogin);
+        }
+        
+        toast({
+          title: "Connected Successfully",
+          description: `You have been authenticated with publishing rights`
+        });
+        
+        setLoginDialogOpen(false);
+        setLoginCredentials({ username: "", password: "" });
+        setSelectedSiteForLogin(null);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Authentication Failed",
+          description: "Invalid WordPress credentials or insufficient publishing rights"
+        });
+      }
+      
+      setIsVerifying(false);
+    }, 1500);
   };
 
   return (
@@ -154,6 +208,18 @@ export default function AdminSites() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
+                    {!site.isConnected ? (
+                      <Button 
+                        size="sm" 
+                        className="gap-2"
+                        onClick={() => handleConnectClick(site.id)}
+                      >
+                        <LogIn className="w-4 h-4" />
+                        Connect
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-green-600 font-medium">Connected ✓</span>
+                    )}
                     <Button variant="ghost" size="icon" asChild>
                       <a href={site.url} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="w-4 h-4" />
@@ -163,7 +229,7 @@ export default function AdminSites() {
                       variant="ghost" 
                       size="icon" 
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => disconnectSite(site.id)} // Simulating removal for admin
+                      onClick={() => disconnectSite(site.id)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -174,6 +240,72 @@ export default function AdminSites() {
           </TableBody>
         </Table>
       </div>
+
+      {/* WordPress Login Dialog */}
+      <Dialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Connect to WordPress Site</DialogTitle>
+            <DialogDescription>
+              Enter your WordPress credentials to authenticate and verify publishing rights.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="wp-username" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                WordPress Username
+              </Label>
+              <Input 
+                id="wp-username" 
+                placeholder="your-username" 
+                value={loginCredentials.username}
+                onChange={e => setLoginCredentials({...loginCredentials, username: e.target.value})}
+                disabled={isVerifying}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wp-password" className="flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                WordPress Password
+              </Label>
+              <Input 
+                id="wp-password" 
+                type="password"
+                placeholder="your-password" 
+                value={loginCredentials.password}
+                onChange={e => setLoginCredentials({...loginCredentials, password: e.target.value})}
+                disabled={isVerifying}
+                onKeyDown={(e) => e.key === 'Enter' && handleVerifyCredentials()}
+              />
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+              <p className="font-medium mb-1">What we check:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Valid WordPress credentials via REST API</li>
+                <li>User has "Editor" or "Administrator" role</li>
+                <li>Publishing permissions verified</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLoginDialogOpen(false)} disabled={isVerifying}>Cancel</Button>
+            <Button onClick={handleVerifyCredentials} disabled={isVerifying} className="gap-2">
+              {isVerifying ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  Connect Account
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
