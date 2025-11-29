@@ -36,7 +36,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", show: true },
-    { label: "Write Article", icon: PenTool, href: "/editor", show: !isAdmin },
+    { label: "Write Article", icon: PenTool, href: "/editor", show: true },
     { label: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
   ];
 
