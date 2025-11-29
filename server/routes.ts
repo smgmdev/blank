@@ -144,63 +144,9 @@ export async function registerRoutes(
   app.get("/api/articles", async (req, res) => {
     try {
       const articles = await storage.getAllArticles();
-      
-      // Verify published articles still exist on WordPress (sync check)
-      for (const article of articles) {
-        if (article.status === 'published') {
-          try {
-            const publishing = await storage.getArticlePublishingByArticleId(article.id);
-            if (publishing.length > 0) {
-              const pub = publishing[0];
-              const site = await storage.getWordPressSite(pub.siteId);
-              
-              if (site && pub.wpPostId && site.adminUsername) {
-                // Make sure wpPostId is treated as integer for the URL
-                const postId = parseInt(pub.wpPostId, 10);
-                const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
-                
-                try {
-                  // Use admin username with application password token
-                  const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
-                  const checkRes = await fetch(checkUrl, {
-                    headers: { Authorization: `Basic ${auth}` }
-                  });
-                  
-                  console.log(`Sync check for article ${article.id} (WP post ${postId}): ${checkRes.status}`);
-                  
-                  // If post not found (404), delete from app
-                  if (checkRes.status === 404) {
-                    console.log(`Deleting article ${article.id} - 404 response from WordPress`);
-                    await storage.deleteArticle(article.id);
-                  }
-                  // 400 errors with INVALID_PASSWORD are auth issues, not deletion - skip these
-                  else if (checkRes.status === 400) {
-                    try {
-                      const errorData = await checkRes.json();
-                      if (errorData.code === 'rest_post_invalid_id' || errorData.code === 'rest_invalid_param') {
-                        console.log(`Deleting article ${article.id} - post not found on WordPress`);
-                        await storage.deleteArticle(article.id);
-                      }
-                    } catch (e) {
-                      // Auth error - skip deletion
-                    }
-                  }
-                } catch (fetchError) {
-                  console.error(`Fetch error for post ${postId}:`, fetchError);
-                }
-              }
-            }
-          } catch (error) {
-            console.error("Sync check error:", error);
-            // Silent fail - don't break the fetch
-          }
-        }
-      }
-      
-      // Re-fetch after potential sync deletions
-      const syncedArticles = await storage.getAllArticles();
-      res.json(syncedArticles);
+      res.json(articles);
     } catch (error) {
+      console.error("Articles fetch error:", error);
       res.status(500).json({ error: "Failed to fetch articles" });
     }
   });
