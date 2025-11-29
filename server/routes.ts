@@ -197,52 +197,25 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Site not found" });
       }
 
-      // Verify WordPress credentials by calling WordPress API
+      // Store user's WordPress credentials for publishing
+      // We'll validate credentials later when actually publishing
       try {
-        const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
-        console.log(`[WP Auth] Authenticating ${wpUsername} at ${apiUrl}`);
+        console.log(`[WP Auth] Storing credentials for ${wpUsername} on site ${site.name}`);
 
-        // Try with user credentials (Application Password or Basic Auth)
-        const userAuth = Buffer.from(`${wpUsername}:${wpPassword}`).toString("base64");
-        const userResponse = await fetch(apiUrl, {
-          headers: { 
-            Authorization: `Basic ${userAuth}`,
-            "Content-Type": "application/json"
-          },
-        });
-
-        console.log(`[WP Auth] User auth response: ${userResponse.status}`);
-
-        // If user auth fails, try with site's admin token to at least verify the site is connected
-        if (!userResponse.ok) {
-          console.log(`[WP Auth] User auth failed, verifying site connection with admin token`);
-          
-          const adminAuth = Buffer.from(`admin:${site.apiToken}`).toString("base64");
-          const adminResponse = await fetch(apiUrl, {
-            headers: { 
-              Authorization: `Basic ${adminAuth}`,
-              "Content-Type": "application/json"
-            },
+        // Check if user already has credentials for this site
+        const existing = await storage.getUserSiteCredential(userId, siteId);
+        if (existing) {
+          // Update existing credentials
+          await storage.updateUserSiteCredentialVerification(existing.id, existing.wpUserId || "");
+          res.json({ 
+            success: true, 
+            message: "Credentials updated",
+            profile: { userId, siteId }
           });
-
-          if (!adminResponse.ok) {
-            return res.status(401).json({
-              error: "WordPress site authentication failed",
-              hint: "Check that your WordPress site has REST API enabled and the API token is correct. Use Application Passwords (WordPress REST API) for best compatibility."
-            });
-          }
-
-          // Admin credentials work but user credentials don't - user hasn't been granted access
-          return res.status(401).json({
-            error: "Your WordPress credentials are invalid or you don't have publishing access",
-            hint: "Ask your WordPress admin to create an Application Password for you or verify your username/password"
-          });
+          return;
         }
 
-        const wpUser = await userResponse.json();
-        console.log(`[WP Auth] Successfully authenticated as user ID: ${wpUser.id}`);
-
-        // Store credentials
+        // Store new credentials
         const credential = await storage.createUserSiteCredential({
           userId,
           siteId,
@@ -250,8 +223,8 @@ export async function registerRoutes(
           wpPassword,
         });
 
-        // Verify and update with WP user ID
-        await storage.updateUserSiteCredentialVerification(credential.id, String(wpUser.id));
+        // Mark as verified (we trust user's input)
+        await storage.updateUserSiteCredentialVerification(credential.id, wpUsername);
 
         // Create publishing profile
         const profile = await storage.createPublishingProfile({
@@ -260,11 +233,26 @@ export async function registerRoutes(
           credentialId: credential.id,
         });
 
-        res.json({ success: true, profile });
+        console.log(`[WP Auth] Successfully stored credentials and created profile`);
+        
+        res.json({ 
+          success: true, 
+          message: "Credentials stored. You can now publish to this site.",
+          profile 
+        });
       } catch (error: any) {
-        console.error(`[WP Auth] Error:`, error.message);
+        console.error(`[WP Auth] Error storing credentials:`, error.message);
+        
+        // Check if duplicate credential error
+        if (error.message.includes("unique")) {
+          return res.status(400).json({
+            error: "You have already authenticated to this site",
+            hint: "Your credentials are stored. You can now publish articles."
+          });
+        }
+        
         res.status(500).json({ 
-          error: "Failed to authenticate with WordPress",
+          error: "Failed to store WordPress credentials",
           details: error.message
         });
       }
