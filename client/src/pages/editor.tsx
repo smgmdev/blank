@@ -31,7 +31,8 @@ import {
   Italic,
   List,
   Link as LinkIcon,
-  AlertCircle
+  AlertCircle,
+  Image as ImageIcon
 } from "lucide-react";
 
 // Mock Data for Categories based on sites
@@ -48,6 +49,7 @@ export default function Editor() {
   const [, setLocation] = useLocation();
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorImageInputRef = useRef<HTMLInputElement>(null);
   const connectedSites = sites.filter(s => s.isConnected);
   
   const [step, setStep] = useState(1);
@@ -186,6 +188,54 @@ export default function Editor() {
   const applyFormat = (command: string, value?: string) => {
     document.execCommand(command, false, value);
     editorRef.current?.focus();
+  };
+
+  const handleImageInsertClick = () => {
+    editorImageInputRef.current?.click();
+  };
+
+  const handleEditorImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const imgDataUrl = event.target?.result as string;
+          if (editorRef.current) {
+            const img = document.createElement('img');
+            img.src = imgDataUrl;
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            img.style.borderRadius = '8px';
+            img.style.margin = '8px 0';
+            img.style.display = 'block';
+            
+            // Insert at cursor position
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              range.insertNode(img);
+              range.setEndAfter(img);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            } else {
+              editorRef.current.appendChild(img);
+            }
+            
+            // Trigger input event to update content
+            handleEditorInput();
+            toast({
+              title: "Image Added",
+              description: "Image inserted into your article."
+            });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    // Reset input
+    e.currentTarget.value = '';
   };
 
   // Validation checks
@@ -408,7 +458,7 @@ export default function Editor() {
                     </div>
 
                     {/* List & Link Group */}
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 border-r border-border pr-2">
                       <Button size="sm" variant="outline" onClick={() => applyFormat('insertUnorderedList')} title="Bullet List" className="h-8 px-2">
                         <List className="w-4 h-4" />
                       </Button>
@@ -419,7 +469,23 @@ export default function Editor() {
                         <LinkIcon className="w-4 h-4" />
                       </Button>
                     </div>
+
+                    {/* Image Group */}
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" onClick={handleImageInsertClick} title="Insert Image" className="h-8 px-2">
+                        <ImageIcon className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
+
+                  {/* Hidden file input for editor images */}
+                  <input 
+                    ref={editorImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditorImageSelect}
+                    className="hidden"
+                  />
                   
                   {/* Rich Text Editor */}
                   <div
