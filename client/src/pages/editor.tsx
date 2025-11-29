@@ -54,7 +54,7 @@ export default function Editor() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
   
-  const [selectedSiteId, setSelectedSiteId] = useState<string>(connectedSites[0]?.id || "");
+  const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -294,10 +294,10 @@ export default function Editor() {
                 <Label>Destination Site</Label>
                 <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select site" />
+                    <SelectValue placeholder="Select a site" />
                   </SelectTrigger>
                   <SelectContent>
-                    {connectedSites.map(site => (
+                    {sites.filter(s => s.isConnected).map(site => (
                       <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
                     ))}
                   </SelectContent>
