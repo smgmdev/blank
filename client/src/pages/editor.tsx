@@ -61,7 +61,7 @@ export default function Editor() {
     content: "",
     image: null as File | null,
     imagePreview: "",
-    category: "",
+    categories: [] as string[],
     tags: [] as string[],
     currentTag: "",
     seo: {
@@ -193,7 +193,7 @@ export default function Editor() {
     const errors = [];
     if (!formData.title) errors.push("Article title is required");
     if (isEditorEmpty) errors.push("Article content is required");
-    if (!formData.category) errors.push("Category must be selected");
+    if (formData.categories.length === 0) errors.push("At least one category must be selected");
     if (formData.tags.length === 0) errors.push("At least one tag is required");
     if (!formData.imagePreview) errors.push("Featured image is required");
     if (!selectedSiteId) errors.push("Destination site is required");
@@ -222,7 +222,7 @@ export default function Editor() {
         siteId: selectedSiteId,
         title: formData.title,
         content: formData.content,
-        category: formData.category || "Uncategorized",
+        category: formData.categories.join(", ") || "Uncategorized",
         tags: formData.tags,
         status: 'published'
       });
@@ -462,22 +462,33 @@ export default function Editor() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid md:grid-cols-[1fr_1fr] gap-6">
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select 
-                    value={formData.category} 
-                    onValueChange={v => setFormData({...formData, category: v})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">Categories fetched from {selectedSite?.name}</p>
+                <div className="space-y-3">
+                  <Label>Categories <span className="text-destructive">*</span></Label>
+                  <div className="space-y-2">
+                    {categories.map(cat => (
+                      <div key={cat} className="flex items-center gap-2">
+                        <Checkbox 
+                          id={`cat-${cat}`}
+                          checked={formData.categories.includes(cat)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFormData({
+                                ...formData,
+                                categories: [...formData.categories, cat]
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                categories: formData.categories.filter(c => c !== cat)
+                              });
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`cat-${cat}`} className="font-normal cursor-pointer">{cat}</Label>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Categories from {selectedSite?.name}</p>
                 </div>
 
                 <div className="space-y-2">
@@ -690,11 +701,13 @@ export default function Editor() {
 
               <Separator />
 
-              {/* Bottom Row: Category and Tags */}
+              {/* Bottom Row: Categories and Tags */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Category</Label>
-                  <div className="mt-1"><Badge variant="outline">{formData.category || "Uncategorized"}</Badge></div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Categories</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {formData.categories.length > 0 ? formData.categories.map(c => <Badge key={c} variant="outline" className="text-xs">{c}</Badge>) : <span className="text-sm text-muted-foreground">-</span>}
+                  </div>
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Tags</Label>
