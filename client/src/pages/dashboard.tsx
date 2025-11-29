@@ -156,6 +156,10 @@ export default function Dashboard() {
 
   const handleDisconnect = (siteId: string) => {
     disconnectSite(siteId);
+    // Update local state to show disconnected
+    setSites(sites.map(site => 
+      site.id === siteId ? { ...site, isConnected: false } : site
+    ));
     toast({
       title: "Disconnected",
       description: "You have been disconnected from this site.",
