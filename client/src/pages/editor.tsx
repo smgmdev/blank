@@ -32,7 +32,11 @@ import {
   List,
   Link as LinkIcon,
   AlertCircle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Palette
 } from "lucide-react";
 
 // Mock Data for Categories based on sites
@@ -188,6 +192,14 @@ export default function Editor() {
   const applyFormat = (command: string, value?: string) => {
     document.execCommand(command, false, value);
     editorRef.current?.focus();
+  };
+
+  const isSeoComplete = () => {
+    if (plugin === 'none') return true;
+    if (plugin === 'aioseo' || plugin === 'rankmath' || plugin === 'yoast') {
+      return formData.seo.focusKeyword.trim().length > 0;
+    }
+    return false;
   };
 
   const handleImageInsertClick = () => {
@@ -418,11 +430,12 @@ export default function Editor() {
                 <div className="border border-border rounded-lg overflow-hidden">
                   {/* Advanced Editor Toolbar */}
                   <div className="bg-gradient-to-r from-muted to-muted/80 border-b border-border p-3 flex flex-wrap gap-2">
-                    {/* Text Style Group */}
+                    {/* Block & Font Size Group */}
                     <div className="flex gap-1 border-r border-border pr-2">
                       <select 
                         className="px-2 py-1 text-sm border border-border rounded hover:bg-background transition-colors"
                         onChange={(e) => applyFormat('formatBlock', e.target.value)}
+                        title="Text style"
                       >
                         <option value="p">Paragraph</option>
                         <option value="h2">Heading 2</option>
@@ -433,6 +446,7 @@ export default function Editor() {
                       <select 
                         className="px-2 py-1 text-sm border border-border rounded hover:bg-background transition-colors"
                         onChange={(e) => applyFormat('fontSize', e.target.value)}
+                        title="Font size"
                       >
                         <option value="1">Small</option>
                         <option value="3" selected>Normal</option>
@@ -441,7 +455,7 @@ export default function Editor() {
                       </select>
                     </div>
 
-                    {/* Formatting Group */}
+                    {/* Text Formatting Group */}
                     <div className="flex gap-1 border-r border-border pr-2">
                       <Button size="sm" variant="outline" onClick={() => applyFormat('bold')} title="Bold (Ctrl+B)" className="h-8 px-2">
                         <Bold className="w-4 h-4" />
@@ -457,6 +471,19 @@ export default function Editor() {
                       </Button>
                     </div>
 
+                    {/* Alignment Group */}
+                    <div className="flex gap-1 border-r border-border pr-2">
+                      <Button size="sm" variant="outline" onClick={() => applyFormat('justifyLeft')} title="Align Left" className="h-8 px-2">
+                        <AlignLeft className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => applyFormat('justifyCenter')} title="Align Center" className="h-8 px-2">
+                        <AlignCenter className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => applyFormat('justifyRight')} title="Align Right" className="h-8 px-2">
+                        <AlignRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+
                     {/* List & Link Group */}
                     <div className="flex gap-1 border-r border-border pr-2">
                       <Button size="sm" variant="outline" onClick={() => applyFormat('insertUnorderedList')} title="Bullet List" className="h-8 px-2">
@@ -468,6 +495,28 @@ export default function Editor() {
                       <Button size="sm" variant="outline" onClick={() => applyFormat('createLink', prompt('Enter URL:') || '')} title="Add Link" className="h-8 px-2">
                         <LinkIcon className="w-4 h-4" />
                       </Button>
+                    </div>
+
+                    {/* Color & Image Group */}
+                    <div className="flex gap-1 border-r border-border pr-2">
+                      <div className="flex items-center gap-1">
+                        <input 
+                          type="color" 
+                          defaultValue="#000000"
+                          onChange={(e) => applyFormat('foreColor', e.target.value)}
+                          title="Text Color"
+                          className="h-8 w-8 border border-border rounded cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <input 
+                          type="color" 
+                          defaultValue="#ffff00"
+                          onChange={(e) => applyFormat('backColor', e.target.value)}
+                          title="Highlight Color"
+                          className="h-8 w-8 border border-border rounded cursor-pointer"
+                        />
+                      </div>
                     </div>
 
                     {/* Image Group */}
@@ -740,7 +789,10 @@ export default function Editor() {
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">SEO Plugin</Label>
-                  <div className="mt-1 font-medium capitalize">{plugin === 'none' ? 'Default WordPress' : plugin}</div>
+                  <div className="mt-1 font-medium capitalize flex items-center gap-2">
+                    {plugin === 'none' ? 'Default WordPress' : plugin}
+                    {isSeoComplete() && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                  </div>
                   {plugin === 'aioseo' && (
                     <div className="mt-2">
                       <Badge className={formData.seo.indexed ? "bg-green-100 text-green-800 text-xs" : "bg-gray-100 text-gray-800 text-xs"}>
