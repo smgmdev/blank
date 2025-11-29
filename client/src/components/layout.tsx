@@ -61,7 +61,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <img 
               src="https://www.worldimpactmedia.org/images/wimb.png" 
               alt="WIMB Logo" 
-              className="w-8 h-8 rounded-lg"
+              className="w-8 h-8"
             />
             <div className="flex flex-col text-primary font-bold text-xs leading-tight">
               <span>Media</span>
@@ -93,7 +93,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <img 
                 src="https://www.worldimpactmedia.org/images/wimb.png" 
                 alt="WIMB Logo" 
-                className="w-10 h-10 rounded-lg"
+                className="w-10 h-10"
               />
               <div className="flex flex-col text-primary font-bold text-sm leading-tight">
                 <span>Media</span>
@@ -109,7 +109,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <img 
               src="https://www.worldimpactmedia.org/images/wimb.png" 
               alt="WIMB Logo" 
-              className="w-8 h-8 rounded-lg"
+              className="w-8 h-8"
             />
             <div className="flex flex-col text-primary font-bold text-xs leading-tight">
               <span>Media</span>
