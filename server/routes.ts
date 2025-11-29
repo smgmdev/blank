@@ -160,10 +160,8 @@ export async function registerRoutes(
                 const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
                 
                 try {
-                  const auth = Buffer.from(`admin:${site.apiToken}`).toString("base64");
-                  const checkRes = await fetch(checkUrl, {
-                    headers: { Authorization: `Basic ${auth}` }
-                  });
+                  // Published posts are public, no auth needed
+                  const checkRes = await fetch(checkUrl);
                   
                   console.log(`Sync check for article ${article.id} (WP post ${postId}): ${checkRes.status}`);
                   
