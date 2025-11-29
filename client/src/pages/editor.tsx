@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Loader2, 
@@ -29,15 +30,16 @@ import {
   Bold,
   Italic,
   List,
-  Link as LinkIcon
+  Link as LinkIcon,
+  AlertCircle
 } from "lucide-react";
 
 // Mock Data for Categories based on sites
 const MOCK_CATEGORIES = {
   'default': ['Uncategorized', 'News', 'Updates'],
-  '1': ['Tech', 'Startups', 'Venture Capital', 'Gadgets'], // TechCrunch
-  '2': ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Vegan'], // Recipes
-  '3': ['Projects', 'Case Studies', 'Thoughts'], // Portfolio
+  '1': ['Tech', 'Startups', 'Venture Capital', 'Gadgets'],
+  '2': ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Vegan'],
+  '3': ['Projects', 'Case Studies', 'Thoughts'],
 };
 
 export default function Editor() {
@@ -48,11 +50,10 @@ export default function Editor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const connectedSites = sites.filter(s => s.isConnected);
   
-  // Wizard State
   const [step, setStep] = useState(1);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isEditorEmpty, setIsEditorEmpty] = useState(true);
   
-  // Form State
   const [selectedSiteId, setSelectedSiteId] = useState<string>(connectedSites[0]?.id || "");
   const [formData, setFormData] = useState({
     title: "",
@@ -65,8 +66,8 @@ export default function Editor() {
     currentTag: "",
     seo: {
       focusKeyword: "",
-      title: "",
-      description: ""
+      description: "",
+      indexed: true
     }
   });
 
@@ -74,7 +75,6 @@ export default function Editor() {
   const plugin = selectedSite?.seoPlugin || 'none';
   const categories = MOCK_CATEGORIES[selectedSiteId as keyof typeof MOCK_CATEGORIES] || MOCK_CATEGORIES['default'];
 
-  // Generate slug from title
   const generateSlug = (title: string) => {
     return title
       .toLowerCase()
@@ -126,9 +126,25 @@ export default function Editor() {
     }
   };
 
+  const handleEditorInput = () => {
+    if (editorRef.current) {
+      const text = editorRef.current.innerText || editorRef.current.textContent || '';
+      const cleanText = text.replace(/Start typing here\.\.\./, '').trim();
+      setIsEditorEmpty(cleanText.length === 0);
+      setFormData({
+        ...formData,
+        content: editorRef.current.innerHTML
+      });
+    }
+  };
+
   const handleNext = () => {
-    if (step === 1 && (!formData.title || !selectedSiteId)) {
-      toast({ variant: "destructive", title: "Missing Fields", description: "Please select a site and enter a title." });
+    if (step === 1 && (!formData.title || !selectedSiteId || isEditorEmpty)) {
+      toast({ 
+        variant: "destructive", 
+        title: "Missing Fields", 
+        description: "Please select a site, enter a title, and write some content." 
+      });
       return;
     }
     setStep(s => s + 1);
@@ -161,16 +177,38 @@ export default function Editor() {
     editorRef.current?.focus();
   };
 
+  // Validation checks
+  const getValidationErrors = () => {
+    const errors = [];
+    if (!formData.title) errors.push("Article title is required");
+    if (isEditorEmpty) errors.push("Article content is required");
+    if (!formData.category) errors.push("Category must be selected");
+    if (!selectedSiteId) errors.push("Destination site is required");
+    if (plugin === 'aioseo' && !formData.seo.focusKeyword) errors.push("Focus keyword is required for AIOSEO");
+    if (plugin === 'rankmath' && !formData.seo.focusKeyword) errors.push("Focus keyword is required for Rank Math");
+    return errors;
+  };
+
+  const validationErrors = getValidationErrors();
+  const isFormValid = validationErrors.length === 0;
+
   const handlePublish = () => {
-    if (!editorRef.current) return;
-    
+    if (!isFormValid) {
+      toast({ 
+        variant: "destructive", 
+        title: "Cannot Publish", 
+        description: "Please fill in all required fields." 
+      });
+      return;
+    }
+
     setIsPublishing(true);
     
     setTimeout(() => {
       addArticle({
         siteId: selectedSiteId,
         title: formData.title,
-        content: editorRef.current?.innerHTML || "",
+        content: formData.content,
         category: formData.category || "Uncategorized",
         tags: formData.tags,
         status: 'published'
@@ -203,7 +241,6 @@ export default function Editor() {
     );
   }
 
-  // Progress Indicator
   const steps = [
     { num: 1, label: "Content" },
     { num: 2, label: "Categorization" },
@@ -315,42 +352,86 @@ export default function Editor() {
               <div className="space-y-2">
                 <Label>Content</Label>
                 <div className="border border-border rounded-lg overflow-hidden">
-                  {/* Editor Toolbar */}
-                  <div className="bg-muted/50 border-b border-border p-2 flex flex-wrap gap-1">
-                    <Button size="sm" variant="outline" onClick={() => applyFormat('bold')} title="Bold">
-                      <Bold className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => applyFormat('italic')} title="Italic">
-                      <Italic className="w-4 h-4" />
-                    </Button>
-                    <Separator orientation="vertical" className="h-6" />
-                    <Button size="sm" variant="outline" onClick={() => applyFormat('formatBlock', '<h2>')} title="Heading 2">
-                      H2
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => applyFormat('formatBlock', '<h3>')} title="Heading 3">
-                      H3
-                    </Button>
-                    <Separator orientation="vertical" className="h-6" />
-                    <Button size="sm" variant="outline" onClick={() => applyFormat('insertUnorderedList')} title="Bullet List">
-                      <List className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => applyFormat('createLink', prompt('Enter URL:') || '')} title="Add Link">
-                      <LinkIcon className="w-4 h-4" />
-                    </Button>
+                  {/* Advanced Editor Toolbar */}
+                  <div className="bg-gradient-to-r from-muted to-muted/80 border-b border-border p-3 flex flex-wrap gap-2">
+                    {/* Text Style Group */}
+                    <div className="flex gap-1 border-r border-border pr-2">
+                      <select 
+                        className="px-2 py-1 text-sm border border-border rounded hover:bg-background transition-colors"
+                        onChange={(e) => applyFormat('formatBlock', e.target.value)}
+                      >
+                        <option value="p">Paragraph</option>
+                        <option value="h2">Heading 2</option>
+                        <option value="h3">Heading 3</option>
+                        <option value="h4">Heading 4</option>
+                      </select>
+                      
+                      <select 
+                        className="px-2 py-1 text-sm border border-border rounded hover:bg-background transition-colors"
+                        onChange={(e) => applyFormat('fontSize', e.target.value)}
+                      >
+                        <option value="1">Small</option>
+                        <option value="3" selected>Normal</option>
+                        <option value="5">Large</option>
+                        <option value="7">Extra Large</option>
+                      </select>
+                    </div>
+
+                    {/* Formatting Group */}
+                    <div className="flex gap-1 border-r border-border pr-2">
+                      <Button size="sm" variant="outline" onClick={() => applyFormat('bold')} title="Bold (Ctrl+B)" className="h-8 px-2">
+                        <Bold className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => applyFormat('italic')} title="Italic (Ctrl+I)" className="h-8 px-2">
+                        <Italic className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => applyFormat('underline')} title="Underline" className="h-8 px-2">
+                        <u>U</u>
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => applyFormat('strikeThrough')} title="Strikethrough" className="h-8 px-2 text-xs">
+                        <s>S</s>
+                      </Button>
+                    </div>
+
+                    {/* List & Link Group */}
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" onClick={() => applyFormat('insertUnorderedList')} title="Bullet List" className="h-8 px-2">
+                        <List className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => applyFormat('insertOrderedList')} title="Numbered List" className="h-8 px-2">
+                        1.
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => applyFormat('createLink', prompt('Enter URL:') || '')} title="Add Link" className="h-8 px-2">
+                        <LinkIcon className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                   
-                  {/* Editor */}
+                  {/* Rich Text Editor */}
                   <div
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
-                    className="min-h-[400px] p-4 focus:outline-none font-[Helvetica,Arial,sans-serif] text-base leading-relaxed"
-                    style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-                  >
-                    <p style={{ color: '#999' }}>Start typing here...</p>
-                  </div>
+                    onInput={handleEditorInput}
+                    className="min-h-[400px] p-4 focus:outline-none font-[Helvetica,Arial,sans-serif] text-base leading-relaxed bg-white dark:bg-slate-950"
+                    style={{ 
+                      fontFamily: 'Helvetica, Arial, sans-serif',
+                      color: '#1f2937'
+                    }}
+                    data-placeholder="Start typing here..."
+                  />
+                  <style>{`
+                    [data-placeholder]:empty::before {
+                      content: attr(data-placeholder);
+                      color: #999;
+                      font-style: italic;
+                    }
+                    [data-placeholder]:empty:focus::before {
+                      content: "";
+                    }
+                  `}</style>
                 </div>
-                <p className="text-xs text-muted-foreground">Use the toolbar to format your text with headings, bold, italic, links, and more.</p>
+                <p className="text-xs text-muted-foreground">Use the toolbar to format your text with headings, bold, italic, links, lists, and more.</p>
               </div>
             </CardContent>
           </Card>
@@ -432,20 +513,33 @@ export default function Editor() {
                 Optimize your content using the connected site's SEO plugin.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Common SEO Title Field (All plugins) */}
+              <div className="space-y-2">
+                <Label>SEO Title (Auto-synced with Article Title)</Label>
+                <Input 
+                  value={formData.title}
+                  disabled
+                  className="bg-muted text-muted-foreground cursor-not-allowed"
+                  placeholder="Auto-synced from article title"
+                />
+                <p className="text-xs text-muted-foreground">This is automatically set to match your article title and cannot be edited separately.</p>
+              </div>
+
+              {/* Plugin-Specific Fields */}
               {plugin === 'rankmath' && (
                 <>
-                  <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-lg mb-4 flex items-center gap-3">
+                  <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-lg flex items-center gap-3">
                     <div className="text-3xl font-bold text-purple-600">76<span className="text-sm font-normal text-muted-foreground">/100</span></div>
                     <div className="text-sm text-muted-foreground">Rank Math Score <br/> Good but could be better.</div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-purple-600 font-medium">Focus Keyword</Label>
-                    <Input placeholder="Main keyword..." />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>SEO Title</Label>
-                    <Input placeholder="Title to appear in Google..." />
+                    <Label className="text-purple-600 font-medium">Focus Keyword *</Label>
+                    <Input 
+                      placeholder="Main keyword to rank for..." 
+                      value={formData.seo.focusKeyword}
+                      onChange={(e) => setFormData({...formData, seo: {...formData.seo, focusKeyword: e.target.value}})}
+                    />
                   </div>
                 </>
               )}
@@ -459,12 +553,27 @@ export default function Editor() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Post Title</Label>
-                    <Input />
+                    <Label className="text-green-600 font-medium">Focus Keyword *</Label>
+                    <Input 
+                      placeholder="Enter focus keyword for AIOSEO..." 
+                      value={formData.seo.focusKeyword}
+                      onChange={(e) => setFormData({...formData, seo: {...formData.seo, focusKeyword: e.target.value}})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Meta Description</Label>
-                    <Input placeholder="Keep it under 160 characters..." />
+                    <Input placeholder="Keep it under 160 characters..." 
+                      value={formData.seo.description}
+                      onChange={(e) => setFormData({...formData, seo: {...formData.seo, description: e.target.value}})}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <Checkbox 
+                      id="indexed" 
+                      checked={formData.seo.indexed}
+                      onCheckedChange={(checked) => setFormData({...formData, seo: {...formData.seo, indexed: checked as boolean}})}
+                    />
+                    <Label htmlFor="indexed" className="font-normal cursor-pointer">Index this page in search engines</Label>
                   </div>
                 </>
               )}
@@ -477,7 +586,11 @@ export default function Editor() {
                   </div>
                   <div className="space-y-2">
                     <Label>Focus Keyphrase</Label>
-                    <Input />
+                    <Input 
+                      placeholder="Focus keyword for Yoast..." 
+                      value={formData.seo.focusKeyword}
+                      onChange={(e) => setFormData({...formData, seo: {...formData.seo, focusKeyword: e.target.value}})}
+                    />
                   </div>
                 </>
               )}
@@ -497,6 +610,25 @@ export default function Editor() {
       {/* Step 4: Review */}
       {step === 4 && (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+          {/* Missing Fields Warning */}
+          {!isFormValid && (
+            <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+              <CardContent className="pt-6">
+                <div className="flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">Missing Required Fields</h4>
+                    <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-200">
+                      {validationErrors.map((error, i) => (
+                        <li key={i}>• {error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Review & Publish</CardTitle>
@@ -537,18 +669,34 @@ export default function Editor() {
                     <Label className="text-xs text-muted-foreground uppercase tracking-wider">SEO Plugin</Label>
                     <div className="mt-1 font-medium capitalize">{plugin}</div>
                   </div>
+                  {plugin === 'aioseo' && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Indexing</Label>
+                      <div className="mt-1">
+                        <Badge className={formData.seo.indexed ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                          {formData.seo.indexed ? "Indexed" : "Not Indexed"}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               
               <Separator />
               
-              <div className="bg-muted/30 p-4 rounded-lg border text-sm text-muted-foreground max-h-60 overflow-y-auto">
-                <p className="font-mono text-xs mb-2 uppercase text-foreground font-bold">Content Preview</p>
-                {editorRef.current?.textContent ? (
-                  <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: editorRef.current?.innerHTML || "" }} />
-                ) : (
-                  <p className="italic">No content written yet...</p>
-                )}
+              <div className="space-y-2">
+                <Label>Content Preview</Label>
+                <div className="bg-muted/30 p-4 rounded-lg border text-sm max-h-80 overflow-y-auto">
+                  {formData.content ? (
+                    <div 
+                      className="prose prose-sm max-w-none dark:prose-invert" 
+                      dangerouslySetInnerHTML={{ __html: formData.content }}
+                      style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                    />
+                  ) : (
+                    <p className="italic text-muted-foreground">No content written yet...</p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -573,7 +721,12 @@ export default function Editor() {
                 Next Step <ChevronRight className="w-4 h-4" />
               </Button>
             ) : (
-              <Button onClick={handlePublish} disabled={isPublishing} className="gap-2 min-w-[140px]">
+              <Button 
+                onClick={handlePublish} 
+                disabled={isPublishing || !isFormValid} 
+                className="gap-2 min-w-[140px]"
+                title={!isFormValid ? "Please fill in all required fields" : ""}
+              >
                 {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 Publish Now
               </Button>
