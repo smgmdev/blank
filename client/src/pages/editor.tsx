@@ -26,7 +26,8 @@ import {
   CheckCircle2, 
   ChevronRight,
   ChevronLeft,
-  UploadCloud
+  UploadCloud,
+  Globe
 } from "lucide-react";
 
 // Mock Data for Categories based on sites
