@@ -722,7 +722,7 @@ export default function Editor() {
                   ) : categories.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4">No categories available</p>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2 mt-4">
                       {categories.map((cat: any) => (
                         <div key={cat.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
                           onClick={() => {
@@ -774,6 +774,7 @@ export default function Editor() {
                         value={formData.currentTag}
                         onChange={e => setFormData({...formData, currentTag: e.target.value})}
                         onKeyDown={handleAddTag}
+                        className="mt-4"
                       />
                       {availableTags.length > 0 && formData.currentTag.trim() !== "" && (
                         <div className="text-xs text-muted-foreground mt-2 p-2 border border-border rounded bg-muted/30">
@@ -797,25 +798,27 @@ export default function Editor() {
                       )}
                     </>
                   )}
-                  <div className="w-full mt-3 p-2 border border-border rounded-lg bg-muted/30 min-h-10 flex flex-wrap gap-2 items-start content-start">
-                    {formData.tags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs">
-                        <span className="line-clamp-2">
-                          {typeof tag === 'number' 
-                            ? availableTags.find((t: any) => t.id === tag)?.name || tag
-                            : tag
-                          }
-                        </span>
-                        <button 
-                          className="ml-1 cursor-pointer hover:bg-destructive/20 rounded-full p-0.5 flex-shrink-0"
-                          onClick={() => removeTag(tag)}
-                          data-testid="button-remove-tag"
-                          type="button"
-                        >
-                          <Search className="w-3 h-3 rotate-45" />
-                        </button>
-                      </Badge>
-                    ))}
+                  <div className="w-full mt-4 p-3 border border-border rounded-lg bg-muted/30 min-h-12 flex flex-wrap gap-2 items-start content-start">
+                    {formData.tags.map(tag => {
+                      const tagName = typeof tag === 'number' 
+                        ? availableTags.find((t: any) => t.id === tag)?.name || tag
+                        : tag;
+                      return (
+                        <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs" style={{maxWidth: '200px', wordBreak: 'break-word', whiteSpace: 'normal'}}>
+                          <span style={{display: 'block', wordBreak: 'break-word'}}>
+                            {tagName}
+                          </span>
+                          <button 
+                            className="ml-1 cursor-pointer hover:bg-destructive/20 rounded-full p-0.5 flex-shrink-0"
+                            onClick={() => removeTag(tag)}
+                            data-testid="button-remove-tag"
+                            type="button"
+                          >
+                            <Search className="w-3 h-3 rotate-45" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
                     {formData.tags.length === 0 && (
                       <span className="text-xs text-muted-foreground italic py-2">No tags added yet.</span>
                     )}
