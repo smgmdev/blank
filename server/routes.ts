@@ -168,10 +168,23 @@ export async function registerRoutes(
                   
                   console.log(`Sync check for article ${article.id} (WP post ${postId}): ${checkRes.status}`);
                   
-                  // If post deleted on WordPress (404), delete from app
-                  if (checkRes.status === 404) {
-                    console.log(`Deleting article ${article.id} - not found on WordPress`);
-                    await storage.deleteArticle(article.id);
+                  // If post deleted on WordPress (404 or 400 - bad request could mean deleted), delete from app
+                  if (checkRes.status === 404 || checkRes.status === 400) {
+                    try {
+                      const errorData = await checkRes.json();
+                      console.log(`Error response:`, errorData);
+                      // Check if it's a "not found" type error
+                      if (checkRes.status === 404 || (errorData.code && (errorData.code.includes('not_found') || errorData.code === 'rest_post_invalid_id'))) {
+                        console.log(`Deleting article ${article.id} - not found on WordPress`);
+                        await storage.deleteArticle(article.id);
+                      }
+                    } catch (e) {
+                      // If 404, assume it's deleted
+                      if (checkRes.status === 404) {
+                        console.log(`Deleting article ${article.id} - 404 response`);
+                        await storage.deleteArticle(article.id);
+                      }
+                    }
                   }
                 } catch (fetchError) {
                   console.error(`Fetch error for post ${postId}:`, fetchError);
