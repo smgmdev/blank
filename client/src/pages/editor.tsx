@@ -767,19 +767,22 @@ export default function Editor() {
                         onChange={e => setFormData({...formData, currentTag: e.target.value})}
                         onKeyDown={handleAddTag}
                       />
-                      {availableTags.length > 0 && formData.currentTag === "" && (
-                        <div className="text-xs text-muted-foreground">
-                          <p className="font-semibold mb-1">Available tags:</p>
+                      {availableTags.length > 0 && formData.currentTag.trim() !== "" && (
+                        <div className="text-xs text-muted-foreground mt-2 p-2 border border-border rounded bg-muted/30">
+                          <p className="font-semibold mb-2">Matching tags:</p>
                           <div className="flex flex-wrap gap-1">
-                            {availableTags.slice(0, 8).map((tag: any) => (
-                              <Badge key={tag.id} variant="outline" className="text-xs cursor-pointer hover:bg-primary/10"
-                                onClick={() => setFormData({...formData, tags: [...formData.tags, tag.id], currentTag: ""})}
-                              >
-                                {tag.name}
-                              </Badge>
-                            ))}
-                            {availableTags.length > 8 && (
-                              <Badge variant="outline" className="text-xs">+{availableTags.length - 8} more</Badge>
+                            {availableTags
+                              .filter((tag: any) => tag.name.toLowerCase().includes(formData.currentTag.toLowerCase()))
+                              .slice(0, 5)
+                              .map((tag: any) => (
+                                <Badge key={tag.id} variant="outline" className="text-xs cursor-pointer hover:bg-primary/10"
+                                  onClick={() => setFormData({...formData, tags: [...formData.tags, tag.id], currentTag: ""})}
+                                >
+                                  {tag.name}
+                                </Badge>
+                              ))}
+                            {availableTags.filter((tag: any) => tag.name.toLowerCase().includes(formData.currentTag.toLowerCase())).length === 0 && (
+                              <p className="text-xs italic text-muted-foreground">No matching tags. Press Enter to create new.</p>
                             )}
                           </div>
                         </div>
