@@ -47,6 +47,8 @@ export default function Editor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorImageInputRef = useRef<HTMLInputElement>(null);
   const userId = localStorage.getItem('userId');
+  const [params] = useLocation();
+  const articleId = params.split('/').pop() || '';
   
   const [sites_user, setSitesUser] = useState<any[]>([]);
   const [loadingSites, setLoadingSites] = useState(true);
@@ -58,6 +60,7 @@ export default function Editor() {
   const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingTags, setLoadingTags] = useState(false);
+  const [isEditingDraft, setIsEditingDraft] = useState(false);
   
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [formData, setFormData] = useState({
@@ -76,9 +79,9 @@ export default function Editor() {
     }
   });
 
-  // Fetch user's authenticated sites
+  // Fetch user's authenticated sites and draft article if editing
   useEffect(() => {
-    const fetchSites = async () => {
+    const fetchData = async () => {
       if (!userId) return;
       setLoadingSites(true);
       try {
@@ -87,14 +90,47 @@ export default function Editor() {
           const data = await res.json();
           setSitesUser(data.filter((s: any) => s.userIsConnected));
         }
+
+        // Load draft article if editing
+        if (articleId && articleId !== '') {
+          try {
+            const articleRes = await fetch(`/api/articles/${articleId}`);
+            if (articleRes.ok) {
+              const article = await articleRes.json();
+              // Load article data into form
+              setIsEditingDraft(true);
+              setFormData({
+                title: article.title || "",
+                slug: article.title ? article.title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').trim() : "",
+                content: article.content || "",
+                image: null,
+                imagePreview: "",
+                categories: [],
+                tags: [],
+                currentTag: "",
+                seo: {
+                  focusKeyword: "",
+                  description: "",
+                  indexed: true
+                }
+              });
+              // Mark editor as not empty
+              if (article.content) {
+                setIsEditorEmpty(false);
+              }
+            }
+          } catch (error) {
+            console.error('Failed to fetch draft article:', error);
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch sites:', error);
       } finally {
         setLoadingSites(false);
       }
     };
-    fetchSites();
-  }, [userId]);
+    fetchData();
+  }, [userId, articleId]);
 
   // Fetch categories and tags when site changes
   useEffect(() => {
@@ -242,15 +278,71 @@ export default function Editor() {
     setSelectedSiteId("");
     setStep(1);
     setIsEditorEmpty(true);
-    // Navigate back to dashboard
-    setLocation("/dashboard");
+    setIsEditingDraft(false);
+    // Navigate back to my articles if editing, dashboard if new
+    setLocation(isEditingDraft ? "/my-articles" : "/dashboard");
   };
 
-  const handleSaveDraft = () => {
-    toast({
-      title: "Draft Saved",
-      description: "Your article draft has been saved successfully."
-    });
+  const handleSaveDraft = async () => {
+    if (!formData.title || isEditorEmpty) {
+      toast({ 
+        variant: "destructive", 
+        title: "Missing Fields", 
+        description: "Please enter a title and write some content." 
+      });
+      return;
+    }
+
+    try {
+      if (isEditingDraft && articleId) {
+        // Update existing draft
+        const res = await fetch(`/api/articles/${articleId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: formData.title,
+            content: formData.content,
+            status: 'draft'
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to save draft');
+        }
+
+        toast({
+          title: "Draft Updated",
+          description: "Your article draft has been updated successfully."
+        });
+      } else {
+        // Create new draft
+        const res = await fetch('/api/articles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            title: formData.title,
+            content: formData.content,
+            status: 'draft'
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to create draft');
+        }
+
+        toast({
+          title: "Draft Saved",
+          description: "Your article draft has been saved successfully."
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Save Failed",
+        description: error.message || "Could not save draft"
+      });
+    }
   };
 
   const handleAddTag = (e: React.KeyboardEvent) => {

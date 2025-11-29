@@ -89,12 +89,8 @@ export default function MyArticles() {
   };
 
   const handleEdit = (articleId: string) => {
-    toast({
-      title: "Edit Article",
-      description: "Opening article editor...",
-    });
-    // In a real app, this would navigate to the editor with the article data
-    // For now, we'll just show the toast
+    // Navigate to editor with article ID
+    window.location.href = `/editor/${articleId}`;
   };
 
   return (

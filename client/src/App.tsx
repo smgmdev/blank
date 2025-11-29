@@ -67,7 +67,7 @@ function Router() {
         </Layout>
       </Route>
       
-      <Route path="/editor">
+      <Route path="/editor/:articleId?">
         <Layout>
           <Editor />
         </Layout>
