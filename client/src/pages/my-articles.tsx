@@ -147,8 +147,8 @@ export default function MyArticles() {
                       {article.tags?.slice(0, 3).map((tag: any) => (
                         <Badge key={tag} variant="secondary" className="text-xs text-muted-foreground">{tag}</Badge>
                       ))}
-                      {article.tags.length > 3 && (
-                        <Badge variant="secondary" className="text-xs text-muted-foreground">+{article.tags.length - 3}</Badge>
+                      {(article.tags?.length ?? 0) > 3 && (
+                        <Badge variant="secondary" className="text-xs text-muted-foreground">+{(article.tags?.length ?? 0) - 3}</Badge>
                       )}
                     </div>
                     <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
