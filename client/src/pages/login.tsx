@@ -16,7 +16,7 @@ export default function Login() {
   const [email, setEmail] = useState("demo@writer.com");
   const [password, setPassword] = useState("password");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       toast({
         variant: "destructive",
@@ -26,31 +26,35 @@ export default function Login() {
       return;
     }
 
-    // Check admin credentials
-    const isAdmin = DEMO_CREDENTIALS.admin.emails.includes(email) && 
-                    password === DEMO_CREDENTIALS.admin.password;
-    
-    // Check user credentials
-    const isUser = DEMO_CREDENTIALS.user.emails.includes(email) && 
-                   password === DEMO_CREDENTIALS.user.password;
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email, password })
+      });
 
-    if (!isAdmin && !isUser) {
+      if (!response.ok) {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: "Invalid credentials"
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const user = await response.json();
+      login(user.role);
+      setLocation(user.role === 'admin' ? '/admin/sites' : '/dashboard');
+    } catch (error) {
       toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: "Invalid credentials"
+        title: "Login Error",
+        description: "Connection failed. Please try again."
       });
-      return;
-    }
-
-    setIsLoading(true);
-    // Simulate network request
-    setTimeout(() => {
-      const type = isAdmin ? 'admin' : 'user';
-      login(type);
-      setLocation(isAdmin ? '/admin/sites' : '/dashboard');
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
