@@ -197,25 +197,49 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Site not found" });
       }
 
-      // Store user's WordPress credentials for publishing
-      // We'll validate credentials later when actually publishing
+      // Site must be connected first (admin verified it)
+      if (!site.isConnected) {
+        return res.status(403).json({
+          error: "Site not verified",
+          hint: "Admin must verify the WordPress site connection first before users can authenticate"
+        });
+      }
+
+      // Verify user credentials against WordPress API
       try {
-        console.log(`[WP Auth] Storing credentials for ${wpUsername} on site ${site.name}`);
+        const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
+        console.log(`[WP Auth] Verifying user ${wpUsername} at ${apiUrl}`);
+
+        const userAuth = Buffer.from(`${wpUsername}:${wpPassword}`).toString("base64");
+        const userResponse = await fetch(apiUrl, {
+          headers: { 
+            Authorization: `Basic ${userAuth}`,
+            "Content-Type": "application/json"
+          },
+        });
+
+        console.log(`[WP Auth] User auth response: ${userResponse.status}`);
+
+        if (!userResponse.ok) {
+          return res.status(401).json({
+            error: "Invalid WordPress credentials",
+            hint: "Your WordPress username or password is incorrect. Please verify and try again."
+          });
+        }
+
+        const wpUser = await userResponse.json();
+        console.log(`[WP Auth] User verified as ID: ${wpUser.id}`);
 
         // Check if user already has credentials for this site
         const existing = await storage.getUserSiteCredential(userId, siteId);
         if (existing) {
-          // Update existing credentials
-          await storage.updateUserSiteCredentialVerification(existing.id, existing.wpUserId || "");
-          res.json({ 
-            success: true, 
-            message: "Credentials updated",
-            profile: { userId, siteId }
-          });
+          // Update existing
+          await storage.updateUserSiteCredentialVerification(existing.id, String(wpUser.id));
+          res.json({ success: true, message: "Credentials updated" });
           return;
         }
 
-        // Store new credentials
+        // Store credentials
         const credential = await storage.createUserSiteCredential({
           userId,
           siteId,
@@ -223,8 +247,8 @@ export async function registerRoutes(
           wpPassword,
         });
 
-        // Mark as verified (we trust user's input)
-        await storage.updateUserSiteCredentialVerification(credential.id, wpUsername);
+        // Mark as verified with actual WP user ID
+        await storage.updateUserSiteCredentialVerification(credential.id, String(wpUser.id));
 
         // Create publishing profile
         const profile = await storage.createPublishingProfile({
@@ -233,26 +257,15 @@ export async function registerRoutes(
           credentialId: credential.id,
         });
 
-        console.log(`[WP Auth] Successfully stored credentials and created profile`);
-        
         res.json({ 
           success: true, 
-          message: "Credentials stored. You can now publish to this site.",
+          message: "Authenticated successfully. You can now publish to this site.",
           profile 
         });
       } catch (error: any) {
-        console.error(`[WP Auth] Error storing credentials:`, error.message);
-        
-        // Check if duplicate credential error
-        if (error.message.includes("unique")) {
-          return res.status(400).json({
-            error: "You have already authenticated to this site",
-            hint: "Your credentials are stored. You can now publish articles."
-          });
-        }
-        
+        console.error(`[WP Auth] Error:`, error.message);
         res.status(500).json({ 
-          error: "Failed to store WordPress credentials",
+          error: "Failed to verify WordPress credentials",
           details: error.message
         });
       }
@@ -262,19 +275,26 @@ export async function registerRoutes(
     }
   });
 
-  // Test WordPress site connection
-  app.post("/api/sites/:siteId/test-connection", async (req, res) => {
+  // Test & Verify WordPress site connection (Admin only)
+  app.post("/api/sites/:siteId/verify-connection", async (req, res) => {
     try {
       const { siteId } = req.params;
+      const { adminUsername, adminPassword } = req.body;
       
       const site = await storage.getWordPressSite(siteId);
       if (!site) {
         return res.status(404).json({ error: "Site not found" });
       }
 
-      const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
-      const auth = Buffer.from(`admin:${site.apiToken}`).toString("base64");
+      if (!adminUsername || !adminPassword) {
+        return res.status(400).json({ error: "Admin credentials required" });
+      }
 
+      const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
+      console.log(`[Site Verify] Testing connection with admin credentials at ${apiUrl}`);
+
+      // Try with provided admin credentials
+      const auth = Buffer.from(`${adminUsername}:${adminPassword}`).toString("base64");
       const response = await fetch(apiUrl, {
         headers: { 
           Authorization: `Basic ${auth}`,
@@ -282,26 +302,39 @@ export async function registerRoutes(
         },
       });
 
+      console.log(`[Site Verify] Response status: ${response.status}`);
+
       if (response.ok) {
         const wpUser = await response.json();
+        // Mark site as connected
         await storage.updateWordPressSiteConnection(siteId, true);
+        console.log(`[Site Verify] Site verified successfully as admin user: ${wpUser.name}`);
+        
         res.json({ 
           success: true, 
-          message: "WordPress site is connected and accessible",
-          wpUser: wpUser.name
+          message: `✓ WordPress site verified and connected as ${wpUser.name}`,
+          wpUser: { id: wpUser.id, name: wpUser.name }
         });
       } else {
+        const errorText = await response.text();
+        console.log(`[Site Verify] Verification failed: ${errorText}`);
+        
         res.status(400).json({
           success: false,
           error: `WordPress API returned ${response.status}`,
-          hint: "Verify that the API URL and token are correct"
+          hint: `Verify that:
+          1. API URL is correct: ${site.apiUrl}
+          2. Admin username/password are valid
+          3. WordPress site has Application Passwords enabled
+          4. The account has API access permissions`
         });
       }
     } catch (error: any) {
+      console.error(`[Site Verify] Error:`, error.message);
       res.status(500).json({
         success: false,
         error: error.message,
-        hint: "Failed to reach WordPress site. Check the API URL and ensure the site is accessible."
+        hint: "Failed to reach WordPress site. Ensure the site is accessible and API is enabled."
       });
     }
   });

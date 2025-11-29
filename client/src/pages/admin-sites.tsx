@@ -56,12 +56,18 @@ export default function AdminSites() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sites_db, setSites_db] = useState<any[]>([]);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const [newSite, setNewSite] = useState({
     name: "",
     url: "",
     seoPlugin: "rankmath" as SeoPlugin,
     apiUrl: "",
     apiToken: ""
+  });
+  const [adminCreds, setAdminCreds] = useState({
+    username: "",
+    password: ""
   });
 
   // Fetch sites from database on mount
@@ -82,8 +88,75 @@ export default function AdminSites() {
     fetchSites();
   }, []);
 
+  const handleVerifyConnection = async () => {
+    if (!newSite.apiUrl || !adminCreds.username || !adminCreds.password) {
+      toast({
+        variant: "destructive",
+        title: "Missing Credentials",
+        description: "Enter API URL and admin credentials"
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      // First create the site as unverified
+      const siteResponse = await fetch('/api/sites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newSite.name,
+          url: newSite.url,
+          apiUrl: newSite.apiUrl,
+          apiToken: newSite.apiToken || "pending",
+          seoPlugin: newSite.seoPlugin
+        })
+      });
+
+      if (!siteResponse.ok) throw new Error('Failed to create site');
+      const site = await siteResponse.json();
+
+      // Now verify the connection
+      const verifyResponse = await fetch(`/api/sites/${site.id}/verify-connection`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminUsername: adminCreds.username,
+          adminPassword: adminCreds.password
+        })
+      });
+
+      if (!verifyResponse.ok) {
+        // Delete the unverified site
+        await fetch(`/api/sites/${site.id}`, { method: 'DELETE' });
+        const errorData = await verifyResponse.json();
+        throw new Error(errorData.error);
+      }
+
+      const verifyData = await verifyResponse.json();
+      setSites_db([...sites_db, { ...site, isConnected: true }]);
+      setIsOpen(false);
+      setIsVerified(false);
+      setNewSite({ name: "", url: "", seoPlugin: "rankmath", apiUrl: "", apiToken: "" });
+      setAdminCreds({ username: "", password: "" });
+
+      toast({
+        title: "Success",
+        description: verifyData.message
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Verification Failed",
+        description: error.message
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const handleAdd = async () => {
-    if (!newSite.name || !newSite.url || !newSite.apiUrl || !newSite.apiToken) {
+    if (!newSite.name || !newSite.url || !newSite.apiUrl) {
       toast({
         variant: "destructive",
         title: "Missing Fields",
@@ -92,39 +165,16 @@ export default function AdminSites() {
       return;
     }
 
-    try {
-      const response = await fetch('/api/sites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newSite.name,
-          url: newSite.url,
-          apiUrl: newSite.apiUrl,
-          apiToken: newSite.apiToken,
-          seoPlugin: newSite.seoPlugin
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add site');
-      }
-
-      const site = await response.json();
-      setSites_db([...sites_db, site]);
-      setIsOpen(false);
-      setNewSite({ name: "", url: "", seoPlugin: "rankmath", apiUrl: "", apiToken: "" });
-      
-      toast({
-        title: "Success",
-        description: "Site added successfully"
-      });
-    } catch (error) {
+    if (!isVerified) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to add site"
+        title: "Not Verified",
+        description: "Please verify the WordPress connection first"
       });
+      return;
     }
+
+    handleVerifyConnection();
   };
 
   const handleDelete = async (id: string) => {
@@ -217,16 +267,58 @@ export default function AdminSites() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="border-t pt-4">
+                <Label className="text-sm font-semibold mb-3 block">Verify WordPress Connection</Label>
+                <div className="space-y-2">
+                  <Input 
+                    placeholder="WordPress admin username" 
+                    value={adminCreds.username}
+                    onChange={e => setAdminCreds({...adminCreds, username: e.target.value})}
+                    disabled={isVerifying}
+                  />
+                  <Input 
+                    type="password"
+                    placeholder="WordPress admin password / app password" 
+                    value={adminCreds.password}
+                    onChange={e => setAdminCreds({...adminCreds, password: e.target.value})}
+                    disabled={isVerifying}
+                  />
+                  <Button 
+                    onClick={handleVerifyConnection}
+                    disabled={isVerifying}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {isVerifying ? "Verifying..." : "Test Connection"}
+                  </Button>
+                  {isVerified && (
+                    <div className="bg-green-50 border border-green-200 rounded p-2 text-xs text-green-800">
+                      ✓ WordPress connection verified
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             <DialogFooter className="justify-between flex gap-2 flex-col-reverse sm:flex-row w-full">
               <Button 
                 variant="outline" 
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsVerified(false);
+                  setAdminCreds({ username: "", password: "" });
+                }}
                 className="hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button onClick={handleAdd} className="w-full sm:w-auto">Add Site</Button>
+              <Button 
+                onClick={handleAdd} 
+                className="w-full sm:w-auto"
+                disabled={!isVerified || isVerifying}
+              >
+                Add Site
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
