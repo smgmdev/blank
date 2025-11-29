@@ -154,21 +154,31 @@ export async function registerRoutes(
               const pub = publishing[0];
               const site = await storage.getWordPressSite(pub.siteId);
               
-              if (site) {
-                const auth = Buffer.from(`${site.apiToken}:WP-DEFAULT`).toString("base64");
-                const checkUrl = `${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`;
+              if (site && pub.wpPostId) {
+                // Make sure wpPostId is treated as integer for the URL
+                const postId = parseInt(pub.wpPostId, 10);
+                const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
                 
-                const checkRes = await fetch(checkUrl, {
-                  headers: { Authorization: `Basic ${auth}` }
-                });
-                
-                // If post deleted on WordPress, delete from app
-                if (checkRes.status === 404) {
-                  await storage.deleteArticle(article.id);
+                try {
+                  const auth = Buffer.from(`admin:${site.apiToken}`).toString("base64");
+                  const checkRes = await fetch(checkUrl, {
+                    headers: { Authorization: `Basic ${auth}` }
+                  });
+                  
+                  console.log(`Sync check for article ${article.id} (WP post ${postId}): ${checkRes.status}`);
+                  
+                  // If post deleted on WordPress (404), delete from app
+                  if (checkRes.status === 404) {
+                    console.log(`Deleting article ${article.id} - not found on WordPress`);
+                    await storage.deleteArticle(article.id);
+                  }
+                } catch (fetchError) {
+                  console.error(`Fetch error for post ${postId}:`, fetchError);
                 }
               }
             }
           } catch (error) {
+            console.error("Sync check error:", error);
             // Silent fail - don't break the fetch
           }
         }
