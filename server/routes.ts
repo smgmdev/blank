@@ -702,6 +702,23 @@ export async function registerRoutes(
 
       const wpPost = await wpResponse.json();
 
+      // Fetch featured image URL if media was uploaded
+      let featuredImageUrl = null;
+      if (featuredMediaId) {
+        try {
+          const mediaUrl = `${site.apiUrl}/wp/v2/media/${featuredMediaId}`;
+          const mediaRes = await fetch(mediaUrl, {
+            headers: { Authorization: `Basic ${auth}` }
+          });
+          if (mediaRes.ok) {
+            const mediaData = await mediaRes.json();
+            featuredImageUrl = mediaData.source_url;
+          }
+        } catch (e) {
+          console.error("Failed to fetch featured image URL:", e);
+        }
+      }
+
       // Save publishing record
       await storage.createArticlePublishing({
         articleId,
@@ -715,12 +732,12 @@ export async function registerRoutes(
         status: 'published',
         publishedAt: new Date(),
         siteId,
-        featuredImageUrl: wpPost.featured_media ? wpPost._links?.wp?.featuredmedia?.[0]?.href : null,
+        featuredImageUrl,
         categories,
         tags
       });
 
-      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link });
+      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, featuredImageUrl });
     } catch (error: any) {
       console.error("Publish error:", error);
       res.status(500).json({ error: "Failed to publish article" });
