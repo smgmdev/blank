@@ -51,7 +51,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <img 
               src="https://www.worldimpactmedia.org/images/wimb.png" 
               alt="WIMB Logo" 
-              className="w-8 h-8 rounded-lg"
+              className="w-10 h-10 rounded-lg"
             />
             WIMB
           </div>

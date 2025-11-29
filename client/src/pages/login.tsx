@@ -53,7 +53,7 @@ export default function Login() {
           <img 
             src="https://www.worldimpactmedia.org/images/wimb.png" 
             alt="WIMB Logo" 
-            className="w-12 h-12 mx-auto mb-4 rounded-xl shadow-lg shadow-primary/20"
+            className="w-20 h-20 mx-auto mb-4 rounded-xl shadow-lg shadow-primary/20"
           />
           <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
           <p className="text-muted-foreground">Sign in to your publishing dashboard</p>
