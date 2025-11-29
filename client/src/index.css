@@ -88,4 +88,25 @@
   .animate-fade-in {
     animation: fadeIn 300ms ease-out;
   }
+
+  /* LinkedIn-style loading animation */
+  @keyframes linkedinLoading {
+    0% {
+      width: 16px;
+      left: 0;
+    }
+    50% {
+      width: 64px;
+      left: 0;
+    }
+    100% {
+      width: 16px;
+      left: calc(100% - 16px);
+    }
+  }
+
+  .animate-linkedin-loading {
+    position: relative;
+    animation: linkedinLoading 2s ease-in-out infinite;
+  }
 }

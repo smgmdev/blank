@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useStore } from "@/lib/store";
+import LoadingScreen from "@/components/loading-screen";
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/layout";
 import Login from "@/pages/login";
@@ -18,10 +19,18 @@ import Settings from "@/pages/settings";
 
 function Router() {
   const { user, initializeFromStorage } = useStore();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     initializeFromStorage();
+    // Show loading screen for 1.5 seconds
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    return () => clearTimeout(timer);
   }, [initializeFromStorage]);
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <Switch>
