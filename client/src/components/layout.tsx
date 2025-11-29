@@ -126,6 +126,39 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Button>
         </div>
 
+        {/* System Account - Top of sidebar */}
+        <div className="p-4 border-b border-border">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="w-full justify-start px-2 hover:bg-muted">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="w-8 h-8 border flex-shrink-0">
+                    <AvatarFallback>{isAdmin ? 'AD' : 'US'}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col items-start text-xs min-w-0">
+                    <span className="font-medium">{isAdmin ? 'Administrator' : 'Content Creator'}</span>
+                    <span className="text-muted-foreground">System Account</span>
+                  </div>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 animate-fade-in">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <Link href="/settings">
+                <DropdownMenuItem>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+              </Link>
+              <DropdownMenuItem onClick={() => logout()} className="text-destructive focus:text-destructive">
+                <LogOut className="w-4 h-4 mr-2" />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.filter(item => item.show && item.href !== "/publishing-profile").map((item) => {
             const isActive = location === item.href;
@@ -165,38 +198,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           )}
         </nav>
-
-        <div className="p-4 border-t border-border">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start px-2 hover:bg-muted">
-                <div className="flex items-center gap-3 min-w-0">
-                  <Avatar className="w-8 h-8 border flex-shrink-0">
-                    <AvatarFallback>{isAdmin ? 'AD' : 'US'}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col items-start text-xs min-w-0">
-                    <span className="font-medium">{isAdmin ? 'Administrator' : 'Content Creator'}</span>
-                    <span className="text-muted-foreground">System Account</span>
-                  </div>
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 animate-fade-in">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <Link href="/settings">
-                <DropdownMenuItem>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </DropdownMenuItem>
-              </Link>
-              <DropdownMenuItem onClick={() => logout()} className="text-destructive focus:text-destructive">
-                <LogOut className="w-4 h-4 mr-2" />
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
       </aside>
 
       {/* Mobile Menu Overlay */}
