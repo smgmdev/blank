@@ -48,10 +48,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <aside className="w-64 bg-background border-r border-border flex flex-col fixed h-full z-10">
         <div className="h-16 flex items-center px-6 border-b border-border">
           <div className="flex items-center gap-2 text-primary font-bold text-xl">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
-              W
-            </div>
-            WP Press
+            <img 
+              src="https://www.worldimpactmedia.org/images/wimb.png" 
+              alt="WIMB Logo" 
+              className="w-8 h-8 rounded-lg"
+            />
+            WIMB
           </div>
         </div>
 
