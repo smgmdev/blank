@@ -81,7 +81,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar / Mobile Menu */}
       <aside className={`
-        fixed lg:relative inset-0 lg:inset-auto left-0 top-0 w-64 bg-background border-r border-border flex flex-col z-50 lg:z-auto
+        fixed lg:relative inset-0 lg:inset-auto left-0 top-0 w-64 bg-background border-r border-border flex flex-col z-50 lg:z-30
         lg:w-64 lg:h-screen lg:inset-y-0 lg:top-auto
         transition-all duration-300
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}

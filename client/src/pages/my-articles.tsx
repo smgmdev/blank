@@ -146,7 +146,7 @@ export default function MyArticles() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="animate-fade-in w-full sm:max-w-md">
+        <DialogContent className="animate-fade-in w-full sm:max-w-md flex flex-col">
           <DialogHeader>
             <DialogTitle>Delete Article</DialogTitle>
             <DialogDescription>

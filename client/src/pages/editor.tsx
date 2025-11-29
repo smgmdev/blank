@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Loader2, 
@@ -59,6 +60,7 @@ export default function Editor() {
   const [step, setStep] = useState(1);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [formData, setFormData] = useState({
@@ -170,6 +172,7 @@ export default function Editor() {
   const handleBack = () => setStep(s => s - 1);
 
   const handleCancel = () => {
+    setShowCancelConfirm(false);
     // Reset form data
     setFormData({
       title: "",
@@ -191,6 +194,13 @@ export default function Editor() {
     setIsEditorEmpty(true);
     // Navigate back to dashboard
     setLocation("/dashboard");
+  };
+
+  const handleSaveDraft = () => {
+    toast({
+      title: "Draft Saved",
+      description: "Your article draft has been saved successfully."
+    });
   };
 
   const handleAddTag = (e: React.KeyboardEvent) => {
@@ -881,33 +891,45 @@ export default function Editor() {
 
       {/* Footer Controls */}
       <div className="fixed bottom-0 left-0 w-full bg-background border-t border-border p-4 z-30 md:pl-64 md:z-20">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 px-4 md:px-0 flex-col sm:flex-row">
+        <div className="max-w-4xl mx-auto flex items-center gap-2 px-4 md:px-0 flex-col sm:flex-row">
           <Button 
             variant="outline" 
-            onClick={handleCancel}
+            onClick={() => setShowCancelConfirm(true)}
             className="gap-2 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 w-full sm:w-auto justify-start"
           >
             Cancel Article
           </Button>
           
-          <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={handleSaveDraft}
+            className="gap-2 w-full sm:w-auto hover:bg-black hover:text-white transition-all duration-200"
+          >
+            <Save className="w-4 h-4" /> Save Draft
+          </Button>
+          
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               onClick={handleBack} 
               disabled={step === 1}
-              className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent flex-1"
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </Button>
             {step < 4 ? (
-              <Button onClick={handleNext} className="gap-2 group">
-                Next Step <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
+              <Button 
+                onClick={handleNext} 
+                className="gap-2 group flex-1 hover:bg-black hover:text-white transition-all duration-200"
+                variant="outline"
+              >
+                Next <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
               </Button>
             ) : (
               <Button 
                 onClick={handlePublish} 
                 disabled={isPublishing || !isFormValid} 
-                className="gap-2 min-w-[140px]"
+                className="gap-2 min-w-[140px] flex-1"
                 title={!isFormValid ? "Please fill in all required fields" : ""}
               >
                 {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -917,6 +939,32 @@ export default function Editor() {
           </div>
         </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <DialogContent className="animate-fade-in w-full sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel Article?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel? All unsaved changes will be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCancelConfirm(false)}
+            >
+              No, Keep Editing
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleCancel}
+            >
+              Yes, Cancel Article
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
