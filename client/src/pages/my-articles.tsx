@@ -1,5 +1,6 @@
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import {
   Table,
   TableBody,
@@ -34,12 +35,12 @@ export default function MyArticles() {
           <h2 className="text-2xl font-bold tracking-tight">My Articles</h2>
           <p className="text-muted-foreground">Manage your published content across all connected sites.</p>
         </div>
-        <Button asChild>
-          <a href="/editor">
+        <Link href="/editor">
+          <Button>
             <FileText className="w-4 h-4 mr-2" />
             Write New
-          </a>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <div className="border rounded-md bg-card">
