@@ -390,28 +390,27 @@ export default function Editor() {
                 </Select>
               </div>
 
-              <div className="grid md:grid-cols-[1fr_200px] gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Article Title</Label>
-                  <Input 
-                    id="title"
-                    placeholder="Enter a catchy title..." 
-                    value={formData.title}
-                    onChange={handleTitleChange}
-                    className="text-lg font-medium"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="slug">Slug (Auto-generated)</Label>
-                  <Input 
-                    id="slug"
-                    value={formData.slug}
-                    disabled
-                    className="bg-muted text-muted-foreground cursor-not-allowed text-sm"
-                    placeholder="auto-generated"
-                  />
-                  <p className="text-xs text-muted-foreground">URL-friendly version</p>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="title">Article Title</Label>
+                <Input 
+                  id="title"
+                  placeholder="Enter a catchy title..." 
+                  value={formData.title}
+                  onChange={handleTitleChange}
+                  className="text-lg font-medium"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug (Auto-generated)</Label>
+                <Input 
+                  id="slug"
+                  value={formData.slug}
+                  disabled
+                  className="bg-muted text-muted-foreground cursor-not-allowed text-sm"
+                  placeholder="auto-generated"
+                />
+                <p className="text-xs text-muted-foreground">URL-friendly version</p>
               </div>
 
               <div className="space-y-2">
@@ -886,7 +885,7 @@ export default function Editor() {
           <Button 
             variant="outline" 
             onClick={handleCancel}
-            className="gap-2 text-gray-600 hover:bg-gray-50"
+            className="gap-2 hover:bg-red-50 hover:text-white hover:border-red-500 transition-all duration-200"
           >
             Cancel Article
           </Button>
@@ -896,13 +895,13 @@ export default function Editor() {
               variant="outline" 
               onClick={handleBack} 
               disabled={step === 1}
-              className="gap-2"
+              className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </Button>
             {step < 4 ? (
-              <Button onClick={handleNext} className="gap-2">
-                Next Step <ChevronRight className="w-4 h-4" />
+              <Button onClick={handleNext} className="gap-2 group">
+                Next Step <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
               </Button>
             ) : (
               <Button 

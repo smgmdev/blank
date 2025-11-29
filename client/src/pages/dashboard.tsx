@@ -167,7 +167,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">My Sites</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Media Network</h2>
           <p className="text-muted-foreground">Authenticate to sites to publish articles.</p>
         </div>
         <Button 
@@ -188,7 +188,7 @@ export default function Dashboard() {
           return (
             <Card 
               key={site.id} 
-              className={`transition-all hover:shadow-lg border-0 shadow-sm ${site.isConnected ? 'bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/40 ring-1 ring-primary/20' : 'bg-card'}`}
+              className={`transition-all hover:shadow-lg border-0 shadow-sm bg-card`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -215,10 +215,11 @@ export default function Dashboard() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="w-full h-8 text-xs text-destructive hover:text-destructive"
+                    className="w-full h-8 text-xs border-green-500 text-green-700 hover:border-red-500 hover:text-destructive hover:bg-red-50 transition-all duration-200 group"
                     onClick={() => handleDisconnect(site.id)}
                   >
-                    Disconnect
+                    <span className="group-hover:hidden">Connected</span>
+                    <span className="hidden group-hover:inline">Disconnect</span>
                   </Button>
                 ) : (
                   <Button 
