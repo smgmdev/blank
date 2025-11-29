@@ -652,17 +652,15 @@ export async function registerRoutes(
           const imageBuffer = Buffer.from(base64Data, 'base64');
           const mediaUrl = `${site.apiUrl}/wp/v2/media`;
           
-          // Use FormData for multipart/form-data upload
-          const formData = new FormData();
-          const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
-          formData.append('file', blob, 'featured-image.jpg');
-          
+          // Send image as binary with proper headers
           const mediaResponse = await fetch(mediaUrl, {
             method: "POST",
             headers: {
-              Authorization: `Basic ${auth}`
+              Authorization: `Basic ${auth}`,
+              "Content-Type": "image/jpeg",
+              "Content-Disposition": 'form-data; name="file"; filename="featured-image.jpg"'
             },
-            body: formData
+            body: imageBuffer
           });
           
           if (mediaResponse.ok) {
