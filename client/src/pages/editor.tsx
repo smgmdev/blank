@@ -407,7 +407,7 @@ export default function Editor() {
                   placeholder="Enter a catchy title..." 
                   value={formData.title}
                   onChange={handleTitleChange}
-                  className="text-lg font-medium"
+                  className="text-sm"
                 />
               </div>
 
@@ -916,7 +916,7 @@ export default function Editor() {
               variant="outline" 
               onClick={handleBack} 
               disabled={step === 1}
-              className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent flex-1"
+              className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent flex-1 hover:bg-black hover:text-white transition-all duration-200"
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </Button>
