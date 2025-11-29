@@ -409,6 +409,105 @@ export async function registerRoutes(
     }
   });
 
+  // Get WordPress categories for a site
+  app.get("/api/sites/:siteId/categories", async (req, res) => {
+    try {
+      const { siteId } = req.params;
+      const site = await storage.getWordPressSite(siteId);
+      if (!site) return res.status(404).json({ error: "Site not found" });
+
+      const apiUrl = `${site.apiUrl}/wp/v2/categories?per_page=100`;
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        return res.status(response.status).json({ error: "Failed to fetch categories" });
+      }
+
+      const categories = await response.json();
+      res.json(categories.map((cat: any) => ({ id: cat.id, name: cat.name })));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  // Get WordPress tags for a site
+  app.get("/api/sites/:siteId/tags", async (req, res) => {
+    try {
+      const { siteId } = req.params;
+      const site = await storage.getWordPressSite(siteId);
+      if (!site) return res.status(404).json({ error: "Site not found" });
+
+      const apiUrl = `${site.apiUrl}/wp/v2/tags?per_page=100`;
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        return res.status(response.status).json({ error: "Failed to fetch tags" });
+      }
+
+      const tags = await response.json();
+      res.json(tags.map((tag: any) => ({ id: tag.id, name: tag.name })));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tags" });
+    }
+  });
+
+  // Publish article to WordPress
+  app.post("/api/articles/:articleId/publish-to-site", async (req, res) => {
+    try {
+      const { articleId } = req.params;
+      const { siteId, userId, title, content, categories, tags, featuredMediaUrl } = req.body;
+
+      const site = await storage.getWordPressSite(siteId);
+      if (!site) return res.status(404).json({ error: "Site not found" });
+
+      const credential = await storage.getUserSiteCredential(userId, siteId);
+      if (!credential || !credential.isVerified) {
+        return res.status(403).json({ error: "Not authenticated to this site" });
+      }
+
+      const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+      const postUrl = `${site.apiUrl}/wp/v2/posts`;
+
+      const postData = {
+        title,
+        content,
+        status: "publish",
+        categories: Array.isArray(categories) ? categories : [],
+        tags: Array.isArray(tags) ? tags : []
+      };
+
+      const wpResponse = await fetch(postUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(postData)
+      });
+
+      if (!wpResponse.ok) {
+        const error = await wpResponse.text();
+        console.error("WordPress publish error:", error);
+        return res.status(wpResponse.status).json({ error: "Failed to publish to WordPress" });
+      }
+
+      const wpPost = await wpResponse.json();
+
+      // Save publishing record
+      await storage.createArticlePublishing({
+        articleId,
+        siteId,
+        wpPostId: String(wpPost.id),
+        status: "published"
+      });
+
+      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link });
+    } catch (error: any) {
+      console.error("Publish error:", error);
+      res.status(500).json({ error: "Failed to publish article" });
+    }
+  });
+
   // Login Route
   app.post("/api/login", async (req, res) => {
     try {

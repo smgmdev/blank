@@ -55,12 +55,16 @@ export default function Editor() {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorImageInputRef = useRef<HTMLInputElement>(null);
-  const connectedSites = sites.filter(s => s.isConnected);
+  const userId = localStorage.getItem('userId');
   
+  const [sites_user, setSitesUser] = useState<any[]>([]);
   const [step, setStep] = useState(1);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [formData, setFormData] = useState({
@@ -69,8 +73,8 @@ export default function Editor() {
     content: "",
     image: null as File | null,
     imagePreview: "",
-    categories: [] as string[],
-    tags: [] as string[],
+    categories: [] as (string | number)[],
+    tags: [] as (string | number)[],
     currentTag: "",
     seo: {
       focusKeyword: "",
@@ -79,9 +83,53 @@ export default function Editor() {
     }
   });
 
-  const selectedSite = sites.find(s => s.id === selectedSiteId);
+  // Fetch user's authenticated sites
+  useEffect(() => {
+    const fetchSites = async () => {
+      if (!userId) return;
+      try {
+        const res = await fetch(`/api/users/${userId}/sites-with-auth`);
+        if (res.ok) {
+          const data = await res.json();
+          setSitesUser(data.filter((s: any) => s.userIsConnected));
+        }
+      } catch (error) {
+        console.error('Failed to fetch sites:', error);
+      }
+    };
+    fetchSites();
+  }, [userId]);
+
+  // Fetch categories and tags when site changes
+  useEffect(() => {
+    const fetchCategoriesAndTags = async () => {
+      if (!selectedSiteId) return;
+      setLoadingCategories(true);
+      try {
+        const [catRes, tagRes] = await Promise.all([
+          fetch(`/api/sites/${selectedSiteId}/categories`),
+          fetch(`/api/sites/${selectedSiteId}/tags`)
+        ]);
+        
+        if (catRes.ok) {
+          const cats = await catRes.json();
+          setCategories(cats);
+        }
+        if (tagRes.ok) {
+          const tags = await tagRes.json();
+          setAvailableTags(tags);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories/tags:', error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to load categories and tags" });
+      }
+      setLoadingCategories(false);
+    };
+    fetchCategoriesAndTags();
+  }, [selectedSiteId]);
+
+  const selectedSite = sites_user.find(s => s.id === selectedSiteId);
   const plugin = selectedSite?.seoPlugin || 'none';
-  const categories = MOCK_CATEGORIES[selectedSiteId as keyof typeof MOCK_CATEGORIES] || MOCK_CATEGORIES['default'];
 
   // Restore editor content when returning to step 1
   useEffect(() => {
@@ -301,7 +349,7 @@ export default function Editor() {
   const validationErrors = getValidationErrors();
   const isFormValid = validationErrors.length === 0;
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!isFormValid) {
       toast({ 
         variant: "destructive", 
@@ -313,15 +361,39 @@ export default function Editor() {
 
     setIsPublishing(true);
     
-    setTimeout(() => {
-      addArticle({
-        siteId: selectedSiteId,
-        title: formData.title,
-        content: formData.content,
-        category: formData.categories.join(", ") || "Uncategorized",
-        tags: formData.tags,
-        status: 'published'
+    try {
+      // Create article locally first
+      const article = await (async () => {
+        const res = await fetch('/api/articles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            title: formData.title,
+            content: formData.content,
+            status: 'draft'
+          })
+        });
+        return res.json();
+      })();
+
+      // Publish to WordPress
+      const publishRes = await fetch(`/api/articles/${article.id}/publish-to-site`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          siteId: selectedSiteId,
+          userId,
+          title: formData.title,
+          content: formData.content,
+          categories: formData.categories,
+          tags: formData.tags
+        })
       });
+
+      if (!publishRes.ok) {
+        throw new Error('Publishing failed');
+      }
 
       setIsPublishing(false);
       toast({
@@ -330,10 +402,17 @@ export default function Editor() {
       });
       
       setLocation("/my-articles");
-    }, 2000);
+    } catch (error: any) {
+      setIsPublishing(false);
+      toast({
+        variant: "destructive",
+        title: "Publishing Failed",
+        description: error.message || "Could not publish article"
+      });
+    }
   };
 
-  if (connectedSites.length === 0) {
+  if (sites_user.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4">
         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
@@ -341,7 +420,7 @@ export default function Editor() {
         </div>
         <h3 className="text-lg font-medium">No Connected Sites</h3>
         <p className="text-muted-foreground max-w-sm">
-          You need to connect to at least one WordPress site in the Dashboard before you can write articles.
+          You need to authenticate to at least one WordPress site in the Dashboard before you can write articles.
         </p>
         <Button asChild>
           <a href="/dashboard">Go to Dashboard</a>
