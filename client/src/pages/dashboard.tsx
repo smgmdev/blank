@@ -237,9 +237,11 @@ export default function Dashboard() {
                   </Button>
                 ) : (
                   <Button 
+                    variant="outline"
                     size="sm"
-                    className="w-full h-8 text-xs"
+                    className="w-full h-8 text-xs border-black text-black hover:bg-black hover:text-white transition-all duration-200"
                     onClick={() => handleAuthenticateClick(site.id)}
+                    data-testid="button-authenticate-site"
                   >
                     Authenticate
                   </Button>
