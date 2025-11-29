@@ -722,9 +722,9 @@ export default function Editor() {
                   ) : categories.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4">No categories available</p>
                   ) : (
-                    <div className="space-y-1.5 mt-4">
+                    <div className="space-y-0.5 mt-4">
                       {categories.map((cat: any) => (
-                        <div key={cat.id} className="flex items-center gap-2 p-1.5 rounded border border-transparent hover:border-border hover:bg-muted/30 cursor-pointer transition-colors"
+                        <div key={cat.id} className="flex items-center gap-2 p-2 rounded border border-transparent hover:border-border hover:bg-muted/30 cursor-pointer transition-colors"
                           onClick={() => {
                             if (formData.categories.includes(cat.id)) {
                               setFormData({
@@ -739,18 +739,18 @@ export default function Editor() {
                             }
                           }}
                         >
-                          <div className={`w-4 h-4 rounded border border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          <div className={`w-5 h-5 rounded border border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                             formData.categories.includes(cat.id) 
                               ? 'bg-primary border-primary' 
                               : 'border-border hover:border-primary'
                           }`}>
                             {formData.categories.includes(cat.id) && (
-                              <svg className="w-2.5 h-2.5 text-primary-foreground" viewBox="0 0 20 20" fill="currentColor">
+                              <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
                             )}
                           </div>
-                          <Label htmlFor={`cat-${cat.id}`} className="font-normal cursor-pointer text-xs flex-1 m-0">{cat.name}</Label>
+                          <Label htmlFor={`cat-${cat.id}`} className="font-normal cursor-pointer text-sm flex-1 m-0">{cat.name}</Label>
                         </div>
                       ))}
                     </div>
@@ -798,7 +798,7 @@ export default function Editor() {
                       )}
                     </>
                   )}
-                  <div className="w-full mt-4 p-3 border border-border rounded-lg bg-muted/30 min-h-12 flex flex-wrap gap-2 items-start content-start">
+                  <div className="w-full mt-4 p-2 border border-border rounded-lg bg-muted/30 min-h-10 flex flex-wrap gap-2 items-start content-start">
                     {formData.tags.map(tag => {
                       const tagName = typeof tag === 'number' 
                         ? availableTags.find((t: any) => t.id === tag)?.name || tag

@@ -45,7 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { label: "Write New Article", icon: PenTool, href: "/editor", show: true },
     { label: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
     { label: "User Management", icon: Users, href: "/admin/users", show: isAdmin },
-    { label: "Publishing Profile", icon: User, href: "/publishing-profile", show: !isAdmin },
+    { label: "Publisher Profile", icon: User, href: "/publishing-profile", show: !isAdmin },
   ];
 
   const handleNavClick = () => {
@@ -193,7 +193,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 `}
               >
                 <User className="w-4 h-4" />
-                Publishing Profile
+                Publisher Profile
               </div>
             </Link>
           )}
