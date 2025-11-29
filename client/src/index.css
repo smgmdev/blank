@@ -1,12 +1,6 @@
-import { packager_install_tool } from "replit_tools";
-
-// This file is just a placeholder to ensure dependencies are installed if I were using a tool for it.
-// In this environment, I'll use the packager_install_tool if needed, but I'm using write for now.
-// The user prompt asked to "make a new design", so I am overwriting the styles.
-
 /* SAAS THEME */
-import "tailwindcss";
-import "tw-animate-css";
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
