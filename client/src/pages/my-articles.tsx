@@ -58,9 +58,8 @@ export default function MyArticles() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="hidden sm:block">
-          <h2 className="text-2xl font-bold tracking-tight">My Articles</h2>
-          <p className="text-muted-foreground text-sm mt-1">Manage your published content across all connected sites.</p>
+        <div>
+          <p className="text-muted-foreground text-sm">Manage your published content across all connected sites.</p>
         </div>
         <Link href="/editor">
           <Button className="w-full sm:w-auto">
