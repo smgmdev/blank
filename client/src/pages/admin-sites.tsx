@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore, Site, SeoPlugin } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,21 +51,99 @@ const getFavicon = (url: string): string => {
 };
 
 export default function AdminSites() {
-  const { sites, addSite } = useStore();
+  const { sites, addSite, removeSite } = useStore();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sites_db, setSites_db] = useState<any[]>([]);
   const [newSite, setNewSite] = useState({
     name: "",
     url: "",
-    seoPlugin: "none" as SeoPlugin,
-    authCode: ""
+    seoPlugin: "rankmath" as SeoPlugin,
+    apiUrl: "",
+    apiToken: ""
   });
 
-  const handleAdd = () => {
-    if (!newSite.name || !newSite.url || !newSite.authCode) return;
-    addSite({ name: newSite.name, url: newSite.url, seoPlugin: newSite.seoPlugin }, newSite.authCode);
-    setIsOpen(false);
-    setNewSite({ name: "", url: "", seoPlugin: "none", authCode: "" });
+  // Fetch sites from database on mount
+  useEffect(() => {
+    const fetchSites = async () => {
+      try {
+        const response = await fetch('/api/sites');
+        if (response.ok) {
+          const data = await response.json();
+          setSites_db(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch sites:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSites();
+  }, []);
+
+  const handleAdd = async () => {
+    if (!newSite.name || !newSite.url || !newSite.apiUrl || !newSite.apiToken) {
+      toast({
+        variant: "destructive",
+        title: "Missing Fields",
+        description: "Please fill in all required fields"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/sites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newSite.name,
+          url: newSite.url,
+          apiUrl: newSite.apiUrl,
+          apiToken: newSite.apiToken,
+          seoPlugin: newSite.seoPlugin
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add site');
+      }
+
+      const site = await response.json();
+      setSites_db([...sites_db, site]);
+      setIsOpen(false);
+      setNewSite({ name: "", url: "", seoPlugin: "rankmath", apiUrl: "", apiToken: "" });
+      
+      toast({
+        title: "Success",
+        description: "Site added successfully"
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add site"
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`/api/sites/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        setSites_db(sites_db.filter(s => s.id !== id));
+        toast({
+          title: "Deleted",
+          description: "Site removed successfully"
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete site"
+      });
+    }
   };
 
   return (
@@ -105,6 +183,26 @@ export default function AdminSites() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="apiUrl">WordPress REST API URL</Label>
+                <Input 
+                  id="apiUrl" 
+                  placeholder="https://example.com/wp-json" 
+                  value={newSite.apiUrl}
+                  onChange={e => setNewSite({...newSite, apiUrl: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apiToken">API Token / App Password</Label>
+                <Input 
+                  id="apiToken" 
+                  type="password"
+                  placeholder="Enter WordPress API token or app password" 
+                  value={newSite.apiToken}
+                  onChange={e => setNewSite({...newSite, apiToken: e.target.value})}
+                />
+                <p className="text-xs text-muted-foreground">Create an App Password in WordPress Settings for security</p>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="plugin">SEO Plugin</Label>
                 <Select 
                   value={newSite.seoPlugin} 
@@ -114,22 +212,10 @@ export default function AdminSites() {
                     <SelectValue placeholder="Select plugin" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None / Default</SelectItem>
-                    <SelectItem value="aioseo">AIO SEO PRO</SelectItem>
                     <SelectItem value="rankmath">Rank Math</SelectItem>
+                    <SelectItem value="aioseo">AIO SEO PRO</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="authCode">Authentication Code</Label>
-                <Input 
-                  id="authCode" 
-                  type="password"
-                  placeholder="Enter WordPress API authentication code" 
-                  value={newSite.authCode}
-                  onChange={e => setNewSite({...newSite, authCode: e.target.value})}
-                />
-                <p className="text-xs text-muted-foreground">Required to securely connect to your WordPress API</p>
               </div>
             </div>
             <DialogFooter className="justify-between flex gap-2 flex-col-reverse sm:flex-row w-full">
@@ -157,7 +243,7 @@ export default function AdminSites() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sites.map((site) => {
+            {sites_db.map((site) => {
               const favicon = getFavicon(site.url);
               return (
               <TableRow key={site.id}>
@@ -196,6 +282,7 @@ export default function AdminSites() {
                       variant="ghost" 
                       size="icon" 
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                      onClick={() => handleDelete(site.id)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
