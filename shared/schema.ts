@@ -1,18 +1,104 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, jsonb, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
+// WordPress Sites (managed by admins)
+export const wordPressSites = pgTable("wordpress_sites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  url: text("url").notNull().unique(),
+  apiUrl: text("api_url").notNull(),
+  apiToken: text("api_token").notNull(), // Encrypted in production
+  seoPlugin: varchar("seo_plugin", { length: 50 }).notNull(), // "Rank Math" or "AIO SEO PRO"
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  isConnected: boolean("is_connected").default(false),
+});
+
+// Users (content creators)
+export const appUsers = pgTable("app_users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  role: varchar("role", { length: 20 }).notNull().default("creator"), // "admin" or "creator"
+  email: text("email"),
+  companyName: text("company_name"),
+  twoFactorSecret: text("two_factor_secret"), // For 2FA
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+// Publishing Profiles (which sites a user can publish to)
+export const publishingProfiles = pgTable("publishing_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => appUsers.id, { onDelete: "cascade" }),
+  siteId: varchar("site_id").notNull().references(() => wordPressSites.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+// Articles/Posts
+export const articles = pgTable("articles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => appUsers.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  htmlContent: text("html_content"),
+  status: varchar("status", { length: 20 }).default("draft"), // "draft", "published"
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Article Publishing (tracks which articles are published to which sites)
+export const articlePublishing = pgTable("article_publishing", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  articleId: varchar("article_id").notNull().references(() => articles.id, { onDelete: "cascade" }),
+  siteId: varchar("site_id").notNull().references(() => wordPressSites.id, { onDelete: "cascade" }),
+  wpPostId: varchar("wp_post_id"), // WordPress post ID after publishing
+  publishedAt: timestamp("published_at").default(sql`CURRENT_TIMESTAMP`),
+  status: varchar("status", { length: 20 }).default("published"), // "published", "failed"
+});
+
+// Schemas for insert operations
+export const insertWordPressSiteSchema = createInsertSchema(wordPressSites).omit({
+  id: true,
+  createdAt: true,
+  isConnected: true,
+});
+
+export const insertAppUserSchema = createInsertSchema(appUsers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPublishingProfileSchema = createInsertSchema(publishingProfiles).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertArticleSchema = createInsertSchema(articles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  publishedAt: true,
+});
+
+export const insertArticlePublishingSchema = createInsertSchema(articlePublishing).omit({
+  id: true,
+  publishedAt: true,
+});
+
+// Types
+export type WordPressSite = typeof wordPressSites.$inferSelect;
+export type InsertWordPressSite = z.infer<typeof insertWordPressSiteSchema>;
+
+export type AppUser = typeof appUsers.$inferSelect;
+export type InsertAppUser = z.infer<typeof insertAppUserSchema>;
+
+export type PublishingProfile = typeof publishingProfiles.$inferSelect;
+export type InsertPublishingProfile = z.infer<typeof insertPublishingProfileSchema>;
+
+export type Article = typeof articles.$inferSelect;
+export type InsertArticle = z.infer<typeof insertArticleSchema>;
+
+export type ArticlePublishing = typeof articlePublishing.$inferSelect;
+export type InsertArticlePublishing = z.infer<typeof insertArticlePublishingSchema>;
