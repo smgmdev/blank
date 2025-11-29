@@ -42,7 +42,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", show: true },
     { label: "My Articles", icon: FileText, href: "/my-articles", show: true },
-    { label: "Write Article", icon: PenTool, href: "/editor", show: true },
+    { label: "Write New Article", icon: PenTool, href: "/editor", show: true },
     { label: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
     { label: "User Management", icon: Users, href: "/admin/users", show: isAdmin },
     { label: "Publishing Profile", icon: User, href: "/publishing-profile", show: !isAdmin },
@@ -215,7 +215,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {navItems.find(i => i.href === location)?.label || 'Dashboard'}
           </h1>
         </header>
-        <div className="flex-1 p-4 lg:p-8 max-w-6xl mx-auto w-full animate-fade-in overflow-y-auto">
+        <div className="flex-1 p-4 lg:p-8 w-full animate-fade-in overflow-y-auto">
           {children}
         </div>
       </main>
