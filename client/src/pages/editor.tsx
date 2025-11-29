@@ -95,22 +95,26 @@ export default function Editor() {
   // Fetch categories and tags when site changes
   useEffect(() => {
     const fetchCategoriesAndTags = async () => {
-      if (!selectedSiteId) return;
+      if (!selectedSiteId || !userId) return;
       setLoadingCategories(true);
       setLoadingTags(true);
       try {
         const [catRes, tagRes] = await Promise.all([
-          fetch(`/api/sites/${selectedSiteId}/categories`),
-          fetch(`/api/sites/${selectedSiteId}/tags`)
+          fetch(`/api/sites/${selectedSiteId}/categories?userId=${userId}`),
+          fetch(`/api/sites/${selectedSiteId}/tags?userId=${userId}`)
         ]);
         
         if (catRes.ok) {
           const cats = await catRes.json();
           setCategories(cats);
+        } else {
+          console.error('Categories response:', catRes.status, await catRes.text());
         }
         if (tagRes.ok) {
           const tags = await tagRes.json();
           setAvailableTags(tags);
+        } else {
+          console.error('Tags response:', tagRes.status, await tagRes.text());
         }
       } catch (error) {
         console.error('Failed to fetch categories/tags:', error);
@@ -120,7 +124,7 @@ export default function Editor() {
       setLoadingTags(false);
     };
     fetchCategoriesAndTags();
-  }, [selectedSiteId]);
+  }, [selectedSiteId, userId]);
 
   const selectedSite = sites_user.find(s => s.id === selectedSiteId);
   const plugin = selectedSite?.seoPlugin || 'none';

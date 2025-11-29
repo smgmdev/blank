@@ -413,11 +413,27 @@ export async function registerRoutes(
   app.get("/api/sites/:siteId/categories", async (req, res) => {
     try {
       const { siteId } = req.params;
+      const userId = req.query.userId as string;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId required" });
+      }
+
       const site = await storage.getWordPressSite(siteId);
       if (!site) return res.status(404).json({ error: "Site not found" });
 
+      const credential = await storage.getUserSiteCredential(userId, siteId);
+      if (!credential || !credential.isVerified) {
+        return res.status(403).json({ error: "Not authenticated to this site" });
+      }
+
+      const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
       const apiUrl = `${site.apiUrl}/wp/v2/categories?per_page=100`;
-      const response = await fetch(apiUrl);
+      const response = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Basic ${auth}`
+        }
+      });
       
       if (!response.ok) {
         return res.status(response.status).json({ error: "Failed to fetch categories" });
@@ -426,6 +442,7 @@ export async function registerRoutes(
       const categories = await response.json();
       res.json(categories.map((cat: any) => ({ id: cat.id, name: cat.name })));
     } catch (error) {
+      console.error("Categories fetch error:", error);
       res.status(500).json({ error: "Failed to fetch categories" });
     }
   });
@@ -434,11 +451,27 @@ export async function registerRoutes(
   app.get("/api/sites/:siteId/tags", async (req, res) => {
     try {
       const { siteId } = req.params;
+      const userId = req.query.userId as string;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId required" });
+      }
+
       const site = await storage.getWordPressSite(siteId);
       if (!site) return res.status(404).json({ error: "Site not found" });
 
+      const credential = await storage.getUserSiteCredential(userId, siteId);
+      if (!credential || !credential.isVerified) {
+        return res.status(403).json({ error: "Not authenticated to this site" });
+      }
+
+      const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
       const apiUrl = `${site.apiUrl}/wp/v2/tags?per_page=100`;
-      const response = await fetch(apiUrl);
+      const response = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Basic ${auth}`
+        }
+      });
       
       if (!response.ok) {
         return res.status(response.status).json({ error: "Failed to fetch tags" });
@@ -447,6 +480,7 @@ export async function registerRoutes(
       const tags = await response.json();
       res.json(tags.map((tag: any) => ({ id: tag.id, name: tag.name })));
     } catch (error) {
+      console.error("Tags fetch error:", error);
       res.status(500).json({ error: "Failed to fetch tags" });
     }
   });
