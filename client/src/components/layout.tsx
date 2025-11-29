@@ -95,7 +95,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 alt="WIMB Logo" 
                 className="w-10 h-10"
               />
-              <div className="flex flex-col text-primary font-bold text-sm leading-tight">
+              <div className="flex flex-col text-primary font-normal text-sm leading-tight">
                 <span>Media</span>
                 <span>Manager</span>
               </div>
