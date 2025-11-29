@@ -200,15 +200,30 @@ export async function registerRoutes(
       // Verify WordPress credentials by calling WordPress API
       try {
         const auth = Buffer.from(`${wpUsername}:${wpPassword}`).toString("base64");
-        const response = await fetch(`${site.apiUrl}/wp/v2/users/me`, {
-          headers: { Authorization: `Basic ${auth}` },
+        const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
+        
+        console.log(`[WP Auth] Attempting to authenticate user: ${wpUsername} at ${apiUrl}`);
+
+        const response = await fetch(apiUrl, {
+          headers: { 
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/json"
+          },
         });
 
+        console.log(`[WP Auth] Response status: ${response.status}`);
+
         if (!response.ok) {
-          return res.status(401).json({ error: "Invalid WordPress credentials" });
+          const errorText = await response.text();
+          console.log(`[WP Auth] Error response: ${errorText}`);
+          return res.status(401).json({ 
+            error: "Invalid WordPress credentials",
+            details: `WordPress API returned ${response.status}`
+          });
         }
 
         const wpUser = await response.json();
+        console.log(`[WP Auth] Successfully authenticated as user ID: ${wpUser.id}`);
 
         // Store credentials
         const credential = await storage.createUserSiteCredential({
@@ -219,7 +234,7 @@ export async function registerRoutes(
         });
 
         // Verify and update with WP user ID
-        await storage.updateUserSiteCredentialVerification(credential.id, wpUser.id);
+        await storage.updateUserSiteCredentialVerification(credential.id, String(wpUser.id));
 
         // Create publishing profile
         const profile = await storage.createPublishingProfile({
@@ -229,10 +244,15 @@ export async function registerRoutes(
         });
 
         res.json({ success: true, profile });
-      } catch (error) {
-        res.status(500).json({ error: "Failed to verify WordPress credentials" });
+      } catch (error: any) {
+        console.error(`[WP Auth] Error:`, error.message);
+        res.status(500).json({ 
+          error: "Failed to verify WordPress credentials",
+          details: error.message
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error(`[WP Auth] Authentication error:`, error.message);
       res.status(500).json({ error: "Failed to authenticate" });
     }
   });
