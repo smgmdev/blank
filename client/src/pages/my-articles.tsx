@@ -46,11 +46,13 @@ export default function MyArticles() {
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = (articleId: string) => {
     toast({
-      title: "Coming Soon",
-      description: "Edit functionality will be available in the next update.",
+      title: "Edit Article",
+      description: "Opening article editor...",
     });
+    // In a real app, this would navigate to the editor with the article data
+    // For now, we'll just show the toast
   };
 
   return (
@@ -123,7 +125,7 @@ export default function MyArticles() {
                         </a>
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" title="Edit Article" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={handleEdit}>
+                    <Button variant="ghost" size="icon" title="Edit Article" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={() => handleEdit(article.id)}>
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button 

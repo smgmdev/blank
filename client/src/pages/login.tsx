@@ -57,7 +57,7 @@ export default function Login() {
               className="w-24 h-24"
             />
           </div>
-          <p className="text-lg text-muted-foreground">Sign in to your Media Manager account</p>
+          <p className="text-sm text-muted-foreground">Sign in to your account</p>
         </div>
 
         <Card className="border-border/50 shadow-xl">
@@ -145,7 +145,7 @@ export default function Login() {
       </div>
 
       {/* Footer */}
-      <div className="w-full py-6 text-center text-xs text-muted-foreground border-t border-border mt-8">
+      <div className="w-full py-6 text-center text-xs text-muted-foreground mt-8">
         <p>&copy; {new Date().getFullYear()} World Impact Media Organization. All rights reserved.</p>
       </div>
     </div>
