@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useStore } from "@/lib/store";
+import { useEffect } from "react";
 import { 
   LayoutDashboard, 
   Settings, 
@@ -20,10 +21,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user, logout } = useStore();
 
-  if (!user) return <>{children}</>;
+  useEffect(() => {
+    if (!user) {
+      setLocation("/login");
+    }
+  }, [user, setLocation]);
+
+  if (!user) return null;
 
   const isAdmin = user === 'admin';
 
