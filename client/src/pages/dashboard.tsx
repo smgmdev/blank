@@ -27,8 +27,9 @@ const getSeoPluginName = (plugin: SeoPlugin): string => {
 };
 
 export default function Dashboard() {
-  const { sites, connectSite, disconnectSite } = useStore();
+  const { connectSite, disconnectSite } = useStore();
   const { toast } = useToast();
+  const [sites, setSites] = useState<any[]>([]);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [credentials, setCredentials] = useState({ username: "", password: "" });
@@ -38,11 +39,34 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [favicons, setFavicons] = useState<{ [key: string]: string }>({});
 
-  // Auto-refresh connection status every 5 seconds
+  // Fetch real sites from API on mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Silently check connection status without showing loading state
-      // In a real app, this would check against the WP API
+    const fetchSites = async () => {
+      try {
+        const response = await fetch('/api/sites');
+        if (response.ok) {
+          const data = await response.json();
+          setSites(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch sites:', error);
+      }
+    };
+    fetchSites();
+  }, []);
+
+  // Auto-refresh sites every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/sites');
+        if (response.ok) {
+          const data = await response.json();
+          setSites(data);
+        }
+      } catch (error) {
+        console.error('Failed to refresh sites:', error);
+      }
     }, 5000);
 
     return () => clearInterval(interval);
