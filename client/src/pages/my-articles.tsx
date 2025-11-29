@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FileText, ExternalLink, Trash2, Edit, Globe } from "lucide-react";
+import { FileText, ExternalLink, Trash2, Edit, Globe, PenTool } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -63,7 +63,7 @@ export default function MyArticles() {
         </div>
         <Link href="/editor">
           <Button className="w-full sm:w-auto">
-            <FileText className="w-4 h-4 mr-2" />
+            <PenTool className="w-4 h-4 mr-2" />
             Write New Article
           </Button>
         </Link>
