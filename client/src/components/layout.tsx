@@ -146,11 +146,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
-        </nav>
 
-        {/* Publishing Profile - shown only for creators, above My Account */}
-        {!isAdmin && (
-          <div className="p-4 border-t border-border">
+          {/* Publishing Profile - shown only for creators, right after nav items */}
+          {!isAdmin && (
             <Link href="/publishing-profile">
               <div 
                 onClick={handleNavClick}
@@ -165,8 +163,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 Publishing Profile
               </div>
             </Link>
-          </div>
-        )}
+          )}
+        </nav>
 
         <div className="p-4 border-t border-border">
           <DropdownMenu>
