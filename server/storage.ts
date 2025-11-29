@@ -2,6 +2,7 @@ import { db } from "./db";
 import {
   wordPressSites,
   appUsers,
+  approvedWpUsers,
   userSiteCredentials,
   publishingProfiles,
   articles,
@@ -10,6 +11,8 @@ import {
   type InsertWordPressSite,
   type AppUser,
   type InsertAppUser,
+  type ApprovedWpUser,
+  type InsertApprovedWpUser,
   type UserSiteCredential,
   type InsertUserSiteCredential,
   type PublishingProfile,
@@ -35,6 +38,12 @@ export interface IStorage {
   getAppUserByUsername(username: string): Promise<AppUser | undefined>;
   getAllAppUsers(): Promise<AppUser[]>;
   deleteAppUser(id: string): Promise<void>;
+
+  // Approved WP Users (Admin)
+  createApprovedWpUser(user: InsertApprovedWpUser): Promise<ApprovedWpUser>;
+  getApprovedWpUser(siteId: string, wpUsername: string): Promise<ApprovedWpUser | undefined>;
+  getApprovedWpUsersBySiteId(siteId: string): Promise<ApprovedWpUser[]>;
+  deleteApprovedWpUser(id: string): Promise<void>;
 
   // User Site Credentials
   createUserSiteCredential(
@@ -107,6 +116,35 @@ export class Storage implements IStorage {
 
   async deleteWordPressSite(id: string): Promise<void> {
     await db.delete(wordPressSites).where(eq(wordPressSites.id, id));
+  }
+
+  // Approved WP Users
+  async createApprovedWpUser(user: InsertApprovedWpUser): Promise<ApprovedWpUser> {
+    const [result] = await db.insert(approvedWpUsers).values(user).returning();
+    if (!result) throw new Error("Failed to approve WP user");
+    return result;
+  }
+
+  async getApprovedWpUser(siteId: string, wpUsername: string): Promise<ApprovedWpUser | undefined> {
+    const [user] = await db
+      .select()
+      .from(approvedWpUsers)
+      .where(and(
+        eq(approvedWpUsers.siteId, siteId),
+        eq(approvedWpUsers.wpUsername, wpUsername)
+      ));
+    return user;
+  }
+
+  async getApprovedWpUsersBySiteId(siteId: string): Promise<ApprovedWpUser[]> {
+    return await db
+      .select()
+      .from(approvedWpUsers)
+      .where(eq(approvedWpUsers.siteId, siteId));
+  }
+
+  async deleteApprovedWpUser(id: string): Promise<void> {
+    await db.delete(approvedWpUsers).where(eq(approvedWpUsers.id, id));
   }
 
   // Users

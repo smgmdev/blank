@@ -27,6 +27,15 @@ export const appUsers = pgTable("app_users", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Approved WordPress Users (admin approves which WP users can publish)
+export const approvedWpUsers = pgTable("approved_wp_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => wordPressSites.id, { onDelete: "cascade" }),
+  wpUsername: text("wp_username").notNull(),
+  wpUserId: varchar("wp_user_id"), // WordPress user ID from API
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 // User WordPress Credentials (per user per site)
 export const userSiteCredentials = pgTable("user_site_credentials", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -71,6 +80,11 @@ export const articlePublishing = pgTable("article_publishing", {
 });
 
 // Schemas for insert operations
+export const insertApprovedWpUserSchema = createInsertSchema(approvedWpUsers).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertWordPressSiteSchema = createInsertSchema(wordPressSites).omit({
   id: true,
   createdAt: true,
@@ -109,6 +123,9 @@ export const insertArticlePublishingSchema = createInsertSchema(articlePublishin
 });
 
 // Types
+export type ApprovedWpUser = typeof approvedWpUsers.$inferSelect;
+export type InsertApprovedWpUser = z.infer<typeof insertApprovedWpUserSchema>;
+
 export type WordPressSite = typeof wordPressSites.$inferSelect;
 export type InsertWordPressSite = z.infer<typeof insertWordPressSiteSchema>;
 

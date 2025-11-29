@@ -181,7 +181,7 @@ export async function registerRoutes(
     }
   });
 
-  // WordPress Site User Authentication (Simple username-only auth)
+  // WordPress Site User Authentication (Check approved list)
   app.post("/api/users/:userId/sites/:siteId/authenticate", async (req, res) => {
     try {
       const { wpUsername } = req.body;
@@ -197,7 +197,7 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Site not found" });
       }
 
-      // Site must be connected first (admin verified it)
+      // Site must be connected first
       if (!site.isConnected) {
         return res.status(403).json({
           error: "Site not verified",
@@ -205,7 +205,16 @@ export async function registerRoutes(
         });
       }
 
-      console.log(`[WP Auth] User ${wpUsername} authenticating to ${site.name}`);
+      // SECURITY: Check if user is in approved list
+      const approvedUser = await storage.getApprovedWpUser(siteId, wpUsername);
+      if (!approvedUser) {
+        return res.status(403).json({
+          error: "User not approved",
+          hint: `${wpUsername} is not approved to publish to this site. Contact admin.`
+        });
+      }
+
+      console.log(`[WP Auth] Approved user ${wpUsername} authenticating to ${site.name}`);
 
       // Check if user already has credentials for this site
       const existing = await storage.getUserSiteCredential(userId, siteId);
@@ -214,7 +223,7 @@ export async function registerRoutes(
         return;
       }
 
-      // Store credentials (username only, no password)
+      // Store credentials
       const credential = await storage.createUserSiteCredential({
         userId,
         siteId,
@@ -239,6 +248,44 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error(`[WP Auth] Auth error:`, error.message);
       res.status(500).json({ error: "Failed to authenticate" });
+    }
+  });
+
+  // Admin: Get approved WP users for a site
+  app.get("/api/sites/:siteId/approved-users", async (req, res) => {
+    try {
+      const { siteId } = req.params;
+      const users = await storage.getApprovedWpUsersBySiteId(siteId);
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch approved users" });
+    }
+  });
+
+  // Admin: Approve a WP user for a site
+  app.post("/api/sites/:siteId/approve-user", async (req, res) => {
+    try {
+      const { siteId } = req.params;
+      const { wpUsername } = req.body;
+
+      if (!wpUsername) {
+        return res.status(400).json({ error: "wpUsername required" });
+      }
+
+      // Check if already approved
+      const existing = await storage.getApprovedWpUser(siteId, wpUsername);
+      if (existing) {
+        return res.json({ success: true, message: "User already approved", user: existing });
+      }
+
+      const approvedUser = await storage.createApprovedWpUser({
+        siteId,
+        wpUsername,
+      });
+
+      res.json({ success: true, message: "User approved", user: approvedUser });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to approve user" });
     }
   });
 
