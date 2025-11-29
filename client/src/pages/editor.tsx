@@ -249,7 +249,7 @@ export default function Editor() {
     });
   };
 
-  const handleAddTag = async (e: React.KeyboardEvent) => {
+  const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && formData.currentTag.trim()) {
       e.preventDefault();
       const tagName = formData.currentTag.trim();
@@ -259,29 +259,13 @@ export default function Editor() {
         return;
       }
 
-      try {
-        // Try to create tag on WordPress if not exists
-        const createRes = await fetch(`/api/sites/${selectedSiteId}/tags`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, tagName })
-        });
-
-        if (createRes.ok) {
-          const newTag = await createRes.json();
-          setFormData({
-            ...formData,
-            tags: [...formData.tags, newTag.id],
-            currentTag: ""
-          });
-          toast({ title: "Tag added", description: `"${tagName}" added to WordPress` });
-        } else {
-          throw new Error('Failed to create tag');
-        }
-      } catch (error) {
-        console.error('Tag creation error:', error);
-        toast({ variant: "destructive", title: "Error", description: "Failed to add tag" });
-      }
+      // Just add tag locally - will be created on WordPress during publishing
+      setFormData({
+        ...formData,
+        tags: [...formData.tags, tagName],
+        currentTag: ""
+      });
+      toast({ title: "Tag added", description: `"${tagName}" will be saved when you publish` });
     }
   };
 
@@ -383,6 +367,26 @@ export default function Editor() {
     setIsPublishing(true);
     
     try {
+      // Create custom tags on WordPress first (tags that aren't already in availableTags)
+      const tagIds = [];
+      for (const tag of formData.tags) {
+        if (typeof tag === 'string') {
+          // Custom tag - create on WordPress
+          const createRes = await fetch(`/api/sites/${selectedSiteId}/tags`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, tagName: tag })
+          });
+          if (createRes.ok) {
+            const newTag = await createRes.json();
+            tagIds.push(newTag.id);
+          }
+        } else {
+          // Existing tag
+          tagIds.push(tag);
+        }
+      }
+
       // Create article locally first
       const article = await (async () => {
         const res = await fetch('/api/articles', {
@@ -408,7 +412,7 @@ export default function Editor() {
           title: formData.title,
           content: formData.content,
           categories: formData.categories,
-          tags: formData.tags
+          tags: tagIds
         })
       });
 
@@ -459,22 +463,29 @@ export default function Editor() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      {/* Stepper */}
-      <div className="flex items-center justify-between relative">
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-border -z-10" />
-        {steps.map((s) => (
-          <div key={s.num} className="flex flex-col items-center gap-2 bg-muted/30 px-2">
-            <div className={`
-              w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors
-              ${step >= s.num ? 'bg-primary text-primary-foreground' : 'bg-background border border-border text-muted-foreground'}
-            `}>
-              {step > s.num ? <CheckCircle2 className="w-6 h-6" /> : s.num}
+      {/* Apple-style Progress Bar */}
+      <div className="space-y-4">
+        <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500" 
+            style={{width: `${(step / steps.length) * 100}%`}}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          {steps.map((s, idx) => (
+            <div key={s.num} className="flex flex-col items-center gap-2 flex-1">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
+                step >= s.num 
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
+                  : 'bg-muted text-muted-foreground border border-border'
+              }`}>
+                {step > s.num ? <CheckCircle2 className="w-5 h-5" /> : s.num}
+              </div>
+              <span className={`text-xs font-medium text-center transition-colors duration-300 ${step >= s.num ? 'text-blue-600 font-semibold' : 'text-muted-foreground'}`}>
+                {s.label}
+              </span>
             </div>
-            <span className={`text-xs font-medium ${step >= s.num ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {s.label}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Step 1: Content */}
