@@ -35,14 +35,15 @@ export default function AdminSites() {
   const [newSite, setNewSite] = useState({
     name: "",
     url: "",
-    seoPlugin: "none" as SeoPlugin
+    seoPlugin: "none" as SeoPlugin,
+    authCode: ""
   });
 
   const handleAdd = () => {
-    if (!newSite.name || !newSite.url) return;
-    addSite(newSite);
+    if (!newSite.name || !newSite.url || !newSite.authCode) return;
+    addSite({ name: newSite.name, url: newSite.url, seoPlugin: newSite.seoPlugin }, newSite.authCode);
     setIsOpen(false);
-    setNewSite({ name: "", url: "", seoPlugin: "none" });
+    setNewSite({ name: "", url: "", seoPlugin: "none", authCode: "" });
   };
 
   return (
@@ -101,6 +102,17 @@ export default function AdminSites() {
                     <SelectItem value="yoast">Yoast SEO</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="authCode">Authentication Code</Label>
+                <Input 
+                  id="authCode" 
+                  type="password"
+                  placeholder="Enter WordPress API authentication code" 
+                  value={newSite.authCode}
+                  onChange={e => setNewSite({...newSite, authCode: e.target.value})}
+                />
+                <p className="text-xs text-muted-foreground">Required to securely connect to your WordPress API</p>
               </div>
             </div>
             <DialogFooter>
