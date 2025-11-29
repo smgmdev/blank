@@ -42,6 +42,7 @@ export const userSiteCredentials = pgTable("user_site_credentials", {
   userId: varchar("user_id").notNull().references(() => appUsers.id, { onDelete: "cascade" }),
   siteId: varchar("site_id").notNull().references(() => wordPressSites.id, { onDelete: "cascade" }),
   wpUsername: text("wp_username").notNull(),
+  wpPassword: text("wp_password").notNull(),
   wpUserId: varchar("wp_user_id"), // WordPress user ID from API
   isVerified: boolean("is_verified").default(false),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
@@ -101,8 +102,6 @@ export const insertUserSiteCredentialSchema = createInsertSchema(userSiteCredent
   createdAt: true,
   wpUserId: true,
   isVerified: true,
-}).omit({
-  wpPassword: true
 });
 
 export const insertPublishingProfileSchema = createInsertSchema(publishingProfiles).omit({

@@ -253,6 +253,7 @@ export async function registerRoutes(
         userId,
         siteId,
         wpUsername,
+        wpPassword,
       });
 
       // Mark as verified with actual WP user ID
