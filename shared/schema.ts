@@ -64,6 +64,7 @@ export const articles = pgTable("articles", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   htmlContent: text("html_content"),
+  featuredImageUrl: text("featured_image_url"),
   status: varchar("status", { length: 20 }).default("draft"), // "draft", "published"
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),

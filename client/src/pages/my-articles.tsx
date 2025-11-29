@@ -46,7 +46,24 @@ export default function MyArticles() {
           const allArticles = await articlesRes.json();
           // Filter to only this user's articles
           const userArticles = allArticles.filter((a: any) => a.userId === userId);
-          setArticles(userArticles);
+          
+          // Fetch WordPress links for published articles
+          const articlesWithLinks = await Promise.all(userArticles.map(async (article: any) => {
+            if (article.status === 'published') {
+              try {
+                const publishRes = await fetch(`/api/articles/${article.id}/publishing`);
+                if (publishRes.ok) {
+                  const pubData = await publishRes.json();
+                  return { ...article, wpLink: pubData.wpLink };
+                }
+              } catch (e) {
+                // Silently fail - wpLink will be undefined
+              }
+            }
+            return article;
+          }));
+          
+          setArticles(articlesWithLinks);
         }
         
         if (sitesRes.ok) {
@@ -134,12 +151,28 @@ export default function MyArticles() {
           {articles.map((article) => {
             const site = sites.find(s => s.id === article.siteId);
             return (
-              <div key={article.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
+              <div key={article.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                <div className="flex flex-col sm:flex-row gap-0 sm:gap-4 sm:p-4">
+                  {/* Featured Image on Left */}
+                  {article.featuredImageUrl && (
+                    <div className="w-full sm:w-40 h-40 flex-shrink-0 bg-muted overflow-hidden rounded-t sm:rounded-lg">
+                      <img 
+                        src={article.featuredImageUrl} 
+                        alt={article.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Content */}
+                  <div className={`flex-1 min-w-0 ${article.featuredImageUrl ? 'p-4 sm:p-0' : 'p-4'}`}>
                     <h3 className="font-semibold text-base break-words">{article.title}</h3>
+                    
+                    {/* Category & Tags */}
                     <div className="flex flex-wrap gap-2 mt-2">
-                      <Badge variant="outline" className="text-xs">{article.category}</Badge>
+                      {article.category && (
+                        <Badge variant="outline" className="text-xs">{article.category}</Badge>
+                      )}
                       {article.tags?.slice(0, 3).map((tag: any) => (
                         <Badge key={tag} variant="secondary" className="text-xs text-muted-foreground">{tag}</Badge>
                       ))}
@@ -147,6 +180,8 @@ export default function MyArticles() {
                         <Badge variant="secondary" className="text-xs text-muted-foreground">+{(article.tags?.length ?? 0) - 3}</Badge>
                       )}
                     </div>
+                    
+                    {/* Meta Info */}
                     <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Globe className="w-3 h-3" />
@@ -157,11 +192,12 @@ export default function MyArticles() {
                           {article.status}
                         </Badge>
                       </div>
-                      <span>{format(new Date(article.publishedAt), "MMM d, yyyy")}</span>
+                      <span>{format(new Date(article.publishedAt || new Date()), "MMM d, yyyy")}</span>
                     </div>
                   </div>
                   
-                  <div className="flex gap-2 flex-shrink-0">
+                  {/* Actions */}
+                  <div className="flex gap-2 flex-shrink-0 p-4 sm:p-0 border-t sm:border-t-0">
                     {article.wpLink && (
                       <Button variant="ghost" size="icon" asChild title="View on WordPress" className="h-8 w-8">
                         <a href={article.wpLink} target="_blank" rel="noopener noreferrer">

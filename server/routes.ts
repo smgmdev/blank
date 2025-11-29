@@ -181,6 +181,19 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/articles/:articleId/publishing", async (req, res) => {
+    try {
+      const publishing = await storage.getArticlePublishingByArticleId(req.params.articleId);
+      if (publishing.length === 0) {
+        return res.status(404).json({ error: "No publishing record found" });
+      }
+      const site = await storage.getWordPressSite(publishing[0].siteId);
+      res.json({ wpLink: `${site?.url}/?p=${publishing[0].wpPostId}` });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch publishing data" });
+    }
+  });
+
   // WordPress Site User Authentication (Validate credentials in real-time)
   app.post("/api/users/:userId/sites/:siteId/authenticate", async (req, res) => {
     try {
@@ -533,7 +546,7 @@ export async function registerRoutes(
   app.post("/api/articles/:articleId/publish-to-site", async (req, res) => {
     try {
       const { articleId } = req.params;
-      const { siteId, userId, title, content, categories, tags, featuredMediaUrl } = req.body;
+      const { siteId, userId, title, content, categories, tags, featuredMediaUrl, featuredImageUrl } = req.body;
 
       const site = await storage.getWordPressSite(siteId);
       if (!site) return res.status(404).json({ error: "Site not found" });
@@ -579,10 +592,11 @@ export async function registerRoutes(
         status: "published"
       });
 
-      // Update article status to published
+      // Update article status to published with featured image and site ID
       await storage.updateArticle(articleId, {
         status: 'published',
-        publishedAt: new Date()
+        publishedAt: new Date(),
+        featuredImageUrl: featuredImageUrl || null
       });
 
       res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link });
