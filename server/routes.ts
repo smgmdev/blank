@@ -451,6 +451,50 @@ export async function registerRoutes(
     }
   });
 
+  // Create a new tag on WordPress
+  app.post("/api/sites/:siteId/tags", async (req, res) => {
+    try {
+      const { siteId } = req.params;
+      const { userId, tagName } = req.body;
+
+      if (!tagName) {
+        return res.status(400).json({ error: "Tag name required" });
+      }
+
+      const site = await storage.getWordPressSite(siteId);
+      if (!site) return res.status(404).json({ error: "Site not found" });
+
+      const credential = await storage.getUserSiteCredential(userId, siteId);
+      if (!credential || !credential.isVerified) {
+        return res.status(403).json({ error: "Not authenticated to this site" });
+      }
+
+      const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+      const tagUrl = `${site.apiUrl}/wp/v2/tags`;
+
+      const tagResponse = await fetch(tagUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name: tagName })
+      });
+
+      if (!tagResponse.ok) {
+        const error = await tagResponse.text();
+        console.error("WordPress tag creation error:", error);
+        return res.status(tagResponse.status).json({ error: "Failed to create tag" });
+      }
+
+      const newTag = await tagResponse.json();
+      res.json({ id: newTag.id, name: newTag.name });
+    } catch (error: any) {
+      console.error("Tag creation error:", error);
+      res.status(500).json({ error: "Failed to create tag" });
+    }
+  });
+
   // Publish article to WordPress
   app.post("/api/articles/:articleId/publish-to-site", async (req, res) => {
     try {

@@ -56,6 +56,7 @@ export default function Editor() {
   const [categories, setCategories] = useState<any[]>([]);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingTags, setLoadingTags] = useState(false);
   
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [formData, setFormData] = useState({
@@ -96,6 +97,7 @@ export default function Editor() {
     const fetchCategoriesAndTags = async () => {
       if (!selectedSiteId) return;
       setLoadingCategories(true);
+      setLoadingTags(true);
       try {
         const [catRes, tagRes] = await Promise.all([
           fetch(`/api/sites/${selectedSiteId}/categories`),
@@ -115,6 +117,7 @@ export default function Editor() {
         toast({ variant: "destructive", title: "Error", description: "Failed to load categories and tags" });
       }
       setLoadingCategories(false);
+      setLoadingTags(false);
     };
     fetchCategoriesAndTags();
   }, [selectedSiteId]);
@@ -242,15 +245,38 @@ export default function Editor() {
     });
   };
 
-  const handleAddTag = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && formData.currentTag) {
+  const handleAddTag = async (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && formData.currentTag.trim()) {
       e.preventDefault();
-      if (!formData.tags.includes(formData.currentTag)) {
-        setFormData({
-          ...formData,
-          tags: [...formData.tags, formData.currentTag],
-          currentTag: ""
+      const tagName = formData.currentTag.trim();
+      
+      if (formData.tags.includes(tagName)) {
+        toast({ variant: "destructive", title: "Tag exists", description: "This tag is already added" });
+        return;
+      }
+
+      try {
+        // Try to create tag on WordPress if not exists
+        const createRes = await fetch(`/api/sites/${selectedSiteId}/tags`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, tagName })
         });
+
+        if (createRes.ok) {
+          const newTag = await createRes.json();
+          setFormData({
+            ...formData,
+            tags: [...formData.tags, newTag.id],
+            currentTag: ""
+          });
+          toast({ title: "Tag added", description: `"${tagName}" added to WordPress` });
+        } else {
+          throw new Error('Failed to create tag');
+        }
+      } catch (error) {
+        console.error('Tag creation error:', error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to add tag" });
       }
     }
   };
@@ -682,48 +708,91 @@ export default function Editor() {
               <div className="grid md:grid-cols-[1fr_1fr] gap-6">
                 <div className="space-y-3">
                   <Label>Categories <span className="text-destructive">*</span></Label>
-                  <div className="space-y-2">
-                    {categories.map(cat => (
-                      <div key={cat} className="flex items-center gap-2">
-                        <Checkbox 
-                          id={`cat-${cat}`}
-                          checked={formData.categories.includes(cat)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setFormData({
-                                ...formData,
-                                categories: [...formData.categories, cat]
-                              });
-                            } else {
-                              setFormData({
-                                ...formData,
-                                categories: formData.categories.filter(c => c !== cat)
-                              });
-                            }
-                          }}
-                        />
-                        <Label htmlFor={`cat-${cat}`} className="font-normal cursor-pointer">{cat}</Label>
+                  {loadingCategories ? (
+                    <div className="flex flex-col items-center justify-center py-8 space-y-2">
+                      <div className="animate-spin">
+                        <Loader2 className="w-5 h-5 text-muted-foreground" />
                       </div>
-                    ))}
-                  </div>
+                      <p className="text-xs text-muted-foreground">Loading categories...</p>
+                    </div>
+                  ) : categories.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-4">No categories available</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {categories.map((cat: any) => (
+                        <div key={cat.id} className="flex items-center gap-2">
+                          <Checkbox 
+                            id={`cat-${cat.id}`}
+                            checked={formData.categories.includes(cat.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setFormData({
+                                  ...formData,
+                                  categories: [...formData.categories, cat.id]
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  categories: formData.categories.filter((c: any) => c !== cat.id)
+                                });
+                              }
+                            }}
+                          />
+                          <Label htmlFor={`cat-${cat.id}`} className="font-normal cursor-pointer text-sm">{cat.name}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground">Categories from {selectedSite?.name}</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Tags <span className="text-destructive">*</span></Label>
-                  <Input 
-                    placeholder="Type tag and press Enter..." 
-                    value={formData.currentTag}
-                    onChange={e => setFormData({...formData, currentTag: e.target.value})}
-                    onKeyDown={handleAddTag}
-                  />
+                  {loadingTags ? (
+                    <div className="flex flex-col items-center justify-center py-6 space-y-2 border border-border rounded-lg bg-muted/30">
+                      <div className="animate-spin">
+                        <Loader2 className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Loading tags...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <Input 
+                        placeholder="Type tag name and press Enter to add..." 
+                        value={formData.currentTag}
+                        onChange={e => setFormData({...formData, currentTag: e.target.value})}
+                        onKeyDown={handleAddTag}
+                      />
+                      {availableTags.length > 0 && formData.currentTag === "" && (
+                        <div className="text-xs text-muted-foreground">
+                          <p className="font-semibold mb-1">Available tags:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {availableTags.slice(0, 8).map((tag: any) => (
+                              <Badge key={tag.id} variant="outline" className="text-xs cursor-pointer hover:bg-primary/10"
+                                onClick={() => setFormData({...formData, tags: [...formData.tags, tag.id], currentTag: ""})}
+                              >
+                                {tag.name}
+                              </Badge>
+                            ))}
+                            {availableTags.length > 8 && (
+                              <Badge variant="outline" className="text-xs">+{availableTags.length - 8} more</Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                   <div className="flex flex-wrap gap-2 mt-2">
                     {formData.tags.map(tag => (
                       <Badge key={tag} variant="secondary" className="gap-1 pr-1">
-                        {tag}
+                        {typeof tag === 'number' 
+                          ? availableTags.find((t: any) => t.id === tag)?.name || tag
+                          : tag
+                        }
                         <div 
                           className="cursor-pointer hover:bg-destructive/20 rounded-full p-0.5"
                           onClick={() => removeTag(tag)}
+                          data-testid="button-remove-tag"
                         >
                           <Search className="w-3 h-3 rotate-45" />
                         </div>
