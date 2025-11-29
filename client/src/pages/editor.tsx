@@ -183,6 +183,8 @@ export default function Editor() {
     if (!formData.title) errors.push("Article title is required");
     if (isEditorEmpty) errors.push("Article content is required");
     if (!formData.category) errors.push("Category must be selected");
+    if (formData.tags.length === 0) errors.push("At least one tag is required");
+    if (!formData.imagePreview) errors.push("Featured image is required");
     if (!selectedSiteId) errors.push("Destination site is required");
     if (plugin === 'aioseo' && !formData.seo.focusKeyword) errors.push("Focus keyword is required for AIOSEO");
     if (plugin === 'rankmath' && !formData.seo.focusKeyword) errors.push("Focus keyword is required for Rank Math");
@@ -291,31 +293,32 @@ export default function Editor() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="title">Article Title</Label>
-                <Input 
-                  id="title"
-                  placeholder="Enter a catchy title..." 
-                  value={formData.title}
-                  onChange={handleTitleChange}
-                  className="text-lg font-medium"
-                />
+              <div className="grid md:grid-cols-[1fr_200px] gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Article Title</Label>
+                  <Input 
+                    id="title"
+                    placeholder="Enter a catchy title..." 
+                    value={formData.title}
+                    onChange={handleTitleChange}
+                    className="text-lg font-medium"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="slug">Slug (Auto-generated)</Label>
+                  <Input 
+                    id="slug"
+                    value={formData.slug}
+                    disabled
+                    className="bg-muted text-muted-foreground cursor-not-allowed text-sm"
+                    placeholder="auto-generated"
+                  />
+                  <p className="text-xs text-muted-foreground">URL-friendly version</p>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug (Auto-generated)</Label>
-                <Input 
-                  id="slug"
-                  value={formData.slug}
-                  disabled
-                  className="bg-muted text-muted-foreground cursor-not-allowed"
-                  placeholder="auto-generated-from-title"
-                />
-                <p className="text-xs text-muted-foreground">The URL-friendly version of your title. Auto-updated as you change the title.</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Featured Image</Label>
+                <Label>Featured Image <span className="text-destructive">*</span></Label>
                 <div 
                   className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer group"
                   onDragOver={(e) => {
@@ -447,47 +450,49 @@ export default function Editor() {
               <CardDescription>Select categories and tags for better discoverability.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <Select 
-                  value={formData.category} 
-                  onValueChange={v => setFormData({...formData, category: v})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">Categories fetched from {selectedSite?.name}</p>
-              </div>
+              <div className="grid md:grid-cols-[1fr_1fr] gap-6">
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select 
+                    value={formData.category} 
+                    onValueChange={v => setFormData({...formData, category: v})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Categories fetched from {selectedSite?.name}</p>
+                </div>
 
-              <div className="space-y-2">
-                <Label>Tags</Label>
-                <Input 
-                  placeholder="Type tag and press Enter..." 
-                  value={formData.currentTag}
-                  onChange={e => setFormData({...formData, currentTag: e.target.value})}
-                  onKeyDown={handleAddTag}
-                />
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {formData.tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="gap-1 pr-1">
-                      {tag}
-                      <div 
-                        className="cursor-pointer hover:bg-destructive/20 rounded-full p-0.5"
-                        onClick={() => removeTag(tag)}
-                      >
-                        <Search className="w-3 h-3 rotate-45" />
-                      </div>
-                    </Badge>
-                  ))}
-                  {formData.tags.length === 0 && (
-                    <span className="text-xs text-muted-foreground italic">No tags added yet.</span>
-                  )}
+                <div className="space-y-2">
+                  <Label>Tags <span className="text-destructive">*</span></Label>
+                  <Input 
+                    placeholder="Type tag and press Enter..." 
+                    value={formData.currentTag}
+                    onChange={e => setFormData({...formData, currentTag: e.target.value})}
+                    onKeyDown={handleAddTag}
+                  />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {formData.tags.map(tag => (
+                      <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                        {tag}
+                        <div 
+                          className="cursor-pointer hover:bg-destructive/20 rounded-full p-0.5"
+                          onClick={() => removeTag(tag)}
+                        >
+                          <Search className="w-3 h-3 rotate-45" />
+                        </div>
+                      </Badge>
+                    ))}
+                    {formData.tags.length === 0 && (
+                      <span className="text-xs text-muted-foreground italic">No tags added yet.</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -635,50 +640,56 @@ export default function Editor() {
               <CardDescription>Double check everything before going live.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Top Row: Destination and SEO Plugin */}
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Destination</Label>
-                    <div className="font-medium flex items-center gap-2 mt-1">
-                      <Globe className="w-4 h-4 text-primary" />
-                      {selectedSite?.name}
-                      <span className="text-xs text-muted-foreground font-normal">({selectedSite?.url})</span>
-                    </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Destination</Label>
+                  <div className="font-medium flex items-center gap-2 mt-1">
+                    <Globe className="w-4 h-4 text-primary" />
+                    {selectedSite?.name}
                   </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Title</Label>
-                    <div className="font-medium text-lg mt-1">{formData.title || "Untitled Article"}</div>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Slug</Label>
-                    <div className="font-mono text-sm mt-1 text-muted-foreground">{formData.slug}</div>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Category</Label>
-                    <div className="mt-1"><Badge variant="outline">{formData.category || "Uncategorized"}</Badge></div>
-                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">{selectedSite?.url}</div>
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Tags</Label>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {formData.tags.length > 0 ? formData.tags.map(t => <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>) : <span className="text-sm text-muted-foreground">-</span>}
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">SEO Plugin</Label>
-                    <div className="mt-1 font-medium capitalize">{plugin}</div>
-                  </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">SEO Plugin</Label>
+                  <div className="mt-1 font-medium capitalize">{plugin === 'none' ? 'Default WordPress' : plugin}</div>
                   {plugin === 'aioseo' && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Indexing</Label>
-                      <div className="mt-1">
-                        <Badge className={formData.seo.indexed ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                          {formData.seo.indexed ? "Indexed" : "Not Indexed"}
-                        </Badge>
-                      </div>
+                    <div className="mt-2">
+                      <Badge className={formData.seo.indexed ? "bg-green-100 text-green-800 text-xs" : "bg-gray-100 text-gray-800 text-xs"}>
+                        {formData.seo.indexed ? "Indexed" : "Not Indexed"}
+                      </Badge>
                     </div>
                   )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Middle Row: Title and Slug */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Title</Label>
+                  <div className="font-medium text-lg mt-1">{formData.title || "Untitled Article"}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Slug</Label>
+                  <div className="font-mono text-sm mt-1 text-muted-foreground">{formData.slug}</div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Bottom Row: Category and Tags */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Category</Label>
+                  <div className="mt-1"><Badge variant="outline">{formData.category || "Uncategorized"}</Badge></div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Tags</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {formData.tags.length > 0 ? formData.tags.map(t => <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>) : <span className="text-sm text-muted-foreground">-</span>}
+                  </div>
                 </div>
               </div>
               
