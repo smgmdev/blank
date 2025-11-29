@@ -49,13 +49,15 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <img 
-            src="https://www.worldimpactmedia.org/images/wimb.png" 
-            alt="WIMB Logo" 
-            className="w-32 h-32 mx-auto mb-6 rounded-xl shadow-lg shadow-primary/20"
-          />
-          <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+        <div className="text-center space-y-4">
+          <div className="flex justify-center py-4">
+            <img 
+              src="https://www.worldimpactmedia.org/images/wimb.png" 
+              alt="WIMB Logo" 
+              className="w-20 h-20 rounded-xl shadow-lg shadow-primary/20"
+            />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Media Manager</h1>
           <p className="text-muted-foreground">Sign in to your publishing dashboard</p>
         </div>
 

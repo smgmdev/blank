@@ -47,13 +47,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className="w-64 bg-background border-r border-border flex flex-col fixed h-full z-10">
         <div className="h-16 flex items-center px-6 border-b border-border">
-          <div className="flex items-center gap-2 text-primary font-bold text-xl">
+          <div className="flex items-center gap-3">
             <img 
               src="https://www.worldimpactmedia.org/images/wimb.png" 
               alt="WIMB Logo" 
-              className="w-12 h-12 rounded-lg"
+              className="w-10 h-10 rounded-lg"
             />
-            WIMB
+            <div className="flex flex-col text-primary font-bold text-sm leading-tight">
+              <span>Media</span>
+              <span>Manager</span>
+            </div>
           </div>
         </div>
 
