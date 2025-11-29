@@ -285,7 +285,7 @@ export default function Editor() {
     }
   };
 
-  const removeTag = (tagToRemove: string) => {
+  const removeTag = (tagToRemove: string | number) => {
     setFormData({
       ...formData,
       tags: formData.tags.filter(t => t !== tagToRemove)
@@ -724,25 +724,33 @@ export default function Editor() {
                   ) : (
                     <div className="space-y-2">
                       {categories.map((cat: any) => (
-                        <div key={cat.id} className="flex items-center gap-2">
-                          <Checkbox 
-                            id={`cat-${cat.id}`}
-                            checked={formData.categories.includes(cat.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setFormData({
-                                  ...formData,
-                                  categories: [...formData.categories, cat.id]
-                                });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  categories: formData.categories.filter((c: any) => c !== cat.id)
-                                });
-                              }
-                            }}
-                          />
-                          <Label htmlFor={`cat-${cat.id}`} className="font-normal cursor-pointer text-sm">{cat.name}</Label>
+                        <div key={cat.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => {
+                            if (formData.categories.includes(cat.id)) {
+                              setFormData({
+                                ...formData,
+                                categories: formData.categories.filter((c: any) => c !== cat.id)
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                categories: [...formData.categories, cat.id]
+                              });
+                            }
+                          }}
+                        >
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                            formData.categories.includes(cat.id) 
+                              ? 'bg-primary border-primary' 
+                              : 'border-border hover:border-primary'
+                          }`}>
+                            {formData.categories.includes(cat.id) && (
+                              <svg className="w-3 h-3 text-primary-foreground" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <Label htmlFor={`cat-${cat.id}`} className="font-normal cursor-pointer text-sm flex-1">{cat.name}</Label>
                         </div>
                       ))}
                     </div>
@@ -789,26 +797,27 @@ export default function Editor() {
                       )}
                     </>
                   )}
-                  <div className="flex flex-wrap gap-2 mt-3 w-full">
+                  <div className="w-full mt-3 p-2 border border-border rounded-lg bg-muted/30 min-h-10 flex flex-wrap gap-2 items-start content-start">
                     {formData.tags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="gap-1 pr-1 break-words max-w-full">
-                        <span className="break-words">
+                      <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs">
+                        <span className="line-clamp-2">
                           {typeof tag === 'number' 
                             ? availableTags.find((t: any) => t.id === tag)?.name || tag
                             : tag
                           }
                         </span>
-                        <div 
-                          className="cursor-pointer hover:bg-destructive/20 rounded-full p-0.5 flex-shrink-0"
+                        <button 
+                          className="ml-1 cursor-pointer hover:bg-destructive/20 rounded-full p-0.5 flex-shrink-0"
                           onClick={() => removeTag(tag)}
                           data-testid="button-remove-tag"
+                          type="button"
                         >
                           <Search className="w-3 h-3 rotate-45" />
-                        </div>
+                        </button>
                       </Badge>
                     ))}
                     {formData.tags.length === 0 && (
-                      <span className="text-xs text-muted-foreground italic">No tags added yet.</span>
+                      <span className="text-xs text-muted-foreground italic py-2">No tags added yet.</span>
                     )}
                   </div>
                 </div>
