@@ -884,9 +884,9 @@ export default function Editor() {
       <div className="fixed bottom-0 left-0 w-full bg-background border-t border-border p-4 z-20 md:pl-64">
         <div className="max-w-4xl mx-auto flex items-center justify-between px-4 md:px-0">
           <Button 
-            variant="destructive" 
+            variant="outline" 
             onClick={handleCancel}
-            className="gap-2"
+            className="gap-2 text-gray-600 hover:bg-gray-50"
           >
             Cancel Article
           </Button>
