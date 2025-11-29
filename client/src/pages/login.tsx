@@ -54,7 +54,7 @@ export default function Login() {
             <img 
               src="https://www.worldimpactmedia.org/images/wimb.png" 
               alt="WIMB Logo" 
-              className="w-16 h-16"
+              className="w-24 h-24"
             />
           </div>
           <p className="text-lg text-muted-foreground">Sign in to your Media Manager account</p>

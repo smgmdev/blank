@@ -188,7 +188,7 @@ export default function Dashboard() {
           return (
             <Card 
               key={site.id} 
-              className={`transition-all hover:shadow-lg border-0 shadow-sm ${site.isConnected ? 'bg-primary/5 border border-primary/30' : 'bg-card'}`}
+              className={`transition-all hover:shadow-lg border-0 shadow-sm ${site.isConnected ? 'bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/40 ring-1 ring-primary/20' : 'bg-card'}`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -208,10 +208,7 @@ export default function Dashboard() {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground line-clamp-1 mb-2">{site.url}</p>
-                <div className="inline-block bg-muted px-2 py-0.5 rounded text-xs text-muted-foreground">
-                  {getSeoPluginName(site.seoPlugin)}
-                </div>
+                <p className="text-xs text-muted-foreground line-clamp-1">{site.url}</p>
               </CardContent>
               <div className="px-4 pb-3 pt-0">
                 {site.isConnected ? (

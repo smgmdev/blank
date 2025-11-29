@@ -63,7 +63,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               alt="WIMB Logo" 
               className="w-8 h-8"
             />
-            <div className="flex flex-col text-primary font-bold text-xs leading-tight">
+            <div className="flex flex-col text-primary font-normal text-xs leading-tight">
               <span>Media</span>
               <span>Manager</span>
             </div>
@@ -81,8 +81,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar / Mobile Menu */}
       <aside className={`
-        fixed lg:relative inset-y-16 lg:inset-auto left-0 w-64 bg-background border-r border-border flex flex-col z-20 lg:z-auto
-        lg:w-64 lg:h-screen lg:inset-y-0
+        fixed lg:relative inset-0 lg:inset-auto left-0 top-0 w-64 bg-background border-r border-border flex flex-col z-20 lg:z-auto
+        lg:w-64 lg:h-screen lg:inset-y-0 lg:top-auto
         transition-all duration-300
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
@@ -104,18 +104,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Mobile Menu Header */}
-        <div className="lg:hidden h-16 flex items-center px-6 border-b border-border">
+        <div className="lg:hidden h-16 flex items-center justify-between px-6 border-b border-border">
           <div className="flex items-center gap-3">
             <img 
               src="https://www.worldimpactmedia.org/images/wimb.png" 
               alt="WIMB Logo" 
               className="w-8 h-8"
             />
-            <div className="flex flex-col text-primary font-bold text-xs leading-tight">
+            <div className="flex flex-col text-primary font-normal text-xs leading-tight">
               <span>Media</span>
               <span>Manager</span>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden"
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
