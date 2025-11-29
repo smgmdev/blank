@@ -70,10 +70,10 @@ export default function AdminSites() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Site Management</h2>
-          <p className="text-muted-foreground">Manage connected WordPress instances and their configurations.</p>
+          <p className="text-muted-foreground text-sm">Manage WordPress instances and configurations.</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
@@ -144,14 +144,14 @@ export default function AdminSites() {
         </Dialog>
       </div>
 
-      <div className="border rounded-md bg-card">
+      <div className="border rounded-md bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Site Name</TableHead>
-              <TableHead>URL</TableHead>
-              <TableHead>SEO Plugin</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="min-w-[180px]">Site Name</TableHead>
+              <TableHead className="hidden md:table-cell min-w-[220px]">URL</TableHead>
+              <TableHead className="hidden sm:table-cell min-w-[140px]">SEO Plugin</TableHead>
+              <TableHead className="text-right min-w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -159,19 +159,24 @@ export default function AdminSites() {
               const favicon = getFavicon(site.url);
               return (
               <TableRow key={site.id}>
-                <TableCell className="font-medium flex items-center gap-2">
-                  {favicon ? (
-                    <img src={favicon} alt={site.name} className="w-6 h-6 rounded" />
-                  ) : (
-                    <div className="w-6 h-6 bg-primary/10 rounded flex items-center justify-center text-primary">
-                      <Globe className="w-4 h-4" />
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {favicon ? (
+                      <img src={favicon} alt={site.name} className="w-6 h-6 rounded flex-shrink-0" />
+                    ) : (
+                      <div className="w-6 h-6 bg-primary/10 rounded flex items-center justify-center text-primary flex-shrink-0">
+                        <Globe className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{site.name}</p>
+                      <p className="text-xs text-muted-foreground truncate md:hidden">{site.url}</p>
                     </div>
-                  )}
-                  {site.name}
+                  </div>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{site.url}</TableCell>
-                <TableCell>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                <TableCell className="hidden md:table-cell text-muted-foreground text-sm break-all">{site.url}</TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap
                     ${site.seoPlugin === 'rankmath' ? 'bg-purple-100 text-purple-800' : 
                       site.seoPlugin === 'aioseo' ? 'bg-green-100 text-green-800' : 
                       'bg-gray-100 text-gray-800'}`}>
@@ -179,8 +184,8 @@ export default function AdminSites() {
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="icon" asChild>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="icon" asChild className="h-8 w-8">
                       <a href={site.url} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="w-4 h-4" />
                       </a>
@@ -188,7 +193,7 @@ export default function AdminSites() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
