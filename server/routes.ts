@@ -228,7 +228,7 @@ export async function registerRoutes(
         if (wpResponse.status === 401) {
           return res.status(401).json({
             error: "Authentication failed",
-            hint: "WordPress Basic Authentication (REST API) plugin may not be installed. Ask admin to install it, or check that username/password are correct."
+            hint: "Admin needs to install a Basic Authentication plugin. Try 'REST API Authentication for WP' by miniOrange or 'Basic Authentication (REST API)' by Alain Schlesser, then activate it and try again."
           });
         }
         
