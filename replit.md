@@ -63,6 +63,11 @@ Preferred communication style: Simple, everyday language.
 - Articles belong to users, publishing records link articles to sites
 - Cascading deletes maintain referential integrity
 
+**Data Retention & Recovery Policy**:
+- Site Deletion: When a WordPress site is deleted from the platform, it becomes invisible to users but all associated articles remain in the database for recovery purposes
+- Database Loss: If the database is lost, articles published to WordPress remain on the WordPress servers independently. Articles are only deleted from WordPress if explicitly deleted through the system's sync/deletion operations
+- Sync Architecture: The bi-directional sync detects WordPress deletions and removes them from the local database, but independent WordPress deletions are not automatically synced
+
 ### External Dependencies
 
 **WordPress REST API Integration**: Authenticates using Basic Auth with WordPress Application Passwords. Supports creating posts, categories, tags, and uploading media. Handles different SEO plugins (Rank Math, AIO SEO PRO, Yoast).
