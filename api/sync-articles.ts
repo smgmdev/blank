@@ -29,11 +29,66 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     const checkPromises = articlesToCheck.map(async (article) => {
       const pub = publishingRecords.find(p => p.articleId === article.id);
       
-      // If no publishing record or wpPostId, skip this article
+      // Handle articles WITHOUT publishing records but WITH wpLink
       if (!pub) {
-        console.log(`[Sync] Article ${article.id} has no publishing record, skipping`);
+        if (article.wpLink) {
+          console.log(`[Sync] Article ${article.id} has no publishing record but has wpLink - attempting to extract postId from wpLink`);
+          
+          // Try to extract post ID from wpLink
+          const postIdMatch = article.wpLink.match(/[?&]p=(\d+)|\/(\d+)(?:\/$|$)/);
+          const postId = postIdMatch ? (postIdMatch[1] || postIdMatch[2]) : null;
+          
+          if (postId && article.siteId) {
+            const site = sitesMap.get(article.siteId);
+            if (site) {
+              console.log(`[Sync] Extracted postId=${postId} from wpLink for article ${article.id}, checking WordPress...`);
+              
+              try {
+                const headers: any = {};
+                if (site.adminUsername && site.apiToken) {
+                  const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+                  headers.Authorization = `Basic ${auth}`;
+                }
+                
+                const checkRes = await fetch(`${site.apiUrl}/wp/v2/posts/${postId}`, { headers });
+                console.log(`[Sync] Article ${article.id}: WordPress returned status ${checkRes.status}`);
+                
+                try {
+                  const responseText = await checkRes.text();
+                  try {
+                    const data = JSON.parse(responseText) as any;
+                    const isNotFound = 
+                      data.code === 'rest_post_invalid_id' ||
+                      data.code === 'rest_invalid_param' ||
+                      data.code === 'not_found' ||
+                      data.message?.toLowerCase().includes('not found') ||
+                      data.message?.toLowerCase().includes('invalid post') ||
+                      (checkRes.ok && !data.id);
+                    
+                    if (isNotFound) {
+                      console.log(`[Sync] Article ${article.id} marked for deletion (post not found on WordPress)`);
+                      return article.id;
+                    }
+                  } catch {
+                    if (!checkRes.ok) {
+                      console.log(`[Sync] Article ${article.id} marked for deletion (error response from WordPress)`);
+                      return article.id;
+                    }
+                  }
+                } catch (e) {
+                  console.log(`[Sync] Article ${article.id}: Error reading response`);
+                }
+              } catch (e: any) {
+                console.error(`[Sync] Error checking wpLink for article ${article.id}:`, e.message);
+              }
+            }
+          }
+        } else {
+          console.log(`[Sync] Article ${article.id} has no publishing record and no wpLink, skipping`);
+        }
         return null;
       }
+      
       if (!pub.wpPostId) {
         console.log(`[Sync] Article ${article.id} has no wpPostId, skipping`);
         return null;
@@ -86,11 +141,14 @@ export default async (req: VercelRequest, res: VercelResponse) => {
               data.message?.toLowerCase().includes('not found') ||
               data.message?.toLowerCase().includes('invalid post') ||
               data.message?.toLowerCase().includes('no post') ||
+              data.message?.toLowerCase().includes('deleted') ||
               data.error?.toLowerCase().includes('not found') ||
-              data.error?.toLowerCase().includes('invalid');
+              data.error?.toLowerCase().includes('invalid') ||
+              data.error?.toLowerCase().includes('deleted');
             
-            if (isNotFound) {
-              console.log(`[Sync] Article ${article.id} marked for deletion - error indicator found: ${data.code || data.message || data.error}`);
+            if (isNotFound || !checkRes.ok) {
+              const reason = isNotFound ? (data.code || data.message || data.error) : `HTTP ${checkRes.status}`;
+              console.log(`[Sync] Article ${article.id} marked for deletion - ${reason}`);
               return article.id;
             }
             
@@ -100,8 +158,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
               return article.id;
             }
           } catch {
-            // Not JSON response
-            // For non-JSON error responses (4xx, 5xx), likely a deleted post
+            // Not JSON response - treat any non-OK status as deleted
             if (!checkRes.ok) {
               console.log(`[Sync] Article ${article.id}: Non-JSON error response (status ${checkRes.status}) - marked for deletion`);
               return article.id;

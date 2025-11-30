@@ -960,7 +960,59 @@ export async function registerRoutes(
       for (const article of publishedArticles) {
         try {
           const publishing = await storage.getArticlePublishingByArticleId(article.id);
-          console.log(`[Sync] Article ${article.id}: found ${publishing.length} publishing records`);
+          console.log(`[Sync] Article "${article.title}" (${article.id}): found ${publishing.length} publishing records, siteId=${article.siteId}, wpLink=${article.wpLink}`);
+          
+          // If article has wpLink but no publishing record, try to use wpLink to get post ID
+          if (publishing.length === 0 && article.wpLink) {
+            console.log(`[Sync] Article "${article.title}" has wpLink but no publishing record - extracting post ID`);
+            // Try to extract post ID from wpLink like "https://example.com/?p=123" or "https://example.com/posts/123/"
+            const postIdMatch = article.wpLink.match(/[?&]p=(\d+)|\/(\d+)(?:\/$|$)/);
+            const postId = postIdMatch ? (postIdMatch[1] || postIdMatch[2]) : null;
+            
+            if (postId && article.siteId) {
+              const site = await storage.getWordPressSite(article.siteId);
+              if (site) {
+                console.log(`[Sync] Extracted postId=${postId} from wpLink, checking if deleted from WordPress...`);
+                const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
+                
+                try {
+                  const headers: any = {};
+                  if (site.adminUsername && site.apiToken) {
+                    const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+                    headers.Authorization = `Basic ${auth}`;
+                  }
+                  
+                  const checkRes = await fetch(checkUrl, { headers });
+                  const responseText = await checkRes.text();
+                  
+                  try {
+                    const data = JSON.parse(responseText) as any;
+                    if (data.code === 'rest_post_invalid_id' || 
+                        data.code === 'rest_invalid_param' || 
+                        data.code === 'not_found' ||
+                        data.message?.toLowerCase().includes('not found') ||
+                        data.message?.toLowerCase().includes('invalid post') ||
+                        (checkRes.ok && !data.id)) {
+                      console.log(`[Sync] Article "${article.title}" marked for deletion (post not found on WordPress)`);
+                      await storage.deleteArticle(article.id);
+                      deletedCount++;
+                      deletedIds.push(article.id);
+                    }
+                  } catch {
+                    if (!checkRes.ok) {
+                      console.log(`[Sync] Article "${article.title}" marked for deletion (error response from WordPress)`);
+                      await storage.deleteArticle(article.id);
+                      deletedCount++;
+                      deletedIds.push(article.id);
+                    }
+                  }
+                } catch (fetchError: any) {
+                  console.error(`[Sync] Error checking wpLink for article "${article.title}":`, fetchError.message);
+                }
+              }
+            }
+            continue;
+          }
           
           if (publishing.length > 0) {
             const pub = publishing[0];
