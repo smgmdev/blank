@@ -324,7 +324,9 @@ export default function MyArticles() {
       const siteTags = tagMap[site.id] || {};
       return article.tags.map((tagId: any) => {
         if (typeof tagId === 'number') {
-          return siteTags[tagId] || null;
+          const tagName = siteTags[tagId];
+          if (!tagName) console.warn(`[MyArticles] Tag ID ${tagId} not found in map for site ${site.id}`, siteTags);
+          return tagName || `Tag ${tagId}`;
         }
         if (typeof tagId === 'string') return tagId;
         return String(tagId);

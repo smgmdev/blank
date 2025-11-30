@@ -27,18 +27,26 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const checkUrl = `${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`;
       
       try {
-        // Use admin token for authentication
-        const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+        // Use admin token for authentication - if adminUsername is available
+        let headers: any = {};
+        if (site.adminUsername && site.apiToken) {
+          const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+          headers.Authorization = `Basic ${auth}`;
+        }
+        
         const checkRes = await Promise.race([
-          fetch(checkUrl, {
-            headers: { Authorization: `Basic ${auth}` }
-          }),
+          fetch(checkUrl, { headers }),
           new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000))
         ]) as Response;
         
         if (checkRes.status === 404) {
           console.log(`[Sync] Article ${article.id} deleted from WordPress - removing`);
           return article.id;
+        }
+        
+        if (checkRes.status === 401) {
+          console.log(`[Sync] Unauthorized checking post ${pub.wpPostId} - skipping (may need admin username stored)`);
+          return null;
         }
       } catch (e) {
         console.error(`[Sync] Check failed for ${article.id}:`, e);
