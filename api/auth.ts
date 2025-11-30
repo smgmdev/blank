@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { verifyAppUser, createAppUser, getUserSiteCredential, createUserSiteCredential } from "./db-utils.js";
+import { getAppUserByUsername, getUserSiteCredential, createUserSiteCredential } from "./db-utils.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
@@ -10,8 +10,11 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         const { email, password } = req.body;
         if (!email || !password) return res.status(400).json({ error: "Email and password required" });
         
-        const user = await verifyAppUser(email, password);
-        res.json({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
+        const user = await getAppUserByUsername(email);
+        if (!user || user.password !== password) {
+          return res.status(401).json({ error: "Invalid credentials" });
+        }
+        res.json({ id: user.id, email: user.email, role: user.role });
       } 
       else if (action === "authenticate") {
         const { userId, siteId, wpUsername, wpPassword } = req.body;
