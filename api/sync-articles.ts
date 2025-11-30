@@ -78,12 +78,11 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           const checkRes = await fetch(checkUrl, { headers });
           
           const resText = await checkRes.text();
-          console.log(`[Sync] WordPress response: status=${checkRes.status}, ok=${checkRes.ok}, body=${resText.substring(0, 300)}`);
+          console.log(`[Sync] WordPress response: status=${checkRes.status}, ok=${checkRes.ok}`);
           
-          // Only delete if we get 404 (Not Found). Ignore other errors like 401/403
-          if (checkRes.status === 404) {
-            // Post definitely not found on WordPress - delete it
-            console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ Got 404 - NOT found on WordPress - DELETING`);
+          if (!checkRes.ok) {
+            // Any error = post not found - delete it
+            console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ Error ${checkRes.status} - NOT found on WordPress - DELETING`);
             try {
               // Delete publishing record first (foreign key constraint)
               await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
@@ -97,10 +96,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             } catch (delError: any) {
               console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
             }
-          } else if (checkRes.ok && checkRes.status === 200) {
-            console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress (200 OK)`);
           } else {
-            console.log(`[Sync] Article "${article.title}" (post ${postId}): Got status ${checkRes.status} - skipping (not deleting on errors)`);
+            console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ Status ${checkRes.status} - exists on WordPress`);
           }
         } catch (checkError: any) {
           console.log(`[Sync] Article "${article.title}" (post ${postId}): Error checking - ${checkError.message}`);
