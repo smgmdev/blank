@@ -622,18 +622,30 @@ export default function Editor() {
       for (const tag of formData.tags) {
         if (typeof tag === 'string') {
           // Custom tag - create on WordPress
-          const createRes = await fetch(`/api/sites/${selectedSiteId}/tags`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, tagName: tag })
-          });
-          if (createRes.ok) {
-            const newTag = await createRes.json();
-            tagData.push({ id: newTag.id, name: tag }); // Store both id and name
+          try {
+            const createRes = await fetch(`/api/sites/${selectedSiteId}/tags`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId, tagName: tag })
+            });
+            if (createRes.ok) {
+              const newTag = await createRes.json();
+              tagData.push({ id: newTag.id, name: tag }); // Store both id and name
+              console.log("[Publish] ✓ Tag created:", { id: newTag.id, name: tag });
+            } else {
+              const error = await createRes.text();
+              console.error("[Publish] ✗ Tag creation failed:", createRes.status, error);
+              toast({ variant: "destructive", title: "Tag Error", description: `Failed to create tag "${tag}"` });
+              throw new Error(`Tag creation failed: ${error}`);
+            }
+          } catch (e) {
+            console.error("[Publish] Tag creation error:", e);
+            throw e;
           }
         } else {
           // Existing tag - just have ID
-          tagData.push({ id: tag, name: null });
+          const existingTagName = availableTags.find((t: any) => t.id === tag)?.name || `tag-${tag}`;
+          tagData.push({ id: tag, name: existingTagName });
         }
       }
       console.log("[Publish] tagData before sending:", tagData, "formData.tags:", formData.tags);
@@ -684,6 +696,19 @@ export default function Editor() {
       }
 
       setIsPublishing(false);
+      
+      // Delete draft article if it exists (after successful publish)
+      if (isEditingDraft && articleId) {
+        try {
+          await fetch(`/api/content?type=articles&articleId=${articleId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (e) {
+          console.warn("Failed to delete draft after publishing:", e);
+        }
+      }
+      
       toast({
         title: "Published Successfully!",
         description: `Article "${formData.title}" is now live on ${selectedSite?.name}`,
