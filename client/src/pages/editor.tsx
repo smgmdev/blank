@@ -881,24 +881,24 @@ export default function Editor() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      {/* Apple-style Progress Bar */}
-      <div className="space-y-4">
-        <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
-          <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500" 
+      {/* Modern Step Indicator */}
+      <div className="space-y-4 px-2">
+        <div className="relative h-1 bg-muted rounded-full overflow-hidden">
+          <div className="absolute inset-y-0 left-0 bg-blue-600 rounded-full transition-all duration-500" 
             style={{width: `${(step / steps.length) * 100}%`}}
           />
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-1">
           {steps.map((s, idx) => (
             <div key={s.num} className="flex flex-col items-center gap-2 flex-1">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 flex-shrink-0 ${
                 step >= s.num 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
-                  : 'bg-muted text-muted-foreground border border-border'
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-100 text-gray-400 border border-gray-200'
               }`}>
                 {step > s.num ? <CheckCircle2 className="w-5 h-5" /> : s.num}
               </div>
-              <span className={`text-xs font-medium text-center transition-colors duration-300 ${step >= s.num ? 'text-blue-600 font-semibold' : 'text-muted-foreground'}`}>
+              <span className={`text-xs font-medium text-center transition-colors duration-300 line-clamp-2 ${step >= s.num ? 'text-blue-600 font-semibold' : 'text-gray-400'}`}>
                 {s.label}
               </span>
             </div>
@@ -1563,7 +1563,7 @@ export default function Editor() {
               disabled={isPublishing}
               className="gap-2 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save className="w-4 h-4" /> <span className="sm:inline">Save Draft</span>
+              <span className="sm:inline">Save Draft</span>
             </Button>
           </div>
           
