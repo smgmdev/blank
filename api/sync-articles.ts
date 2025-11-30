@@ -66,24 +66,26 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           const data = await res.json();
           console.log(`[Sync] Response data for post ${postId}:`, JSON.stringify(data).substring(0, 200));
           
+          // Check for auth errors
+          if (data?.error === "INVALID_PASSWORD" || data?.code === "rest_authentication_failed") {
+            console.log(`[Sync] ⚠ Article "${article.title}" (post ${postId}): Auth error - SKIPPING (cannot verify)`);
+            continue;
+          }
+          
           if (data?.id) {
             // Article found on WordPress - keep it
             console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): Found on WP`);
           } else {
             // Cannot find article on WordPress - delete it
-            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No ID in response - DELETING`);
+            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Not found on WP - DELETING`);
             await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
             await db.delete(articles).where(eq(articles.id, article.id));
             deletedCount++;
             deletedIds.push(article.id);
           }
         } catch (e: any) {
-          // Any error means article doesn't exist - delete it
-          console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Error fetching - ${e.message} - DELETING`);
-          await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
-          await db.delete(articles).where(eq(articles.id, article.id));
-          deletedCount++;
-          deletedIds.push(article.id);
+          // Network error - cannot verify, skip
+          console.log(`[Sync] ⚠ Article "${article.title}" (post ${postId}): Error fetching - ${e.message} - SKIPPING (cannot verify)`);
         }
       }
     }
