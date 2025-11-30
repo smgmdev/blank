@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getUserSiteCredentialsByUserId, getAllWordPressSites } from "./db-utils.js";
+import { getUserSiteCredentialsByUserId, getAllWordPressSites } from "../../db-utils.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   if (req.method !== "GET") {
@@ -7,7 +7,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   }
 
   try {
-    const userId = req.url?.split("/api/users/")[1]?.split("/")[0];
+    const userId = req.query.userId as string;
     
     if (!userId) {
       return res.status(400).json({ error: "User ID required" });
@@ -28,7 +28,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
     res.json(sitesWithAuth);
   } catch (error: any) {
-    console.error("Sites with auth error:", error.message);
+    console.error("Sites with auth error:", error.message, error.stack);
     res.status(500).json({ error: "Failed to fetch sites", details: error.message });
   }
 };
