@@ -96,6 +96,22 @@ export async function createUserSiteCredential(data: any): Promise<any> {
   return credential;
 }
 
+export async function upsertUserSiteCredential(data: any): Promise<any> {
+  const database = getDatabase();
+  // Check if credential already exists
+  const existing = await getUserSiteCredential(data.userId, data.siteId);
+  
+  if (existing) {
+    // Delete the old one and create a new one
+    await database.delete(schema.userSiteCredentials).where(eq(schema.userSiteCredentials.id, existing.id));
+  }
+  
+  // Create new credential
+  const [credential] = await database.insert(schema.userSiteCredentials).values(data).returning();
+  if (!credential) throw new Error("Failed to upsert credential");
+  return credential;
+}
+
 export async function updateUserSiteCredentialVerification(credentialId: string, wpUserId: string): Promise<void> {
   const database = getDatabase();
   await database
@@ -109,6 +125,14 @@ export async function createPublishingProfile(data: any): Promise<any> {
   const [profile] = await database.insert(schema.publishingProfiles).values(data).returning();
   if (!profile) throw new Error("Failed to create publishing profile");
   return profile;
+}
+
+export async function getPublishingProfilesByUserId(userId: string): Promise<any[]> {
+  const database = getDatabase();
+  return await database
+    .select()
+    .from(schema.publishingProfiles)
+    .where(eq(schema.publishingProfiles.userId, userId));
 }
 
 export async function deleteUserSiteCredential(credentialId: string): Promise<void> {

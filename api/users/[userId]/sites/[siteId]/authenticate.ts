@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getWordPressSiteById, getUserSiteCredential, createUserSiteCredential, updateUserSiteCredentialVerification, createPublishingProfile } from "../../../../db-utils.js";
+import { getWordPressSiteById, getUserSiteCredential, createUserSiteCredential, updateUserSiteCredentialVerification, createPublishingProfile, upsertUserSiteCredential, getPublishingProfilesByUserId } from "../../../../db-utils.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   if (req.method !== "POST") {
@@ -68,14 +68,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     const wpUser = await wpResponse.json();
     console.log(`[WP Auth] User ${wpUsername} verified as WP user ID: ${wpUser.id}`);
 
-    // Check if user already has credentials for this site
-    const existing = await getUserSiteCredential(userId, siteId);
-    if (existing) {
-      return res.json({ success: true, message: "You are already authenticated to this site" });
-    }
-
-    // Store credentials
-    const credential = await createUserSiteCredential({
+    // Upsert credentials (create or update if already exists)
+    const credential = await upsertUserSiteCredential({
       userId,
       siteId,
       wpUsername,
@@ -85,12 +79,18 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     // Mark as verified with actual WP user ID
     await updateUserSiteCredentialVerification(credential.id, String(wpUser.id));
 
-    // Create publishing profile
-    const profile = await createPublishingProfile({
-      userId,
-      siteId,
-      credentialId: credential.id,
-    });
+    // Check if publishing profile already exists
+    const existingProfiles = await getPublishingProfilesByUserId(userId);
+    let profile = existingProfiles.find((p: any) => p.siteId === siteId);
+    
+    if (!profile) {
+      // Create publishing profile if it doesn't exist
+      profile = await createPublishingProfile({
+        userId,
+        siteId,
+        credentialId: credential.id,
+      });
+    }
 
     res.json({ 
       success: true, 
