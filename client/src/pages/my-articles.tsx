@@ -65,22 +65,32 @@ export default function MyArticles() {
           // Filter to only this user's articles
           const userArticles = allArticles.filter((a: any) => a.userId === userId);
           
-          // Optimize: Only fetch WordPress links for published articles (skip categories for now)
-          const articlesWithLinks = await Promise.all(userArticles.map(async (article: any) => {
-            if (article.status === 'published') {
-              try {
-                const publishRes = await fetch(`/api/content?type=publishing&articleId=${article.id}&siteId=${article.siteId}`);
-                if (publishRes.ok) {
-                  const pubData = await publishRes.json();
-                  return { ...article, wpLink: pubData.wpLink };
-                }
-              } catch (e) {
-                // Silently fail - wpLink will be undefined
-              }
-            }
-            return article;
-          }));
+          // Optimize: Batch fetch WordPress links for published articles with concurrency limit
+          const publishedArticles = userArticles.filter((a: any) => a.status === 'published');
+          const draftArticles = userArticles.filter((a: any) => a.status === 'draft');
           
+          // Fetch WordPress links only for published articles, max 3 concurrent requests
+          const articlesWithLinks = [...draftArticles];
+          const publishBatch = async (articles: any[], batchSize = 3) => {
+            for (let i = 0; i < articles.length; i += batchSize) {
+              const batch = articles.slice(i, i + batchSize);
+              const results = await Promise.all(batch.map(async (article: any) => {
+                try {
+                  const publishRes = await fetch(`/api/content?type=publishing&articleId=${article.id}&siteId=${article.siteId}`);
+                  if (publishRes.ok) {
+                    const pubData = await publishRes.json();
+                    return { ...article, wpLink: pubData.wpLink };
+                  }
+                } catch (e) {
+                  // Silently fail
+                }
+                return article;
+              }));
+              articlesWithLinks.push(...results);
+            }
+          };
+          
+          await publishBatch(publishedArticles, 3);
           setArticles(articlesWithLinks);
         }
       } catch (error) {

@@ -99,29 +99,31 @@ export default function Editor() {
         if (articleId && articleId !== '' && articleId !== 'undefined') {
           try {
             const articleRes = await fetch(`/api/content?type=articles&articleId=${articleId}`);
-            if (articleRes.ok) {
-              const article = await articleRes.json();
-              // Load article data into form
-              setIsEditingDraft(true);
-              setFormData({
-                title: article.title || "",
-                slug: article.title ? article.title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').trim() : "",
-                content: article.content || "",
-                image: null,
-                imagePreview: "",
-                categories: [],
-                tags: [],
-                currentTag: "",
-                seo: {
-                  focusKeyword: "",
-                  description: "",
-                  indexed: true
-                }
-              });
-              // Mark editor as not empty
-              if (article.content) {
-                setIsEditorEmpty(false);
+            if (!articleRes.ok) {
+              console.warn('Failed to fetch article:', articleRes.status, articleId);
+              return;
+            }
+            const article = await articleRes.json();
+            // Load article data into form
+            setIsEditingDraft(true);
+            setFormData({
+              title: article.title || "",
+              slug: article.title ? article.title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').trim() : "",
+              content: article.content || "",
+              image: null,
+              imagePreview: "",
+              categories: [],
+              tags: [],
+              currentTag: "",
+              seo: {
+                focusKeyword: "",
+                description: "",
+                indexed: true
               }
+            });
+            // Mark editor as not empty
+            if (article.content) {
+              setIsEditorEmpty(false);
             }
           } catch (error) {
             console.error('Failed to fetch draft article:', error);
@@ -1160,16 +1162,16 @@ export default function Editor() {
               <Separator className="my-2" />
 
               {/* Featured Image Preview */}
-              {formData.featuredImageBase64 && (
+              {formData.imagePreview && (
                 <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">Featured Image</Label>
                   <div className="mt-2 rounded-lg border overflow-hidden bg-muted/20 p-2 max-w-xs">
-                    <img src={formData.featuredImageBase64} alt="Featured" className="w-full h-auto rounded" />
+                    <img src={formData.imagePreview} alt="Featured" className="w-full h-auto rounded" />
                   </div>
                 </div>
               )}
 
-              {formData.featuredImageBase64 && <Separator className="my-2" />}
+              {formData.imagePreview && <Separator className="my-2" />}
 
               {/* Middle Row: Title and Slug */}
               <div className="grid md:grid-cols-2 gap-6">
