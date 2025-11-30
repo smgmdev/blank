@@ -1,11 +1,13 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { db } from "./db-utils.js";
+import { getDatabase } from "./db-utils.js";
 import { articles, articlePublishing, wordPressSites } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    
+    const db = getDatabase();
     
     // Get all published articles with their publishing records
     const publishingRecords = await db.select().from(articlePublishing);
