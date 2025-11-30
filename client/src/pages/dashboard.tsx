@@ -43,7 +43,7 @@ export default function Dashboard() {
       try {
         if (!userId) return;
         
-        const response = await fetch(`/api/users/${userId}/sites-with-auth`);
+        const response = await fetch(`/api/user-sites?userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
           setSites(data);
@@ -53,7 +53,7 @@ export default function Dashboard() {
       }
     };
     fetchSites();
-  }, []);
+  }, [userId]);
 
   // Auto-refresh sites every 5 seconds
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function Dashboard() {
       try {
         if (!userId) return;
         
-        const response = await fetch(`/api/users/${userId}/sites-with-auth`);
+        const response = await fetch(`/api/user-sites?userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
           setSites(data);
@@ -72,7 +72,7 @@ export default function Dashboard() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [userId]);
 
   const handleAuthenticateClick = (siteId: string) => {
     setSelectedSiteId(siteId);
@@ -100,11 +100,13 @@ export default function Dashboard() {
 
       // Call WordPress authentication endpoint
       const authResponse = await fetch(
-        `/api/users/${userId}/sites/${selectedSiteId}/authenticate`,
+        `/api/authenticate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            userId,
+            siteId: selectedSiteId,
             wpUsername: credentials.username,
             wpPassword: credentials.password
           })
@@ -125,7 +127,7 @@ export default function Dashboard() {
 
       // Refresh sites to show updated connection status
       if (userId) {
-        const sitesResponse = await fetch(`/api/users/${userId}/sites-with-auth`);
+        const sitesResponse = await fetch(`/api/user-sites?userId=${userId}`);
         if (sitesResponse.ok) {
           const updatedSites = await sitesResponse.json();
           setSites(updatedSites);
