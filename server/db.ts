@@ -1,11 +1,4 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import * as schema from "@shared/schema";
+import { getDb } from "@shared/db-client";
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL environment variable is not set");
-}
-
-const client = postgres(databaseUrl);
-export const db = drizzle(client, { schema });
+// Use shared database client to avoid connection pool exhaustion
+export const db = getDb();

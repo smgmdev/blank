@@ -1,16 +1,11 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import * as schema from "../shared/schema.js";
+import { getDb, initializeDb } from "../shared/db-client.js";
 import { eq, and } from "drizzle-orm";
+import * as schema from "../shared/schema.js";
 import type { AppUser, Article, WordPressSite } from "../shared/schema.js";
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL environment variable is not set");
-}
-
-const client = postgres(databaseUrl);
-export const db = drizzle(client, { schema });
+// Initialize and get the shared database client
+initializeDb();
+export const db = getDb();
 
 export async function getAppUserByUsername(username: string): Promise<AppUser | undefined> {
   const [user] = await db
