@@ -290,24 +290,26 @@ export default function MyArticles() {
     
     return (
       <div className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-        <div className="flex flex-col sm:flex-row gap-0 sm:gap-4 sm:p-4">
-          {/* Featured Image on Left - Small Square on Mobile, Larger on Desktop */}
-          {article.featuredImageUrl && (
-            <div className="w-24 h-24 sm:w-40 sm:h-40 flex-shrink-0 bg-muted overflow-hidden rounded-t sm:rounded-lg" data-testid={`img-article-${article.id}`}>
-              <img 
-                src={article.featuredImageUrl} 
-                alt={article.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  console.error("Image load failed for:", article.featuredImageUrl);
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            </div>
-          )}
-          
-          {/* Content */}
-          <div className={`flex-1 min-w-0 ${article.featuredImageUrl ? 'p-4 sm:p-0' : 'p-4'}`}>
+        {/* Mobile: Image + Title on left, actions on right */}
+        <div className="p-3 sm:p-4 flex flex-row sm:flex-col gap-3">
+          <div className="flex gap-3 flex-1 min-w-0">
+            {/* Featured Image - Compact */}
+            {article.featuredImageUrl && (
+              <div className="w-16 h-16 sm:w-32 sm:h-32 flex-shrink-0 bg-muted overflow-hidden rounded" data-testid={`img-article-${article.id}`}>
+                <img 
+                  src={article.featuredImageUrl} 
+                  alt={article.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error("Image load failed for:", article.featuredImageUrl);
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Title + Meta - Compact */}
+            <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-base break-words">{article.title}</h3>
             
             {/* Meta Description - 2 lines max */}
