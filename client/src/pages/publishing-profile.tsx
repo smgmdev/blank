@@ -42,6 +42,14 @@ export default function PublishingProfile() {
       setIsLoading(true);
       try {
         if (userId) {
+          // Load from local database first as source of truth
+          if (publishingProfile?.displayName) {
+            setDisplayName(publishingProfile.displayName);
+          }
+          if (publishingProfile?.profilePicture) {
+            setPreviewUrl(publishingProfile.profilePicture);
+          }
+          
           // Fetch connected sites
           const sitesRes = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
           if (sitesRes.ok) {
@@ -62,23 +70,6 @@ export default function PublishingProfile() {
               }
             }
             setSiteUsers(users);
-          }
-          
-          // Fetch WP profile for display name (but prioritize local database image)
-          const wpData = await fetchWPProfile(userId);
-          if (wpData && typeof wpData === 'object') {
-            const { displayName: wpDisplayName } = wpData as { displayName: string; profilePicture?: string };
-            // Use WP display name if available, otherwise use local
-            if (wpDisplayName) {
-              setDisplayName(wpDisplayName);
-            } else if (publishingProfile?.displayName) {
-              setDisplayName(publishingProfile.displayName);
-            }
-            
-            // Always use local database profile picture (not WordPress Gravatar)
-            if (publishingProfile?.profilePicture) {
-              setPreviewUrl(publishingProfile.profilePicture);
-            }
           }
         }
       } catch (e) {
