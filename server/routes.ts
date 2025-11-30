@@ -954,23 +954,13 @@ export async function registerRoutes(
       let deletedCount = 0;
       const deletedIds: string[] = [];
       
-      console.log(`[Sync] Starting sync (manual: ${isManual}) - found ${articles.length} total articles`);
+      console.log(`[Sync] Starting sync - found ${articles.length} total articles`);
       const publishedArticles = articles.filter(a => a.status === 'published');
-      
-      // Skip articles published less than 30 seconds ago (protection against WordPress indexing delays)
-      const now = Date.now();
-      const minAgeMs = 30 * 1000; // 30 seconds
-      const articlesToCheck = publishedArticles.filter(a => {
-        if (!a.publishedAt) return true;
-        const ageMs = now - new Date(a.publishedAt).getTime();
-        return ageMs >= minAgeMs;
-      });
-      
-      console.log(`[Sync] Checking ${articlesToCheck.length} published articles (skipped ${publishedArticles.length - articlesToCheck.length} recently published)`);
+      console.log(`[Sync] Checking ${publishedArticles.length} published articles`);
       
       // Group articles by site
       const articlesBySite = new Map<string, any[]>();
-      for (const article of articlesToCheck) {
+      for (const article of publishedArticles) {
         const publishing = await storage.getArticlePublishingByArticleId(article.id);
         if (publishing.length > 0) {
           const siteId = publishing[0].siteId;
@@ -1016,12 +1006,8 @@ export async function registerRoutes(
               const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
               const checkRes = await fetch(checkUrl, { headers });
               
-              console.log(`[Sync] Article "${article.title}" (post ${postId}): Response status = ${checkRes.status}, ok = ${checkRes.ok}`);
-              
-              if (checkRes.ok) {
-                console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
-              } else if (checkRes.status === 404) {
-                // Post not found - delete immediately (safe because we skip recently published articles)
+              if (!checkRes.ok) {
+                // Post not found on WordPress - delete it
                 console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING`);
                 try {
                   await storage.deleteArticle(article.id);
@@ -1032,7 +1018,7 @@ export async function registerRoutes(
                   console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
                 }
               } else {
-                console.log(`[Sync] Article "${article.title}" (post ${postId}): Skipped (HTTP ${checkRes.status})`);
+                console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
               }
             } catch (checkError: any) {
               console.log(`[Sync] Article "${article.title}" (post ${postId}): Error checking - ${checkError.message}`);

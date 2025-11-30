@@ -21,22 +21,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     const deletedIds: string[] = [];
     
-    // Skip articles published less than 30 seconds ago (protection against WordPress indexing delays)
-    const now = Date.now();
-    const minAgeMs = 30 * 1000; // 30 seconds
-    const filteredArticles = articlesToCheck.filter((a: any) => {
-      if (!a.publishedAt) return true;
-      const ageMs = now - new Date(a.publishedAt).getTime();
-      return ageMs >= minAgeMs;
-    });
-    
-    console.log(`[Sync] Starting sync (manual: ${isManual}) - found ${allArticles.length} total articles, checking ${filteredArticles.length} published (skipped ${articlesToCheck.length - filteredArticles.length} recently published)`);
+    console.log(`[Sync] Starting sync - found ${allArticles.length} total articles, checking ${articlesToCheck.length} published`);
     console.log(`[Sync] Found ${publishingRecords.length} publishing records`);
-    console.log(`[Sync] Article IDs to check: ${filteredArticles.map((a: any) => a.id).join(', ')}`);
-    console.log(`[Sync] Publishing record article IDs: ${publishingRecords.map((p: any) => p.articleId).join(', ')}`);
+    console.log(`[Sync] Article IDs to check: ${articlesToCheck.map((a: any) => a.id).join(', ')}`);
     
     // Check each published article
-    const checkPromises = filteredArticles.map(async (article: any) => {
+    const checkPromises = articlesToCheck.map(async (article: any) => {
       const pub = publishingRecords.find((p: any) => p.articleId === article.id);
       
       // Handle articles WITHOUT publishing records but WITH wpLink
@@ -178,9 +168,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             data.message?.toLowerCase().includes('no post');
           
           if (isNotFound) {
-            // Delete immediately (safe because we skip recently published articles)
-            const reason = isMissing ? `post empty/missing (id: ${data.id}, title: ${data.title?.raw || 'missing'})` : (data.code || data.message || 'no post data');
-            console.log(`[Sync] Article ${article.id} marked for deletion - ${reason}`);
+            console.log(`[Sync] Article ${article.id}: Post not found on WordPress - deleting`);
             return article.id;
           }
           
