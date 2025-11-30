@@ -195,7 +195,6 @@ export default function Dashboard() {
         <p className="text-muted-foreground text-sm">Authenticate to sites to publish articles.</p>
         <Button 
           variant="outline" 
-          size="sm"
           onClick={handleRefresh}
           disabled={isRefreshing}
           className="gap-2"
