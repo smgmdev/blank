@@ -1,5 +1,4 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { storage } from "../server/storage";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   if (req.method !== "POST") {
@@ -12,6 +11,9 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return res.status(400).json({ error: "Username and password required" });
     }
 
+    // Dynamic import to avoid connection issues at build time
+    const { storage } = await import("../server/storage");
+    
     const user = await storage.getAppUserByUsername(username);
     if (!user || user.password !== password) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -26,6 +28,10 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     });
   } catch (error: any) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "Failed to login", details: error.message });
+    res.status(500).json({ 
+      error: "Failed to login", 
+      details: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+    });
   }
 };
