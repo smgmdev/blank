@@ -1004,11 +1004,15 @@ export async function registerRoutes(
             try {
               // Check if post exists by making a direct request to the post endpoint
               const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
+              console.log(`[Sync] Checking article "${article.title}" (wpPostId: ${publishing.wpPostId}) at ${checkUrl}`);
               const checkRes = await fetch(checkUrl, { headers });
+              
+              console.log(`[Sync] WordPress response: status=${checkRes.status}, ok=${checkRes.ok}`);
               
               if (!checkRes.ok) {
                 // Post not found on WordPress - delete it
-                console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING`);
+                const resText = await checkRes.text();
+                console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress (response: ${resText.substring(0, 200)}) - DELETING`);
                 try {
                   await storage.deleteArticle(article.id);
                   console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
