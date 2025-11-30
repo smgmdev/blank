@@ -298,7 +298,7 @@ export default function MyArticles() {
           
           {/* Actions */}
           <div className="flex flex-col gap-1 flex-shrink-0 p-4 sm:p-0 border-t sm:border-t-0 sm:border-t-0">
-            {article.wpLink && (
+            {article.status === 'published' && article.wpLink && (
               <Button variant="outline" size="sm" asChild title="View Article" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap">
                 <a href={article.wpLink} target="_blank" rel="noopener noreferrer">
                   View Article
