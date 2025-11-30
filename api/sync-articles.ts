@@ -39,18 +39,18 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           const postId = postIdMatch ? (postIdMatch[1] || postIdMatch[2]) : null;
           
           if (postId && article.siteId) {
-            const site = sitesMap.get(article.siteId);
+            const site = sitesMap.get(article.siteId) as any;
             if (site) {
               console.log(`[Sync] Extracted postId=${postId} from wpLink for article ${article.id}, checking WordPress...`);
               
               try {
                 const headers: any = {};
-                if (site.adminUsername && site.apiToken) {
-                  const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+                if ((site as any).adminUsername && (site as any).apiToken) {
+                  const auth = Buffer.from(`${(site as any).adminUsername}:${(site as any).apiToken}`).toString("base64");
                   headers.Authorization = `Basic ${auth}`;
                 }
                 
-                const checkRes = await fetch(`${site.apiUrl}/wp/v2/posts/${postId}`, { headers });
+                const checkRes = await fetch(`${(site as any).apiUrl}/wp/v2/posts/${postId}`, { headers });
                 console.log(`[Sync] Article ${article.id}: WordPress returned status ${checkRes.status}`);
                 
                 try {
@@ -104,7 +104,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         return null;
       }
       
-      const site = sitesMap.get(pub.siteId);
+      const site = sitesMap.get(pub.siteId) as any;
       if (!site) {
         console.log(`[Sync] Article ${article.id}: Site ${pub.siteId} not found, skipping`);
         return null;
@@ -116,16 +116,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       try {
         // Use admin credentials if available, otherwise try public access
         const headers: any = {};
-        if (site.adminUsername && site.apiToken) {
-          const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+        if ((site as any).adminUsername && (site as any).apiToken) {
+          const auth = Buffer.from(`${(site as any).adminUsername}:${(site as any).apiToken}`).toString("base64");
           headers.Authorization = `Basic ${auth}`;
-          console.log(`[Sync] Using admin auth (${site.adminUsername}) for post ${pub.wpPostId}`);
+          console.log(`[Sync] Using admin auth (${(site as any).adminUsername}) for post ${pub.wpPostId}`);
         } else {
-          console.log(`[Sync] No admin credentials (user: ${site.adminUsername}, token: ${!!site.apiToken}), trying public access for post ${pub.wpPostId}`);
+          console.log(`[Sync] No admin credentials (user: ${(site as any).adminUsername}, token: ${!!(site as any).apiToken}), trying public access for post ${pub.wpPostId}`);
         }
         
         const checkRes = await Promise.race([
-          fetch(`${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`, { headers }),
+          fetch(`${(site as any).apiUrl}/wp/v2/posts/${pub.wpPostId}`, { headers }),
           new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
         ]) as Response;
         
