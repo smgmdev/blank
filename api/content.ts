@@ -37,6 +37,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         if (!userIdHeader) return res.status(401).json({ error: "User ID required" });
         
         const articles = await getArticlesByUserId(userIdHeader);
+        console.log("[API] Fetched articles for user:", articles.map(a => ({ id: a.id, title: a.title, featured: !!a.featuredImageUrl })));
         res.json(articles);
       } else if (req.method === "POST") {
         const parsed = insertArticleSchema.safeParse(req.body);
