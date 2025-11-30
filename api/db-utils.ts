@@ -2,7 +2,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "../shared/schema.js";
 import { eq } from "drizzle-orm";
-import type { AppUser } from "../shared/schema.js";
+import type { AppUser, Article, WordPressSite } from "../shared/schema.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -22,4 +22,15 @@ export async function getAppUserByUsername(username: string): Promise<AppUser | 
 
 export async function getAllAppUsers(): Promise<AppUser[]> {
   return await db.select().from(schema.appUsers);
+}
+
+export async function getArticlesByUserId(userId: string): Promise<Article[]> {
+  return await db
+    .select()
+    .from(schema.articles)
+    .where(eq(schema.articles.userId, userId));
+}
+
+export async function getAllWordPressSites(): Promise<WordPressSite[]> {
+  return await db.select().from(schema.wordPressSites);
 }

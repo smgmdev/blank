@@ -41,7 +41,7 @@ export default function MyArticles() {
       setIsLoading(true);
       try {
         const [articlesRes, sitesRes] = await Promise.all([
-          fetch(`/api/articles`),
+          fetch(`/api/articles`, { headers: { "x-user-id": userId } }),
           fetch(`/api/sites`)
         ]);
         
