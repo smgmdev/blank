@@ -118,7 +118,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       
       const pub = await getArticlePublishingBySiteAndArticle(siteId as string, articleId as string);
       if (!pub) return res.status(404).json({ error: "Publishing info not found" });
-      res.json(pub);
+      
+      // Get site info to construct wpLink if not saved
+      const site = await getWordPressSiteById(siteId as string);
+      const wpLink = pub.wpLink || (site && pub.wpPostId ? `${site.url}?p=${pub.wpPostId}` : null);
+      
+      res.json({ ...pub, wpLink });
     }
     // /api/content?type=publish - POST publish article
     else if (type === "publish") {
