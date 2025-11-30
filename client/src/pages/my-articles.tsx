@@ -331,60 +331,69 @@ export default function MyArticles() {
           </div>
           <p className="text-muted-foreground text-sm">Loading articles...</p>
         </div>
-      ) : articles.length === 0 ? (
-        <div className="border border-dashed rounded-lg p-12 text-center space-y-4">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-            <FileText className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <div>
-            <h3 className="font-medium text-lg">No articles yet</h3>
-            <p className="text-muted-foreground text-sm">Start writing your first article to see it here.</p>
-          </div>
-          <Link href="/editor">
-            <Button variant="outline" size="sm">
-              Write Your First Article
-            </Button>
-          </Link>
-        </div>
       ) : (
-        <Tabs defaultValue="published" className="w-full">
-          <TabsList>
-            <TabsTrigger value="published" className="flex items-center gap-2">
-              Published <Badge variant="secondary" className="ml-2">{publishedArticles.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="drafts" className="flex items-center gap-2">
-              Drafts <Badge variant="secondary" className="ml-2">{draftArticles.length}</Badge>
-            </TabsTrigger>
-          </TabsList>
+        <>
+          <Tabs defaultValue="published" className="w-full">
+            <TabsList>
+              <TabsTrigger value="published" className="flex items-center gap-2">
+                Published <Badge variant="secondary" className="ml-2">{publishedArticles.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="drafts" className="flex items-center gap-2">
+                Drafts <Badge variant="secondary" className="ml-2">{draftArticles.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="published" className="space-y-4">
-            {publishedArticles.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No published articles yet.</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {publishedArticles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
+            <TabsContent value="published" className="space-y-4">
+              {publishedArticles.length === 0 ? (
+                <div className="border border-dashed rounded-lg p-12 text-center space-y-4">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                    <FileText className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-lg">No published articles yet</h3>
+                    <p className="text-muted-foreground text-sm">Write and publish your first article to see it here.</p>
+                  </div>
+                  <Link href="/editor">
+                    <Button variant="outline" size="sm">
+                      Write Your First Article
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {publishedArticles.map((article) => (
+                    <ArticleCard key={article.id} article={article} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
-          <TabsContent value="drafts" className="space-y-4">
-            {draftArticles.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No draft articles yet.</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {draftArticles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="drafts" className="space-y-4">
+              {draftArticles.length === 0 ? (
+                <div className="border border-dashed rounded-lg p-12 text-center space-y-4">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                    <FileText className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-lg">No draft articles yet</h3>
+                    <p className="text-muted-foreground text-sm">Start writing your first article to save it as a draft.</p>
+                  </div>
+                  <Link href="/editor">
+                    <Button variant="outline" size="sm">
+                      Write Your First Article
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {draftArticles.map((article) => (
+                    <ArticleCard key={article.id} article={article} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </>
       )}
 
       {/* Delete Confirmation Dialog */}
