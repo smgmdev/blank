@@ -1003,7 +1003,9 @@ export async function registerRoutes(
             
             const postsRes = await fetch(postsUrl, { headers });
             if (!postsRes.ok) {
+              const errorText = await postsRes.text();
               console.error(`[Sync] Failed to fetch posts from ${site.name}: HTTP ${postsRes.status}`);
+              console.error(`[Sync] WordPress API response:`, errorText);
               console.log(`[Sync] Skipping deletion check for ${site.name} due to fetch error`);
               break;
             }
