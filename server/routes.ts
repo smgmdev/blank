@@ -622,7 +622,7 @@ export async function registerRoutes(
             headers: {
               Authorization: `Basic ${adminAuth}`,
               "Content-Type": contentType,
-              "Content-Disposition": `form-data; name="file"; filename="featured-image.${extension}"`
+              "Content-Disposition": `attachment; filename="featured-image.${extension}"`
             },
             body: imageBuffer
           });
@@ -710,6 +710,54 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Publish error:", error);
       res.status(500).json({ error: "Failed to publish article" });
+    }
+  });
+
+  // Sync/Refresh - Check for deleted articles on WordPress
+  app.post("/api/sync-articles", async (req, res) => {
+    try {
+      const articles = await storage.getAllArticles();
+      let deletedCount = 0;
+      
+      for (const article of articles) {
+        if (article.status === 'published' && article.siteId) {
+          try {
+            const publishing = await storage.getArticlePublishingByArticleId(article.id);
+            if (publishing.length > 0) {
+              const pub = publishing[0];
+              const site = await storage.getWordPressSite(pub.siteId);
+              
+              if (site && pub.wpPostId && site.adminUsername) {
+                const postId = parseInt(pub.wpPostId, 10);
+                const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
+                
+                try {
+                  const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+                  const checkRes = await fetch(checkUrl, {
+                    headers: { Authorization: `Basic ${auth}` }
+                  });
+                  
+                  if (checkRes.status === 404) {
+                    console.log(`Article ${article.id} deleted from WordPress - removing from app`);
+                    await storage.deleteArticle(article.id);
+                    deletedCount++;
+                  }
+                } catch (fetchError) {
+                  console.error(`Fetch error for post ${postId}:`, fetchError);
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Sync check error:", error);
+          }
+        }
+      }
+      
+      const syncedArticles = await storage.getAllArticles();
+      res.json({ success: true, deletedCount, articles: syncedArticles });
+    } catch (error) {
+      console.error("Sync error:", error);
+      res.status(500).json({ error: "Failed to sync articles" });
     }
   });
 

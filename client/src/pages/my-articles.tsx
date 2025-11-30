@@ -132,46 +132,58 @@ export default function MyArticles() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      const [articlesRes, sitesRes] = await Promise.all([
-        fetch(`/api/articles`),
-        fetch(`/api/sites`)
-      ]);
+      const syncRes = await fetch(`/api/sync-articles`, {
+        method: 'POST'
+      });
       
-      if (articlesRes.ok && sitesRes.ok) {
-        const allArticles = await articlesRes.json();
-        const allSites = await sitesRes.json();
-        const userArticles = allArticles.filter((a: any) => a.userId === userId);
+      if (syncRes.ok) {
+        const syncData = await syncRes.json();
+        const userArticles = syncData.articles.filter((a: any) => a.userId === userId);
         
+        // Fetch category names for each site
+        const [sitesRes] = await Promise.all([fetch(`/api/sites`)]);
+        const allSites = sitesRes.ok ? await sitesRes.json() : [];
+        setSites(allSites);
+        
+        const newCategoryMap: Record<string, Record<number, string>> = {};
+        for (const site of allSites) {
+          try {
+            const catRes = await fetch(`/api/sites/${site.id}/categories?userId=${userId}`);
+            if (catRes.ok) {
+              const categories = await catRes.json();
+              newCategoryMap[site.id] = {};
+              categories.forEach((cat: any) => {
+                newCategoryMap[site.id][cat.id] = cat.name;
+              });
+            }
+          } catch (e) {
+            console.error(`Failed to fetch categories for site ${site.id}:`, e);
+          }
+        }
+        setCategoryMap(newCategoryMap);
+        
+        // Fetch WordPress links
         const articlesWithLinks = await Promise.all(userArticles.map(async (article: any) => {
-          if (article.status === 'published' && article.siteId) {
+          if (article.status === 'published') {
             try {
-              const site = allSites.find((s: any) => s.id === article.siteId);
               const publishRes = await fetch(`/api/articles/${article.id}/publishing`);
               if (publishRes.ok) {
                 const pubData = await publishRes.json();
-                return { ...article, wpLink: pubData.wpLink, exists: true };
-              } else if (publishRes.status === 404) {
-                // Article doesn't exist on WordPress anymore - mark for deletion
-                return { ...article, exists: false };
+                return { ...article, wpLink: pubData.wpLink };
               }
             } catch (e) {
-              // Silently fail but keep article
+              // Silently fail
             }
           }
-          return { ...article, exists: true };
+          return article;
         }));
         
-        // Filter out deleted articles and update
-        const activeArticles = articlesWithLinks.filter(a => a.exists !== false);
-        const deletedCount = articlesWithLinks.length - activeArticles.length;
+        setArticles(articlesWithLinks);
         
-        setArticles(activeArticles);
-        setSites(allSites);
-        
-        if (deletedCount > 0) {
+        if (syncData.deletedCount > 0) {
           toast({
             title: "Synced",
-            description: `Articles synced with WordPress. ${deletedCount} deleted article(s) removed.`
+            description: `Articles synced with WordPress. ${syncData.deletedCount} deleted article(s) removed.`
           });
         } else {
           toast({
