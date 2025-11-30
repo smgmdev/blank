@@ -355,14 +355,14 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         status: "published"
       });
 
-      console.log("[Publish] Updating article with:", { featuredImageUrl, categories, tags });
+      console.log("[Publish] Updating article with:", { featuredImageUrl, categories, allTagIds });
       await updateArticle(articleId as string, {
         status: 'published',
         publishedAt: new Date(),
         siteId: sid,
         featuredImageUrl,
         categories,
-        tags
+        tags: allTagIds  // Use all tag IDs (existing + newly created)
       });
 
       console.log("[Publish] ✓ Article published successfully:", { wpPostId: wpPost.id, wpLink, featuredImageUrl });

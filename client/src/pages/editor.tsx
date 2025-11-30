@@ -1379,10 +1379,6 @@ export default function Editor() {
         </div>
       )}
 
-      {/* Overlay during publishing - MUST be before footer to be on top */}
-      {isPublishing && (
-        <div className="fixed inset-0 bg-black/40 z-50 cursor-not-allowed" />
-      )}
 
       {/* Footer Controls */}
       <div className="fixed bottom-0 left-0 w-full bg-background border-t border-border p-4 z-30 md:pl-64 md:z-20">
