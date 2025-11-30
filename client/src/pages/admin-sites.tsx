@@ -317,29 +317,21 @@ export default function AdminSites() {
                       ✓ WordPress connection verified
                     </div>
                   )}
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsOpen(false);
+                      setIsVerified(false);
+                      setAdminCreds({ username: "", password: "" });
+                      setNewSite({ name: "", url: "", seoPlugin: "rankmath", apiUrl: "", apiToken: "" });
+                    }}
+                    className="w-full hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200"
+                  >
+                    Cancel
+                  </Button>
                 </div>
               </div>
             </div>
-            <DialogFooter className="justify-between flex gap-2 flex-col-reverse sm:flex-row w-full">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setIsOpen(false);
-                  setIsVerified(false);
-                  setAdminCreds({ username: "", password: "" });
-                }}
-                className="hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleAdd} 
-                className="w-full sm:w-auto"
-                disabled={!isVerified || isVerifying}
-              >
-                Add Site
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
