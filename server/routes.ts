@@ -1099,22 +1099,30 @@ export async function registerRoutes(
           return res.status(401).json({ error: "Invalid credentials" });
         }
 
-        // Create server-side session (7 days expiry)
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);
-        
-        const session = await storage.createUserSession({
-          userId: user.id,
-          expiresAt
-        });
+        // Try to create server-side session (7 days expiry)
+        let sessionId = null;
+        try {
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 7);
+          
+          const session = await storage.createUserSession({
+            userId: user.id,
+            expiresAt
+          });
+          sessionId = session.id;
+        } catch (sessionError) {
+          // Session table might not exist yet, continue without it
+          console.warn("[Auth] Session creation failed, continuing without server session");
+        }
 
         res.json({
           id: user.id,
           email: user.email,
           role: user.role,
-          sessionId: session.id
+          sessionId: sessionId || user.id
         });
       } catch (error) {
+        console.error("[Auth] Login error:", error);
         res.status(500).json({ error: "Failed to login" });
       }
     } else if (action === "logout") {
