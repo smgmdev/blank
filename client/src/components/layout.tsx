@@ -276,12 +276,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen lg:h-full overflow-hidden">
         <header className="h-16 border-b border-border bg-background/50 backdrop-blur-sm z-10 flex items-center justify-between px-4 lg:px-8 flex-shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-2">
             <h1 className="font-semibold text-lg">
               {location === '/settings' ? 'Account Settings' : (navItems.find(i => i.href === location)?.headerLabel || 'Dashboard')}
             </h1>
             {location === '/settings' && (
-              <Badge className="bg-black text-white rounded-full px-1.5 py-0.5 text-xs font-semibold">
+              <Badge className="bg-black text-white rounded-full px-1 py-0 text-xs font-semibold h-fit mt-1">
                 Global
               </Badge>
             )}
