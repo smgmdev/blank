@@ -181,6 +181,28 @@ export default function PublishingProfile() {
           setPreviewUrl(wpData.profilePicture);
         }
       }
+      
+      // Refetch connected sites user data to show updated profile image in cards
+      const sitesRes = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
+      if (sitesRes.ok) {
+        const sites = await sitesRes.json();
+        const connected = sites.filter((s: any) => s.userIsConnected);
+        setConnectedSites(connected);
+        
+        // Fetch updated WP user info for each site
+        const users: { [key: string]: any } = {};
+        for (const site of connected) {
+          try {
+            const userRes = await fetch(`/api/wp-site-user?userId=${userId}&siteId=${site.id}`);
+            if (userRes.ok) {
+              users[site.id] = await userRes.json();
+            }
+          } catch (e) {
+            console.error(`Failed to refetch WP user for site ${site.id}:`, e);
+          }
+        }
+        setSiteUsers(users);
+      }
 
       toast({
         title: "Profile Updated",
