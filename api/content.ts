@@ -257,6 +257,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       // Handle tags: numeric IDs go directly, strings are created as new tags
       const tagIds: number[] = [];
       const newTagNames: string[] = [];
+      const createdTagMap: Record<number, string> = {}; // Track newly created tags
       
       if (Array.isArray(tags)) {
         for (const tag of tags) {
@@ -286,6 +287,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             if (tagRes.ok) {
               const newTag = await tagRes.json();
               allTagIds.push(newTag.id);
+              createdTagMap[newTag.id] = tagName; // Store mapping
               console.log("[Publish] ✓ Created new tag:", { name: tagName, id: newTag.id });
             } else {
               const error = await tagRes.text();
@@ -369,7 +371,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       });
 
       console.log("[Publish] ✓ Article published successfully:", { wpPostId: wpPost.id, wpLink, featuredImageUrl });
-      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, wpLink: wpLink, featuredImageUrl });
+      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, wpLink: wpLink, featuredImageUrl, createdTags: createdTagMap });
     }
     else {
       res.status(400).json({ error: "Invalid type" });
