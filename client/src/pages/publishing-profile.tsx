@@ -170,6 +170,9 @@ export default function PublishingProfile() {
       // Refetch from API to get the saved profile
       await loadPublishingProfileFromAPI(userId);
       
+      // Trigger layout to refetch from Supabase
+      window.dispatchEvent(new Event('profile-updated'));
+      
       // After refetch, update state with saved values from database
       if (savedUser && savedUser.displayName) {
         setDisplayName(savedUser.displayName);

@@ -26,8 +26,37 @@ import {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
-  const { user, logout, isPublishing, publishingProfile } = useStore();
+  const { user, logout, isPublishing } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [publishingProfile, setPublishingProfile] = useState<any>(null);
+
+  // Fetch profile from Supabase (via API) - always fresh from database
+  const fetchProfile = () => {
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+      fetch(`/api/users/${userId}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(user => {
+          if (user) {
+            setPublishingProfile({
+              userId,
+              displayName: user.displayName || 'Content Creator',
+              profilePicture: user.profilePicture
+            });
+          }
+        })
+        .catch(e => console.debug('Profile fetch:', e));
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      // Listen for profile updates from other pages
+      window.addEventListener('profile-updated', fetchProfile);
+      return () => window.removeEventListener('profile-updated', fetchProfile);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
