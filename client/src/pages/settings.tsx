@@ -181,6 +181,16 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl space-y-8 pb-20">
+      <div className="flex items-start gap-2">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Account Settings</h2>
+          {isAdmin && (
+            <Badge className="bg-black text-white rounded-full px-1.5 py-0.5 text-xs font-semibold inline-block mt-1">
+              Global
+            </Badge>
+          )}
+        </div>
+      </div>
       <div>
         <p className="text-muted-foreground">Manage your account information and security.</p>
       </div>
