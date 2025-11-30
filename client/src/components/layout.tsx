@@ -60,6 +60,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [isPublishing]);
 
+  // Close mobile menu when location changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
+
   if (!user) return null;
 
   const isAdmin = user === 'admin';
