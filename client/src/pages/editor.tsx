@@ -221,21 +221,37 @@ export default function Editor() {
       .trim();
   };
 
-  // Common stop words to exclude from focus keyword
+  // Common stop words and verbs to exclude from focus keyword
   const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'be', 'been', 'is', 'this', 'that', 'it', 'which', 'who', 'what', 'when', 'where', 'why', 'how', 'he', 'she', 'me', 'you', 'we', 'they', 'them', 'their']);
+  
+  // Common verbs to exclude - we want nouns for focus keywords
+  const verbWords = new Set(['make', 'get', 'go', 'know', 'take', 'see', 'come', 'think', 'say', 'try', 'ask', 'need', 'feel', 'become', 'leave', 'put', 'mean', 'keep', 'let', 'begin', 'seem', 'help', 'talk', 'turn', 'start', 'show', 'hear', 'play', 'run', 'move', 'like', 'live', 'believe', 'hold', 'bring', 'happen', 'write', 'provide', 'sit', 'stand', 'lose', 'pay', 'meet', 'include', 'continue', 'set', 'learn', 'change', 'lead', 'understand', 'watch', 'follow', 'stop', 'create', 'speak', 'read', 'allow', 'add', 'spend', 'grow', 'open', 'walk', 'win', 'offer', 'remember', 'love', 'consider', 'appear', 'buy', 'wait', 'serve', 'die', 'send', 'expect', 'build', 'stay', 'fall', 'cut', 'reach', 'kill', 'remain', 'suggest', 'raise', 'pass', 'sell', 'require', 'report', 'decide', 'pull', 'explain', 'develop', 'carry', 'break', 'receive', 'agree', 'support', 'hit', 'produce', 'eat', 'cover', 'catch', 'draw', 'choose', 'cause', 'follow', 'climb', 'claim', 'arrive', 'hurt', 'doing', 'done', 'called', 'being', 'having', 'going', 'coming', 'trying', 'making', 'taking', 'giving', 'showing', 'using', 'looking', 'getting', 'seeing', 'finding']);
 
-  // Global trending SEO keywords - high-value words used when no good keyword found
-  const trendingWords = ['guide', 'tips', 'best', 'tutorial', 'how', 'learn', 'strategy', 'benefits', 'review', 'solution', 'method', 'process', 'tools', 'software', 'app', 'service', 'platform', 'system', 'analysis', 'comparison', 'complete', 'advanced', 'ultimate', 'essential', 'proven', 'effective', 'powerful', 'practical'];
+  // Global trending SEO keywords (nouns) - high-value words used when no good keyword found
+  const trendingWords = ['guide', 'tips', 'strategy', 'benefits', 'review', 'solution', 'method', 'process', 'tools', 'software', 'app', 'service', 'platform', 'system', 'analysis', 'comparison', 'tutorial', 'resource', 'template', 'framework', 'pattern', 'technique', 'approach', 'feature', 'implementation', 'example', 'case', 'study', 'practice', 'training', 'course'];
+
+  const isNoun = (word: string): boolean => {
+    // Filter out verbs and stop words
+    if (stopWords.has(word) || verbWords.has(word)) {
+      return false;
+    }
+    // Exclude common verb endings
+    if (word.endsWith('ing') || word.endsWith('ed') || word.endsWith('ize') || word.endsWith('ise')) {
+      return false;
+    }
+    return true;
+  };
 
   const extractFocusKeyword = (title: string, content: string): string => {
     if (!title || !content) return '';
     
-    // Extract words from title (excluding stop words)
+    // Extract nouns from title (excluding stop words and verbs)
     const titleWords = title
       .toLowerCase()
       .split(/\s+/)
-      .filter(word => word.length > 2 && !stopWords.has(word))
-      .map(word => word.replace(/[^\w]/g, ''));
+      .filter(word => word.length > 2)
+      .map(word => word.replace(/[^\w]/g, ''))
+      .filter(word => isNoun(word));
 
     // Get first paragraph from content (strip HTML)
     const firstParagraph = content
@@ -243,19 +259,19 @@ export default function Editor() {
       .split(/\n\n/)[0]
       .toLowerCase();
 
-    // Find first title word that also appears in first paragraph
+    // Find first title noun that also appears in first paragraph
     for (const word of titleWords) {
       if (firstParagraph.includes(word)) {
         return word;
       }
     }
 
-    // Fallback: if we have substantial words, use first one
+    // Fallback: if we have nouns, use first one
     if (titleWords.length > 0) {
       return titleWords[0];
     }
 
-    // Final fallback: use trending word from title (if title contains trending words)
+    // Final fallback: use trending word from title (nouns only)
     const trendingInTitle = title.toLowerCase().split(/\s+/).find(word => 
       trendingWords.includes(word.replace(/[^\w]/g, ''))
     );
