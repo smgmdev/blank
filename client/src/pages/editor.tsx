@@ -1379,9 +1379,9 @@ export default function Editor() {
         </div>
       )}
 
-      {/* Overlay during publishing - disables all clicks and covers entire viewport */}
+      {/* Overlay during publishing - MUST be before footer to be on top */}
       {isPublishing && (
-        <div className="fixed inset-0 bg-black/30 z-50 cursor-not-allowed pointer-events-auto" />
+        <div className="fixed inset-0 bg-black/40 z-50 cursor-not-allowed" />
       )}
 
       {/* Footer Controls */}

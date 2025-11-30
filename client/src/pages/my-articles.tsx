@@ -90,19 +90,7 @@ export default function MyArticles() {
           setArticles(articlesWithCachedLinks);
           setIsLoading(false);
           
-          // BACKGROUND: Sync with WordPress to remove deleted articles
-          fetch(`/api/sync-articles`, { method: 'POST' })
-            .then(res => res.ok && res.json())
-            .then(syncData => {
-              if (syncData?.deletedIds?.length > 0) {
-                console.log('[MyArticles] Removed deleted articles:', syncData.deletedIds);
-                // Remove deleted articles from state
-                setArticles(prev => prev.filter(a => !syncData.deletedIds.includes(a.id)));
-              }
-            })
-            .catch(e => console.error('[MyArticles] Sync failed:', e));
-          
-          // BACKGROUND: Fetch categories for each site and populate categoryMap
+          // FETCH CATEGORIES IMMEDIATELY FOR INITIAL LOAD
           const newCategoryMap: Record<string, Record<number, string>> = {};
           for (const site of allSites) {
             try {
@@ -115,12 +103,25 @@ export default function MyArticles() {
                 });
               }
             } catch (e) {
-              // Silently fail
+              console.error(`Failed to fetch categories for site ${site.id}:`, e);
             }
           }
           if (Object.keys(newCategoryMap).length > 0) {
             setCategoryMap(newCategoryMap);
+            setIsCategoriesLoading(false);
           }
+          
+          // BACKGROUND: Sync with WordPress to remove deleted articles
+          fetch(`/api/sync-articles`, { method: 'POST' })
+            .then(res => res.ok && res.json())
+            .then(syncData => {
+              if (syncData?.deletedIds?.length > 0) {
+                console.log('[MyArticles] Removed deleted articles:', syncData.deletedIds);
+                // Remove deleted articles from state
+                setArticles(prev => prev.filter(a => !syncData.deletedIds.includes(a.id)));
+              }
+            })
+            .catch(e => console.error('[MyArticles] Sync failed:', e));
           
           // BACKGROUND: Fetch WordPress links for published articles ONLY if there are any
           const publishedArticles = articlesWithCachedLinks.filter((a: any) => a.status === 'published' && !a.wpLink);
