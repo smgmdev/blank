@@ -25,6 +25,18 @@ export async function ensureSchemaColumns() {
       ADD COLUMN IF NOT EXISTS admin_password TEXT
     `);
     
+    // Check and create displayName column if missing
+    await db.execute(sql`
+      ALTER TABLE app_users 
+      ADD COLUMN IF NOT EXISTS display_name TEXT
+    `);
+    
+    // Check and create profilePicture column if missing
+    await db.execute(sql`
+      ALTER TABLE app_users 
+      ADD COLUMN IF NOT EXISTS profile_picture TEXT
+    `);
+    
     console.log("[DB] Schema columns verified");
   } catch (error) {
     console.error("[DB] Failed to ensure schema columns:", error);
