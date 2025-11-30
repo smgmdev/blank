@@ -229,7 +229,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${isPublishing ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'cursor-pointer'}
                     ${isActive 
                       ? "bg-primary/10 text-primary" 
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+                      : "text-muted-foreground hover:bg-blue-50 hover:text-blue-600"}
                   `}
                 >
                   <item.icon className="w-4 h-4" />
@@ -248,7 +248,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${isPublishing ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'cursor-pointer'}
                   ${location === "/publishing-profile"
                     ? "bg-primary/10 text-primary" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+                    : "text-muted-foreground hover:bg-blue-50 hover:text-blue-600"}
                 `}
               >
                 <User className="w-4 h-4" />
