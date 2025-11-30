@@ -64,14 +64,19 @@ export default function PublishingProfile() {
             setSiteUsers(users);
           }
           
-          // Fetch WP profile
+          // Fetch WP profile for display name (but prioritize local database image)
           const wpData = await fetchWPProfile(userId);
           if (wpData && typeof wpData === 'object') {
-            const { displayName: wpDisplayName, profilePicture: wpProfilePicture } = wpData as { displayName: string; profilePicture?: string };
-            setDisplayName(wpDisplayName || publishingProfile?.displayName || "");
-            if (wpProfilePicture) {
-              setPreviewUrl(wpProfilePicture);
-            } else if (publishingProfile?.profilePicture) {
+            const { displayName: wpDisplayName } = wpData as { displayName: string; profilePicture?: string };
+            // Use WP display name if available, otherwise use local
+            if (wpDisplayName) {
+              setDisplayName(wpDisplayName);
+            } else if (publishingProfile?.displayName) {
+              setDisplayName(publishingProfile.displayName);
+            }
+            
+            // Always use local database profile picture (not WordPress Gravatar)
+            if (publishingProfile?.profilePicture) {
               setPreviewUrl(publishingProfile.profilePicture);
             }
           }
@@ -171,17 +176,16 @@ export default function PublishingProfile() {
         // Don't fail the save if WordPress sync fails
       }
 
-      // Refetch from API and WordPress to ensure everything is synced
+      // Refetch from API to get the saved profile
       await loadPublishingProfileFromAPI(userId);
       
-      // Reload WP profile to show it was synced
-      await new Promise(r => setTimeout(r, 500));
-      const wpData = await fetchWPProfile(userId);
-      if (wpData) {
-        setDisplayName(wpData.displayName || displayName);
-        if (wpData.profilePicture) {
-          setPreviewUrl(wpData.profilePicture);
-        }
+      // After refetch, update state with saved values from database
+      if (savedUser && savedUser.displayName) {
+        setDisplayName(savedUser.displayName);
+      }
+      if (savedUser && savedUser.profilePicture) {
+        setPreviewUrl(savedUser.profilePicture);
+        console.log('Profile picture updated from database:', savedUser.profilePicture.length, 'bytes');
       }
       
       // Refetch connected sites user data to show updated profile image in cards
