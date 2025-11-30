@@ -39,12 +39,18 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
         ]) as Response;
         
-        if (!checkRes.ok) {
+        // Only delete if we get 404 (post not found). Skip on 401/403 (auth issues)
+        if (checkRes.status === 404) {
           console.log(`[Sync] Article ${article.id} deleted from WordPress`);
           return article.id;
         }
+        
+        // For any other status (401, 403, 500 etc), don't delete - just log and continue
+        if (!checkRes.ok) {
+          console.log(`[Sync] Article ${article.id}: Got status ${checkRes.status}, not deleting (might be auth issue)`);
+        }
       } catch (e) {
-        console.error(`[Sync] Check failed for ${article.id}`);
+        console.error(`[Sync] Check failed for ${article.id}:`, e);
       }
       return null;
     });
