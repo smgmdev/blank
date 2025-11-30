@@ -21,13 +21,22 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     const deletedIds: string[] = [];
     
-    console.log(`[Sync] Starting sync (manual: ${isManual}) - found ${allArticles.length} total articles, ${articlesToCheck.length} published`);
+    // Skip articles published less than 30 seconds ago (protection against WordPress indexing delays)
+    const now = Date.now();
+    const minAgeMs = 30 * 1000; // 30 seconds
+    const filteredArticles = articlesToCheck.filter((a: any) => {
+      if (!a.publishedAt) return true;
+      const ageMs = now - new Date(a.publishedAt).getTime();
+      return ageMs >= minAgeMs;
+    });
+    
+    console.log(`[Sync] Starting sync (manual: ${isManual}) - found ${allArticles.length} total articles, checking ${filteredArticles.length} published (skipped ${articlesToCheck.length - filteredArticles.length} recently published)`);
     console.log(`[Sync] Found ${publishingRecords.length} publishing records`);
-    console.log(`[Sync] Article IDs to check: ${articlesToCheck.map((a: any) => a.id).join(', ')}`);
+    console.log(`[Sync] Article IDs to check: ${filteredArticles.map((a: any) => a.id).join(', ')}`);
     console.log(`[Sync] Publishing record article IDs: ${publishingRecords.map((p: any) => p.articleId).join(', ')}`);
     
     // Check each published article
-    const checkPromises = articlesToCheck.map(async (article: any) => {
+    const checkPromises = filteredArticles.map(async (article: any) => {
       const pub = publishingRecords.find((p: any) => p.articleId === article.id);
       
       // Handle articles WITHOUT publishing records but WITH wpLink
@@ -169,20 +178,10 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             data.message?.toLowerCase().includes('no post');
           
           if (isNotFound) {
-            // Grace period: only delete if old enough (auto: 5min, manual: 15sec minimum safety window)
-            const publishedTime = article.publishedAt ? new Date(article.publishedAt).getTime() : 0;
-            const now = Date.now();
-            const ageMs = now - publishedTime;
-            const graceMs = isManual ? 15 * 1000 : 5 * 60 * 1000; // 15 seconds for manual, 5 minutes for auto
-            
-            if (ageMs > graceMs) {
-              const reason = isMissing ? `post empty/missing (id: ${data.id}, title: ${data.title?.raw || 'missing'})` : (data.code || data.message || 'no post data');
-              console.log(`[Sync] Article ${article.id} marked for deletion - ${reason} (manual: ${isManual}, age: ${(ageMs/1000).toFixed(0)}s, grace: ${(graceMs/1000).toFixed(0)}s)`);
-              return article.id;
-            } else {
-              const reason = isMissing ? `post empty/missing (id: ${data.id}, title: ${data.title?.raw || 'missing'})` : (data.code || data.message || 'no post data');
-              console.log(`[Sync] Article ${article.id}: ${reason} but too recent (manual: ${isManual}, age: ${(ageMs/1000).toFixed(0)}s, needs: ${(graceMs/1000).toFixed(0)}s), skipping delete`);
-            }
+            // Delete immediately (safe because we skip recently published articles)
+            const reason = isMissing ? `post empty/missing (id: ${data.id}, title: ${data.title?.raw || 'missing'})` : (data.code || data.message || 'no post data');
+            console.log(`[Sync] Article ${article.id} marked for deletion - ${reason}`);
+            return article.id;
           }
           
           console.log(`[Sync] Article ${article.id}: Post exists (status ${checkRes.status})`);
