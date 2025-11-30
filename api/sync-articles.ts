@@ -42,22 +42,24 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return null;
     });
     
-    const deletedArticleIds = (await Promise.all(checkPromises)).filter(Boolean);
+    const deletedArticleIds = (await Promise.all(checkPromises)).filter((id): id is string => id !== null);
     
     // Delete articles and their publishing records from database
     if (deletedArticleIds.length > 0) {
-      console.log(`[Sync] Deleting ${deletedArticleIds.length} articles from database:`, deletedArticleIds);
+      console.log(`[Sync] Found ${deletedArticleIds.length} deleted articles, removing from DB:`, deletedArticleIds);
       for (const id of deletedArticleIds) {
         try {
-          const delCount = await db.delete(articles).where(eq(articles.id, id));
-          const pubDelCount = await db.delete(articlePublishing).where(eq(articlePublishing.articleId, id));
-          console.log(`[Sync] ✓ Deleted article ${id}: articles=${delCount}, publishing=${pubDelCount}`);
+          await db.delete(articlePublishing).where(eq(articlePublishing.articleId, id));
+          await db.delete(articles).where(eq(articles.id, id));
           deletedIds.push(id);
+          console.log(`[Sync] ✓ Deleted article ${id} from database`);
         } catch (e) {
           console.error(`[Sync] Error deleting article ${id}:`, e);
         }
       }
     }
+    
+    console.log(`[Sync] Complete: ${deletedIds.length} articles removed`);
     
     const syncedArticles = await db.select().from(articles);
     console.log(`[Sync] Complete: ${deletedIds.length} deleted`);

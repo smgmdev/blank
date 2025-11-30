@@ -30,6 +30,7 @@ export default function MyArticles() {
   const [articles, setArticles] = useState<any[]>([]);
   const [sites, setSites] = useState<any[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, Record<number, string>>>({});
+  const [tagMap, setTagMap] = useState<Record<string, Record<number, string>>>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,11 +91,15 @@ export default function MyArticles() {
           setArticles(articlesWithCachedLinks);
           setIsLoading(false);
           
-          // FETCH CATEGORIES IMMEDIATELY FOR INITIAL LOAD
+          // FETCH CATEGORIES AND TAGS IMMEDIATELY FOR INITIAL LOAD
           const newCategoryMap: Record<string, Record<number, string>> = {};
+          const newTagMap: Record<string, Record<number, string>> = {};
           for (const site of allSites) {
             try {
-              const catRes = await fetch(`/api/content?type=categories&userId=${userId}&siteId=${site.id}`);
+              const [catRes, tagRes] = await Promise.all([
+                fetch(`/api/content?type=categories&userId=${userId}&siteId=${site.id}`),
+                fetch(`/api/content?type=tags&userId=${userId}&siteId=${site.id}`)
+              ]);
               if (catRes.ok) {
                 const categories = await catRes.json();
                 newCategoryMap[site.id] = {};
@@ -102,14 +107,24 @@ export default function MyArticles() {
                   newCategoryMap[site.id][cat.id] = cat.name;
                 });
               }
+              if (tagRes.ok) {
+                const tags = await tagRes.json();
+                newTagMap[site.id] = {};
+                tags.forEach((tag: any) => {
+                  newTagMap[site.id][tag.id] = tag.name;
+                });
+              }
             } catch (e) {
-              console.error(`Failed to fetch categories for site ${site.id}:`, e);
+              console.error(`Failed to fetch categories/tags for site ${site.id}:`, e);
             }
           }
           if (Object.keys(newCategoryMap).length > 0) {
             setCategoryMap(newCategoryMap);
-            setIsCategoriesLoading(false);
           }
+          if (Object.keys(newTagMap).length > 0) {
+            setTagMap(newTagMap);
+          }
+          setIsCategoriesLoading(false);
           
           // BACKGROUND: Sync with WordPress to remove deleted articles
           fetch(`/api/sync-articles`, { method: 'POST' })
@@ -295,15 +310,25 @@ export default function MyArticles() {
       if (!Array.isArray(article.categories) || !site) return [];
       const siteCategories = categoryMap[site.id] || {};
       return article.categories.map((catId: any) => {
-        // If it's a number ID, look it up in the map
         if (typeof catId === 'number') {
-          return siteCategories[catId] || null;  // Return null if loading, don't show raw ID
+          return siteCategories[catId] || null;
         }
-        // If it's already an object with name, use it
         if (typeof catId === 'object' && catId.name) return catId.name;
-        // Otherwise convert to string
         return String(catId);
-      }).filter(Boolean);  // Filter out null values
+      }).filter(Boolean);
+    };
+    
+    // Get tag names from the tagMap
+    const getTagNames = () => {
+      if (!Array.isArray(article.tags) || !site) return [];
+      const siteTags = tagMap[site.id] || {};
+      return article.tags.map((tagId: any) => {
+        if (typeof tagId === 'number') {
+          return siteTags[tagId] || null;
+        }
+        if (typeof tagId === 'string') return tagId;
+        return String(tagId);
+      }).filter(Boolean);
     };
     
     // Check if ANY categories are still loading for this article
@@ -360,11 +385,11 @@ export default function MyArticles() {
                   ))}
                 </>
               )}
-              {!isCategoriesLoading && Array.isArray(article.tags) && article.tags.slice(0, 3).map((tag: any) => (
-                <Badge key={tag} variant="secondary" className="text-xs text-muted-foreground">{tag}</Badge>
+              {!isCategoriesLoading && getTagNames().slice(0, 3).map((tagName: string) => (
+                <Badge key={tagName} variant="secondary" className="text-xs text-muted-foreground">{tagName}</Badge>
               ))}
-              {!isCategoriesLoading && Array.isArray(article.tags) && article.tags.length > 3 && (
-                <Badge variant="secondary" className="text-xs text-muted-foreground">+{article.tags.length - 3}</Badge>
+              {!isCategoriesLoading && getTagNames().length > 3 && (
+                <Badge variant="secondary" className="text-xs text-muted-foreground">+{getTagNames().length - 3}</Badge>
               )}
             </div>
             
