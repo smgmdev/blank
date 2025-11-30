@@ -27,8 +27,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const checkUrl = `${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`;
       
       try {
+        // Use admin token for authentication
+        const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
         const checkRes = await Promise.race([
-          fetch(checkUrl),
+          fetch(checkUrl, {
+            headers: { Authorization: `Basic ${auth}` }
+          }),
           new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000))
         ]) as Response;
         
