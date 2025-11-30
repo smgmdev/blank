@@ -1003,51 +1003,23 @@ export async function registerRoutes(
             
             try {
               const checkRes = await fetch(checkUrl, { headers });
-              const resText = await checkRes.text();
               
-              console.log(`[Sync] Response status: ${checkRes.status}`);
-              
-              // If 404, post doesn't exist on WordPress - delete it from our database
-              if (checkRes.status === 404) {
-                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): NOT FOUND on WordPress (404) - DELETING`);
-                await storage.deleteArticle(article.id);
-                console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
-                deletedCount++;
-                deletedIds.push(article.id);
-                continue;
-              }
-              
-              // Check if it's an auth error
-              if (checkRes.status === 400 || checkRes.status === 401 || checkRes.status === 403) {
-                try {
-                  const data = JSON.parse(resText);
-                  if (data?.error === "INVALID_PASSWORD" || data?.code === "rest_authentication_required") {
-                    console.log(`[Sync] ⚠ Article "${article.title}" (post ${postId}): Auth failed - SKIPPING (not deleting)`);
-                    continue; // Skip this article, don't delete
-                  }
-                } catch {}
-              }
-              
-              // Try to parse response (200 with post data)
-              try {
-                const data = JSON.parse(resText);
-                
-                // If we get post data with ID, it exists
+              if (checkRes.ok) {
+                // Article exists on WordPress
+                const data = await checkRes.json();
                 if (data?.id) {
-                  console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS on WordPress`);
+                  console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS`);
                 } else {
-                  // No post data - article doesn't exist on WordPress, delete it
-                  console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No post data - DELETING`);
+                  // No ID in response - delete it
+                  console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): DELETING`);
                   await storage.deleteArticle(article.id);
-                  console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
                   deletedCount++;
                   deletedIds.push(article.id);
                 }
-              } catch {
-                // Can't parse JSON - post doesn't exist on WordPress, delete it
-                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No valid JSON - DELETING`);
+              } else {
+                // Article not found on WordPress - delete it
+                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): NOT FOUND on WordPress - DELETING`);
                 await storage.deleteArticle(article.id);
-                console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
                 deletedCount++;
                 deletedIds.push(article.id);
               }

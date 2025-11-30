@@ -59,53 +59,25 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         const postId = publishing.wpPostId;
         const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
         
-        console.log(`[Sync] Checking "${article.title}" (post ${postId}) at ${checkUrl}`);
-        
         try {
           const res = await fetch(checkUrl, { headers });
-          const resText = await res.text();
           
-          console.log(`[Sync] Response status: ${res.status}`);
-          
-          // If 404, post doesn't exist on WordPress - delete it from our database
-          if (res.status === 404) {
-            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): NOT FOUND on WordPress (404) - DELETING`);
-            await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
-            await db.delete(articles).where(eq(articles.id, article.id));
-            deletedCount++;
-            deletedIds.push(article.id);
-            continue;
-          }
-          
-          // Check if it's an auth error
-          if (res.status === 400 || res.status === 401 || res.status === 403) {
-            try {
-              const data = JSON.parse(resText);
-              if (data?.error === "INVALID_PASSWORD" || data?.code === "rest_authentication_required") {
-                console.log(`[Sync] ⚠ Article "${article.title}" (post ${postId}): Auth failed - SKIPPING (not deleting)`);
-                continue; // Skip this article, don't delete
-              }
-            } catch {}
-          }
-          
-          // Try to parse response to check if post exists (200 with post data)
-          try {
-            const data = JSON.parse(resText);
-            
-            // If we can parse JSON and get post data with ID, it exists
+          if (res.ok) {
+            // Article exists on WordPress
+            const data = await res.json();
             if (data?.id) {
-              console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS on WordPress`);
+              console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS`);
             } else {
-              // No post data - article doesn't exist on WordPress, delete it
-              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No post data - DELETING`);
+              // No ID in response - delete it
+              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): DELETING`);
               await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
               await db.delete(articles).where(eq(articles.id, article.id));
               deletedCount++;
               deletedIds.push(article.id);
             }
-          } catch (parseErr: any) {
-            // Can't parse as JSON - post doesn't exist on WordPress, delete it
-            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No valid JSON response - DELETING`);
+          } else {
+            // Article not found on WordPress - delete it
+            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): NOT FOUND on WordPress - DELETING`);
             await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
             await db.delete(articles).where(eq(articles.id, article.id));
             deletedCount++;
