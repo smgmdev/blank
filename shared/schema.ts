@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean, jsonb, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, jsonb, integer, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -48,7 +48,9 @@ export const userSiteCredentials = pgTable("user_site_credentials", {
   wpUserId: varchar("wp_user_id"), // WordPress user ID from API
   isVerified: boolean("is_verified").default(false),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-});
+}, (table) => ({
+  unq: unique().on(table.userId, table.siteId),
+}));
 
 // Publishing Profiles (which sites a user can publish to)
 export const publishingProfiles = pgTable("publishing_profiles", {

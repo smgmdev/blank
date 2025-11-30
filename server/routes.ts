@@ -284,51 +284,53 @@ export async function registerRoutes(
       console.log(`[WP Auth] User ${wpUsername} verified as WP user ID: ${wpUser.id}`);
 
       // Check if user already has credentials for this site
-      const existing = await storage.getUserSiteCredential(userId, siteId);
+      let existing = await storage.getUserSiteCredential(userId, siteId);
+      
       if (existing) {
-        res.json({ success: true, message: "You are already authenticated to this site" });
+        // Re-authentication: update credentials with new password
+        console.log(`[WP Auth] User already authenticated, updating credentials`);
+        // Get the database connection to update
+        const { db } = await import("./db");
+        const { userSiteCredentials } = await import("@shared/schema");
+        const { eq, and } = await import("drizzle-orm");
+        
+        await db
+          .update(userSiteCredentials)
+          .set({
+            wpPassword,
+            wpUserId: String(wpUser.id),
+            isVerified: true,
+          })
+          .where(and(
+            eq(userSiteCredentials.userId, userId),
+            eq(userSiteCredentials.siteId, siteId)
+          ));
+        
+        res.json({ 
+          success: true, 
+          message: "Credentials updated successfully. You can now publish to this site.",
+          profile: { userId, siteId, credentialId: existing.id }
+        });
         return;
       }
 
-      // Store credentials
-      let credential;
-      try {
-        credential = await storage.createUserSiteCredential({
-          userId,
-          siteId,
-          wpUsername,
-          wpPassword,
-        });
-      } catch (dbError: any) {
-        // Handle duplicate constraint error
-        if (dbError.message.includes("duplicate") || dbError.message.includes("unique")) {
-          console.log(`[WP Auth] User already has credentials, returning success`);
-          res.json({ success: true, message: "You are already authenticated to this site" });
-          return;
-        }
-        throw dbError;
-      }
+      // Store new credentials
+      const credential = await storage.createUserSiteCredential({
+        userId,
+        siteId,
+        wpUsername,
+        wpPassword,
+      });
 
       // Mark as verified with actual WP user ID
       await storage.updateUserSiteCredentialVerification(credential.id, String(wpUser.id));
 
       // Create publishing profile
-      let profile;
-      try {
-        profile = await storage.createPublishingProfile({
-          userId,
-          siteId,
-          credentialId: credential.id,
-        });
-      } catch (profileError: any) {
-        // If profile already exists, just get the existing credential
-        if (profileError.message.includes("duplicate") || profileError.message.includes("unique")) {
-          console.log(`[WP Auth] Publishing profile already exists`);
-          profile = { userId, siteId, credentialId: credential.id };
-        } else {
-          throw profileError;
-        }
-      }
+      const profile = await storage.createPublishingProfile({
+        userId,
+        siteId,
+        credentialId: credential.id,
+      });
 
       res.json({ 
         success: true, 
