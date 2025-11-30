@@ -35,6 +35,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [user, setLocation]);
 
+  // Close mobile menu and prevent interactions during publishing
+  useEffect(() => {
+    if (isPublishing) {
+      setMobileMenuOpen(false);
+    }
+  }, [isPublishing]);
+
   if (!user) return null;
 
   const isAdmin = user === 'admin';
@@ -72,7 +79,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onClick={() => !isPublishing && setMobileMenuOpen(!mobileMenuOpen)}
+          disabled={isPublishing}
           className="lg:hidden"
         >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -204,7 +212,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {mobileMenuOpen && (
         <div 
           className="lg:hidden fixed inset-0 bg-black/50 z-10 top-16"
-          onClick={() => setMobileMenuOpen(false)}
+          onClick={() => !isPublishing && setMobileMenuOpen(false)}
         />
       )}
 
