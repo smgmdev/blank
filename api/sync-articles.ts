@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { getDatabase } from "./db-utils.js";
-import { articles, articlePublishing, wordPressSites } from "../shared/schema.js";
+import { articles, articlePublishing, wordPressSites, userSiteCredentials } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
@@ -37,30 +37,34 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       }
     }
     
-    // Check each article with admin API
+    // Check each article with user API credentials
     for (const [siteId, siteArticles] of articlesBySite.entries()) {
       const site = allSites.find((s: any) => s.id === siteId) as any;
       if (!site) continue;
       
-      console.log(`[Sync] Site: ${site.name} - checking ${siteArticles.length} articles with admin API`);
+      console.log(`[Sync] Site: ${site.name} - checking ${siteArticles.length} articles`);
       
-      // Build admin auth header
-      const headers: any = {};
-      if (site.adminUsername && site.apiToken) {
-        console.log(`[Sync] DEBUG: FULL apiToken: "${site.apiToken}"`);
-        console.log(`[Sync] DEBUG: apiToken length: ${site.apiToken.length}`);
-        const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
-        headers.Authorization = `Basic ${auth}`;
-        console.log(`[Sync] Using apiToken for Basic Auth with ${site.adminUsername}`);
-        console.log(`[Sync] DEBUG: FULL Auth header: ${headers.Authorization}`);
-      } else if (site.adminUsername && site.adminPassword) {
-        console.log(`[Sync] DEBUG: FULL adminPassword: "${site.adminPassword}"`);
-        console.log(`[Sync] DEBUG: adminPassword length: ${site.adminPassword.length}`);
-        const auth = Buffer.from(`${site.adminUsername}:${site.adminPassword}`).toString("base64");
-        headers.Authorization = `Basic ${auth}`;
-        console.log(`[Sync] Using adminPassword for Basic Auth with ${site.adminUsername}`);
-        console.log(`[Sync] DEBUG: FULL Auth header: ${headers.Authorization}`);
+      // Get user credentials from first article's user
+      const firstArticle = siteArticles[0];
+      
+      // Query for user credentials from same database
+      const userCredentials = await db.select()
+        .from(userSiteCredentials)
+        .where(eq(userSiteCredentials.userId, firstArticle.article.userId))
+        .limit(1);
+      
+      if (!userCredentials || userCredentials.length === 0) {
+        console.log(`[Sync] No user credentials found for site ${siteId} - skipping`);
+        continue;
       }
+      
+      const credential = userCredentials[0];
+      
+      // Setup auth headers using USER credentials (same as publishing)
+      const headers: any = {};
+      const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+      headers.Authorization = `Basic ${auth}`;
+      console.log(`[Sync] Using user credentials for checking posts: ${credential.wpUsername}`);
       
       // Check each article
       for (const { article, publishing } of siteArticles) {

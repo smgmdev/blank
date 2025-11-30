@@ -984,23 +984,20 @@ export async function registerRoutes(
         console.log(`[Sync] Site: ${site.name} - checking ${siteArticles.length} articles`);
         
         try {
-          // Setup auth headers once
-          const headers: any = {};
-          if (site.adminUsername && site.apiToken) {
-            console.log(`[Sync] DEBUG: FULL apiToken: "${site.apiToken}"`);
-            console.log(`[Sync] DEBUG: apiToken length: ${site.apiToken.length}`);
-            const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
-            headers.Authorization = `Basic ${auth}`;
-            console.log(`[Sync] Using apiToken for Basic Auth with ${site.adminUsername}`);
-            console.log(`[Sync] DEBUG: FULL Auth header: ${headers.Authorization}`);
-          } else if (site.adminUsername && site.adminPassword) {
-            console.log(`[Sync] DEBUG: FULL adminPassword: "${site.adminPassword}"`);
-            console.log(`[Sync] DEBUG: adminPassword length: ${site.adminPassword.length}`);
-            const auth = Buffer.from(`${site.adminUsername}:${site.adminPassword}`).toString("base64");
-            headers.Authorization = `Basic ${auth}`;
-            console.log(`[Sync] Using adminPassword for Basic Auth with ${site.adminUsername}`);
-            console.log(`[Sync] DEBUG: FULL Auth header: ${headers.Authorization}`);
+          // Get user credentials from first article's user
+          const firstArticle = siteArticles[0];
+          const credential = await storage.getUserSiteCredential(firstArticle.article.userId, siteId);
+          
+          if (!credential) {
+            console.log(`[Sync] No user credentials found for site ${siteId} - skipping`);
+            continue;
           }
+          
+          // Setup auth headers using USER credentials (same as publishing)
+          const headers: any = {};
+          const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+          headers.Authorization = `Basic ${auth}`;
+          console.log(`[Sync] Using user credentials for checking posts: ${credential.wpUsername}`);
           
           // Check each article with admin API
           console.log(`[Sync] Checking ${siteArticles.length} articles with admin API`);
