@@ -1,8 +1,41 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getAppUserByUsername, getUserSiteCredential, createUserSiteCredential } from "./db-utils.js";
+import { getAppUserByUsername, getUserSiteCredential, createUserSiteCredential, getDatabase } from "./db-utils.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
+    if (req.method === "GET") {
+      // Check session endpoint
+      const { action } = req.query;
+      if (action === "session") {
+        const { sessionId } = req.query;
+        if (!sessionId) {
+          return res.status(401).json({ error: "No session" });
+        }
+
+        try {
+          const db = getDatabase();
+          const { userSessions, appUsers } = await import("../shared/schema.js");
+          const { eq } = await import("drizzle-orm");
+
+          const [session] = await db.select().from(userSessions).where(eq(userSessions.id, sessionId as string));
+          
+          if (!session || session.expiresAt < new Date()) {
+            return res.status(401).json({ error: "Session expired" });
+          }
+
+          const [user] = await db.select().from(appUsers).where(eq(appUsers.id, session.userId));
+          if (!user) {
+            return res.status(401).json({ error: "User not found" });
+          }
+
+          res.json({ id: user.id, email: user.email, role: user.role, sessionId });
+        } catch (error: any) {
+          res.status(500).json({ error: "Failed to check session" });
+        }
+      }
+      return;
+    }
+
     if (req.method === "POST") {
       const { action } = req.query;
       
