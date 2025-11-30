@@ -291,13 +291,17 @@ export default function MyArticles() {
     return (
       <div className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
         <div className="flex flex-col sm:flex-row gap-0 sm:gap-4 sm:p-4">
-          {/* Featured Image on Left */}
+          {/* Featured Image on Left - Small Square on Mobile, Larger on Desktop */}
           {article.featuredImageUrl && (
-            <div className="w-full sm:w-40 h-40 flex-shrink-0 bg-muted overflow-hidden rounded-t sm:rounded-lg">
+            <div className="w-24 h-24 sm:w-40 sm:h-40 flex-shrink-0 bg-muted overflow-hidden rounded-t sm:rounded-lg" data-testid={`img-article-${article.id}`}>
               <img 
                 src={article.featuredImageUrl} 
                 alt={article.title}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.error("Image load failed for:", article.featuredImageUrl);
+                  e.currentTarget.style.display = "none";
+                }}
               />
             </div>
           )}

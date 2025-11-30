@@ -166,7 +166,10 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const site = await getWordPressSiteById(siteId as string);
       const wpLink = pub.wpLink || (site && pub.wpPostId ? `${site.url}?p=${pub.wpPostId}` : null);
       
-      res.json({ ...pub, wpLink });
+      // Get article to fetch featured image URL
+      const article = await getArticle(articleId as string);
+      
+      res.json({ ...pub, wpLink, featuredImageUrl: article?.featuredImageUrl });
     }
     // /api/content?type=publish - POST publish article
     else if (type === "publish") {
