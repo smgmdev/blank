@@ -131,15 +131,27 @@ export async function registerRoutes(
 
   app.patch("/api/users/:id", async (req, res) => {
     try {
-      const { displayName, profilePicture } = req.body;
-      if (!displayName) {
-        return res.status(400).json({ error: "displayName required" });
+      const { displayName, profilePicture, email, password } = req.body;
+      
+      // Update profile (displayName and profilePicture)
+      if (displayName || profilePicture) {
+        await storage.updateAppUserProfile(req.params.id, displayName, profilePicture);
       }
-      await storage.updateAppUserProfile(req.params.id, displayName, profilePicture);
+      
+      // Update email
+      if (email) {
+        await storage.updateAppUserEmail(req.params.id, email);
+      }
+      
+      // Update password
+      if (password) {
+        await storage.updateAppUserPassword(req.params.id, password);
+      }
+      
       const user = await storage.getAppUser(req.params.id);
       res.json(user);
     } catch (error) {
-      res.status(500).json({ error: "Failed to update user profile" });
+      res.status(500).json({ error: "Failed to update user" });
     }
   });
 

@@ -21,18 +21,42 @@ export default function Settings() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleEmailUpdate = () => {
+  const handleEmailUpdate = async () => {
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "Missing Email",
+        description: "Please enter a valid email address.",
+      });
+      return;
+    }
+
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      const response = await fetch(`/api/users/${currentUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      if (!response.ok) throw new Error('Failed to update email');
+
       toast({
         title: "Email Updated",
         description: "Your email has been changed successfully.",
       });
-    }, 1500);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update email. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
         variant: "destructive",
@@ -52,8 +76,15 @@ export default function Settings() {
     }
 
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      const response = await fetch(`/api/users/${currentUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword })
+      });
+
+      if (!response.ok) throw new Error('Failed to update password');
+
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -61,7 +92,15 @@ export default function Settings() {
         title: "Password Changed",
         description: "Your password has been updated successfully.",
       });
-    }, 1500);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update password. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
