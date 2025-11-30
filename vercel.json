@@ -1,7 +1,10 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "env": ["DATABASE_URL", "NODE_ENV"],
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "NODE_ENV": "production"
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
