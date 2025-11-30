@@ -67,10 +67,8 @@ export const articles = pgTable("articles", {
   content: text("content").notNull(),
   htmlContent: text("html_content"),
   featuredImageUrl: text("featured_image_url"),
-  imageCaption: text("image_caption"),
   categories: jsonb("categories"),
   tags: jsonb("tags"),
-  seo: jsonb("seo"),
   status: varchar("status", { length: 20 }).default("draft"), // "draft", "published"
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
