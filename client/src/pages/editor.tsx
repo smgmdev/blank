@@ -221,6 +221,78 @@ export default function Editor() {
       .trim();
   };
 
+  // Common stop words to exclude from focus keyword
+  const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'be', 'been', 'is', 'this', 'that', 'it', 'which', 'who', 'what', 'when', 'where', 'why', 'how']);
+
+  const extractFocusKeyword = (title: string, content: string): string => {
+    if (!title || !content) return '';
+    
+    // Extract words from title (excluding stop words)
+    const titleWords = title
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(word => word.length > 2 && !stopWords.has(word))
+      .map(word => word.replace(/[^\w]/g, ''));
+
+    // Get first paragraph from content (strip HTML)
+    const firstParagraph = content
+      .replace(/<[^>]*>/g, ' ')
+      .split(/\n\n/)[0]
+      .toLowerCase();
+
+    // Find first title word that also appears in first paragraph
+    for (const word of titleWords) {
+      if (firstParagraph.includes(word)) {
+        return word;
+      }
+    }
+
+    // Fallback: use first substantial word from title
+    return titleWords[0] || '';
+  };
+
+  const generateMetaDescription = (content: string, focusKeyword: string): string => {
+    if (!content) return '';
+    
+    // Strip HTML and get first sentence or ~160 chars
+    let text = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    // Try to get first sentence
+    const sentences = text.split(/[.!?]+/);
+    let description = sentences[0];
+
+    // Ensure it includes focus keyword if we have one
+    if (focusKeyword && !description.toLowerCase().includes(focusKeyword)) {
+      description = sentences[0]; // Use first sentence as is
+    }
+
+    // Trim to ~160 characters
+    if (description.length > 160) {
+      description = description.substring(0, 160).trim() + '...';
+    }
+
+    return description;
+  };
+
+  // Auto-generate SEO fields when title or content changes
+  useEffect(() => {
+    if (plugin === 'aioseo' && formData.title && formData.content) {
+      const keyword = extractFocusKeyword(formData.title, formData.content);
+      const metaDesc = generateMetaDescription(formData.content, keyword);
+      
+      if (keyword !== formData.seo.focusKeyword || metaDesc !== formData.seo.description) {
+        setFormData(prev => ({
+          ...prev,
+          seo: {
+            ...prev.seo,
+            focusKeyword: keyword,
+            description: metaDesc
+          }
+        }));
+      }
+    }
+  }, [formData.title, formData.content, plugin]);
+
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
     setFormData({
@@ -1233,25 +1305,24 @@ export default function Editor() {
               {plugin === 'aioseo' && (
                 <>
                   <div className="space-y-2">
-                    <Label className="text-green-600 font-medium">AIO SEO PRO Score</Label>
-                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-green-500 w-[85%]" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-green-600 font-medium">Focus Keyword *</Label>
+                    <Label className="text-green-600 font-medium">AI Generated Focus Keyword *</Label>
                     <Input 
-                      placeholder="Enter focus keyword for AIO SEO PRO..." 
+                      disabled
+                      placeholder="Auto-generated from title and content..." 
                       value={formData.seo.focusKeyword}
-                      onChange={(e) => setFormData({...formData, seo: {...formData.seo, focusKeyword: e.target.value}})}
+                      className="bg-muted text-muted-foreground cursor-not-allowed"
                     />
+                    <p className="text-xs text-muted-foreground">Automatically extracted from your article title and first paragraph for optimal SEO.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label>Meta Description</Label>
-                    <Input placeholder="Keep it under 160 characters..." 
+                    <Label className="text-green-600 font-medium">AI Generated Meta Description</Label>
+                    <Input 
+                      disabled
+                      placeholder="Auto-generated from content..." 
                       value={formData.seo.description}
-                      onChange={(e) => setFormData({...formData, seo: {...formData.seo, description: e.target.value}})}
+                      className="bg-muted text-muted-foreground cursor-not-allowed"
                     />
+                    <p className="text-xs text-muted-foreground">Automatically generated from your first paragraph (max 160 characters).</p>
                   </div>
                   <div className="flex items-center gap-2 pt-2 border-t">
                     <Checkbox 
