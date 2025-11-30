@@ -120,11 +120,12 @@ export default function Editor() {
               tags: Array.isArray(article.tags) ? article.tags.map((t: any) => typeof t === 'object' ? t.id : t) : [],
               currentTag: "",
               seo: {
-                focusKeyword: "",
-                description: "",
-                indexed: true
+                focusKeyword: (article.seo?.focusKeyword) || "",
+                description: (article.seo?.description) || "",
+                indexed: article.seo?.indexed !== false
               }
             });
+            console.log("[Draft Load] Restored article:", { title: article.title, categories: article.categories, tags: article.tags, seo: article.seo });
             // Mark editor as not empty
             if (article.content) {
               setIsEditorEmpty(false);
@@ -426,8 +427,15 @@ export default function Editor() {
         categories: formData.categories.length > 0 ? formData.categories : null,
         tags: formData.tags.length > 0 ? formData.tags : null,
         featuredImageUrl: imageUrl,
-        imageCaption: formData.imageCaption || null
+        imageCaption: formData.imageCaption || null,
+        seo: {
+          focusKeyword: formData.seo?.focusKeyword || "",
+          description: formData.seo?.description || "",
+          indexed: formData.seo?.indexed !== false
+        }
       };
+      
+      console.log("[Draft Save] Full data being saved:", draftData);
 
       if (isEditingDraft && articleId) {
         // Update existing draft - save ALL form data
