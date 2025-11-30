@@ -64,15 +64,31 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         
         console.log(`[Sync] Article ${article.id}: WordPress returned status ${checkRes.status}`);
         
-        // Only delete if we get 404 (post not found)
-        if (checkRes.status === 404) {
-          console.log(`[Sync] Article ${article.id} marked for deletion - not found in WordPress`);
+        // Delete if: 404, 410 (Gone), or if it's an error response with "rest_post_invalid_id"
+        if (checkRes.status === 404 || checkRes.status === 410) {
+          console.log(`[Sync] Article ${article.id} marked for deletion - not found in WordPress (status ${checkRes.status})`);
           return article.id;
         }
         
-        // For any other non-success status, log but don't delete
+        // Also check response body for error messages indicating post doesn't exist
         if (!checkRes.ok) {
-          console.log(`[Sync] Article ${article.id}: Got status ${checkRes.status}, will not delete (keep existing)`);
+          try {
+            const responseText = await checkRes.text();
+            console.log(`[Sync] Article ${article.id}: Got status ${checkRes.status}, response: ${responseText.substring(0, 200)}`);
+            
+            try {
+              const errorData = JSON.parse(responseText) as any;
+              if (errorData.code === 'rest_post_invalid_id' || errorData.code === 'rest_invalid_param' || errorData.message?.includes('not found')) {
+                console.log(`[Sync] Article ${article.id} marked for deletion - error code: ${errorData.code}`);
+                return article.id;
+              }
+            } catch {
+              // Not JSON response
+            }
+          } catch {
+            // Couldn't parse response, log and don't delete
+            console.log(`[Sync] Article ${article.id}: Could not parse error response`);
+          }
         }
       } catch (e: any) {
         console.error(`[Sync] Check failed for article ${article.id}:`, e.message);
