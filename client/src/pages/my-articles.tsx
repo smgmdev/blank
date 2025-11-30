@@ -78,6 +78,12 @@ export default function MyArticles() {
           // Filter to only this user's articles
           const userArticles = allArticles.filter((a: any) => a.userId === userId);
           
+          // Check localStorage for cached wpLinks first
+          const articlesWithCachedLinks = userArticles.map((a: any) => {
+            const cachedLink = localStorage.getItem(`wpLink_${a.id}`);
+            return cachedLink ? { ...a, wpLink: cachedLink } : a;
+          });
+          
           // SHOW ARTICLES IMMEDIATELY with cached wpLinks
           setArticles(articlesWithCachedLinks);
           setIsLoading(false);
@@ -101,12 +107,6 @@ export default function MyArticles() {
           if (Object.keys(newCategoryMap).length > 0) {
             setCategoryMap(newCategoryMap);
           }
-          
-          // Check localStorage for cached wpLinks first
-          const articlesWithCachedLinks = userArticles.map((a: any) => {
-            const cachedLink = localStorage.getItem(`wpLink_${a.id}`);
-            return cachedLink ? { ...a, wpLink: cachedLink } : a;
-          });
           
           // BACKGROUND: Fetch WordPress links for published articles ONLY if there are any
           const publishedArticles = articlesWithCachedLinks.filter((a: any) => a.status === 'published' && !a.wpLink);
