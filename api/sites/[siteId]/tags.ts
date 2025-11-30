@@ -4,8 +4,11 @@ import { getWordPressSiteById, getUserSiteCredential } from "../../db-utils.js";
 export default async (req: VercelRequest, res: VercelResponse) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    res.setHeader("Allow", "POST, OPTIONS");
-    return res.status(200).end();
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.status(200).end();
+    return;
   }
 
   try {
