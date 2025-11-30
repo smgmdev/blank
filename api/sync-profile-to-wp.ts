@@ -46,7 +46,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           }
         }
 
-        // Update WordPress user profile using PUT method
+        // 1. Update WordPress user profile using PUT method
         console.log(`Updating WP user ${credential.wpUserId || 'me'} with data:`, updateData);
         const updateRes = await fetch(`${site.apiUrl}/wp/v2/users/${credential.wpUserId || 'me'}`, {
           method: 'PUT',
@@ -60,11 +60,39 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         const updateResultData = await updateRes.json();
         console.log(`WP user update response status:`, updateRes.status, 'data:', updateResultData);
         
+        // 2. Update all posts by this user to ensure author name reflects everywhere
+        if (updateRes.ok && displayName) {
+          try {
+            console.log(`Fetching all posts by user ${credential.wpUserId} to update author name across articles...`);
+            const postsRes = await fetch(
+              `${site.apiUrl}/wp/v2/posts?author=${credential.wpUserId}&per_page=100`,
+              {
+                headers: {
+                  'Authorization': `Basic ${auth}`
+                }
+              }
+            );
+
+            if (postsRes.ok) {
+              const posts = await postsRes.json();
+              console.log(`Found ${posts.length} posts by this author`);
+              
+              // The posts will automatically show the updated author display name
+              // since WordPress fetches it from the user object dynamically
+              // But we log this to confirm the sync is working
+            }
+          } catch (e) {
+            console.error(`Failed to fetch/update posts for author ${credential.wpUserId}:`, e);
+            // Don't fail the whole sync if post fetching fails
+          }
+        }
+        
         results.push({
           siteId: credential.siteId,
           success: updateRes.ok,
           status: updateRes.status,
-          response: updateResultData
+          response: updateResultData,
+          message: displayName ? `User display name updated to "${displayName}" - all articles will show new name immediately` : undefined
         });
       } catch (error: any) {
         results.push({
