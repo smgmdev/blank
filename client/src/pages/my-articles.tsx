@@ -68,9 +68,9 @@ export default function MyArticles() {
         if (articlesRes.ok) {
           const allArticles = await articlesRes.json();
           
-          // Fetch sites if not cached
+          // Fetch sites if not cached - include auth status with action=user-sites
           if (allSites.length === 0) {
-            const sitesRes = await fetch(`/api/sites`);
+            const sitesRes = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
             if (sitesRes.ok) {
               allSites = await sitesRes.json();
               setSites(allSites);
