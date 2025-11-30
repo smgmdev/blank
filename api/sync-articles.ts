@@ -44,6 +44,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       }
       
       console.log(`[Sync] Checking article ${article.id} (wpPostId: ${pub.wpPostId}) on site ${site.name}`);
+      console.log(`[Sync] Site has adminUsername: ${!!site.adminUsername}, apiToken: ${!!site.apiToken}`);
       
       try {
         // Use admin credentials if available, otherwise try public access
@@ -51,9 +52,9 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         if (site.adminUsername && site.apiToken) {
           const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
           headers.Authorization = `Basic ${auth}`;
-          console.log(`[Sync] Using admin auth for post ${pub.wpPostId}`);
+          console.log(`[Sync] Using admin auth (${site.adminUsername}) for post ${pub.wpPostId}`);
         } else {
-          console.log(`[Sync] No admin credentials, trying public access for post ${pub.wpPostId}`);
+          console.log(`[Sync] No admin credentials (user: ${site.adminUsername}, token: ${!!site.apiToken}), trying public access for post ${pub.wpPostId}`);
         }
         
         const checkRes = await Promise.race([
