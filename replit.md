@@ -46,6 +46,7 @@ Preferred communication style: Simple, everyday language.
 - `/api/content` - Article CRUD operations
 - `/api/sync-articles` - **Improved Sync Logic:** Fetches all published posts directly from WordPress using admin API credentials, compares against articles in system, and deletes any articles whose post IDs no longer exist on WordPress. Uses pagination to handle sites with many posts.
 - `/api/health` - Database connectivity check
+- `/api/sites/[siteId]/tags` - **Fixed:** Corrected import path for Vercel deployment (../../db-utils.js)
 
 ### Database Schema
 
