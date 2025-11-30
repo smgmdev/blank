@@ -1008,15 +1008,24 @@ export async function registerRoutes(
               if (checkRes.ok) {
                 console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
               } else if (checkRes.status === 404) {
-                // Post not found - delete from local database
-                console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING`);
-                try {
-                  await storage.deleteArticle(article.id);
-                  console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
-                  deletedCount++;
-                  deletedIds.push(article.id);
-                } catch (delError: any) {
-                  console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                // Post not found - only delete if published more than 5 minutes ago
+                const publishedTime = article.publishedAt ? new Date(article.publishedAt).getTime() : 0;
+                const now = Date.now();
+                const ageMs = now - publishedTime;
+                const fiveMinutesMs = 5 * 60 * 1000;
+                
+                if (ageMs > fiveMinutesMs) {
+                  console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING (age: ${(ageMs/1000).toFixed(0)}s)`);
+                  try {
+                    await storage.deleteArticle(article.id);
+                    console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                    deletedCount++;
+                    deletedIds.push(article.id);
+                  } catch (delError: any) {
+                    console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                  }
+                } else {
+                  console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - SKIP (too recent, age: ${(ageMs/1000).toFixed(0)}s)`);
                 }
               } else {
                 console.log(`[Sync] Article "${article.title}" (post ${postId}): Skipped (HTTP ${checkRes.status})`);
