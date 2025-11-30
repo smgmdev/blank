@@ -19,6 +19,12 @@ export async function ensureSchemaColumns() {
       ADD COLUMN IF NOT EXISTS seo JSONB
     `);
     
+    // Check and create admin_password column if missing
+    await db.execute(sql`
+      ALTER TABLE wordpress_sites 
+      ADD COLUMN IF NOT EXISTS admin_password TEXT
+    `);
+    
     console.log("[DB] Schema columns verified");
   } catch (error) {
     console.error("[DB] Failed to ensure schema columns:", error);
