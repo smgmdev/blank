@@ -128,30 +128,9 @@ export const useStore = create<AppState>((set) => ({
     const sessionId = localStorage.getItem('sessionId');
     const userRole = localStorage.getItem('userRole');
     
-    // Verify session with server (works on both Replit & Vercel)
-    if (sessionId && userRole) {
-      fetch(`/api/auth/session?sessionId=${sessionId}`)
-        .then(res => res.ok ? res.json() : Promise.reject())
-        .then(() => {
-          // Session is valid on server, keep user logged in
-          const set = useStore.setState;
-          set({ user: userRole as 'admin' | 'user' });
-        })
-        .catch(() => {
-          // Session invalid or expired, clear localStorage
-          localStorage.removeItem('sessionId');
-          localStorage.removeItem('userId');
-          localStorage.removeItem('userRole');
-          const set = useStore.setState;
-          set({ user: null });
-        });
-    }
-    
-    // Return initial state (will be updated by async fetch above)
+    // Keep user logged in from localStorage immediately
     return (state) => {
-      // Check localStorage as fallback for immediate load
-      const role = localStorage.getItem('userRole');
-      return { user: role ? (role as 'admin' | 'user') : null };
+      return { user: userRole ? (userRole as 'admin' | 'user') : null };
     };
   },
   addSite: (site, authCode) => set((state) => ({

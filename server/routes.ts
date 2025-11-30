@@ -1056,17 +1056,23 @@ export async function registerRoutes(
         return res.status(401).json({ error: "No session" });
       }
 
-      const session = await storage.getUserSession(sessionId as string);
-      if (!session || session.expiresAt < new Date()) {
-        return res.status(401).json({ error: "Session expired" });
-      }
+      try {
+        const session = await storage.getUserSession(sessionId as string);
+        if (!session || session.expiresAt < new Date()) {
+          return res.status(401).json({ error: "Session expired" });
+        }
 
-      const user = await storage.getAppUser(session.userId);
-      if (!user) {
-        return res.status(401).json({ error: "User not found" });
-      }
+        const user = await storage.getAppUser(session.userId);
+        if (!user) {
+          return res.status(401).json({ error: "User not found" });
+        }
 
-      res.json({ id: user.id, email: user.email, role: user.role, sessionId });
+        res.json({ id: user.id, email: user.email, role: user.role, sessionId });
+      } catch (dbError: any) {
+        // If session table doesn't exist or DB error, return 401 instead of 500
+        console.warn("[Session Check] Database error (likely sessions table missing):", dbError.message);
+        return res.status(401).json({ error: "Session check unavailable" });
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to check session" });
     }
