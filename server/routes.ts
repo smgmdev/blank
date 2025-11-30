@@ -1477,44 +1477,90 @@ export async function registerRoutes(
   });
 
 
-  // Get WordPress user profile (for publishing profile)
-  app.get("/api/wp-user-profile", async (req, res) => {
+  // Sync publishing profile to connected WordPress sites
+  app.post("/api/sync-profile-to-wp", async (req, res) => {
     try {
       const userId = req.query.userId as string;
       if (!userId) {
         return res.status(400).json({ error: "userId required" });
       }
 
-      // Get user's first connected site
-      const credential = await storage.getUserSiteCredentialsByUserId(userId);
-      if (!credential || credential.length === 0) {
-        return res.status(404).json({ error: "No WordPress sites connected" });
+      const { displayName, profilePictureUrl } = req.body;
+      
+      // Get all user's site credentials
+      const credentials = await storage.getUserSiteCredentialsByUserId(userId);
+      if (!credentials || credentials.length === 0) {
+        return res.status(200).json({ success: true, message: "No WordPress sites connected" });
       }
 
-      const cred = credential[0];
-      const site = await storage.getWordPressSiteById(cred.siteId);
-      if (!site) {
-        return res.status(404).json({ error: "Site not found" });
+      const results: any[] = [];
+      
+      for (const credential of credentials) {
+        try {
+          const site = await storage.getWordPressSite(credential.siteId);
+          if (!site) continue;
+
+          const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+          const updateData: any = {};
+
+          if (displayName) {
+            updateData.name = displayName;
+            updateData.display_name = displayName;
+          }
+
+          if (profilePictureUrl) {
+            // Upload avatar to WordPress media library if it's a data URL
+            if (profilePictureUrl.startsWith('data:')) {
+              try {
+                const base64Data = profilePictureUrl.split(',')[1];
+                const uploadRes = await fetch(`${site.apiUrl}/wp/v2/media`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Basic ${auth}`,
+                    'Content-Type': 'image/jpeg',
+                    'Content-Disposition': 'attachment; filename="avatar.jpg"'
+                  },
+                  body: Buffer.from(base64Data, 'base64')
+                });
+
+                if (uploadRes.ok) {
+                  const media = await uploadRes.json();
+                  updateData.avatar_urls = { 96: media.source_url };
+                }
+              } catch (e) {
+                console.error('Avatar upload failed:', e);
+              }
+            }
+          }
+
+          // Update WordPress user profile
+          const updateRes = await fetch(`${site.apiUrl}/wp/v2/users/${credential.wpUserId || 'me'}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updateData)
+          });
+
+          results.push({
+            siteId: credential.siteId,
+            success: updateRes.ok,
+            status: updateRes.status
+          });
+        } catch (error: any) {
+          results.push({
+            siteId: credential.siteId,
+            success: false,
+            error: error.message
+          });
+        }
       }
 
-      const auth = Buffer.from(`${cred.wpUsername}:${cred.wpPassword}`).toString("base64");
-      const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
-      const response = await fetch(apiUrl, {
-        headers: { Authorization: `Basic ${auth}` }
-      });
-
-      if (!response.ok) {
-        return res.status(response.status).json({ error: "Failed to fetch WP user" });
-      }
-
-      const wpUser = await response.json();
-      res.json({
-        displayName: wpUser.name || wpUser.display_name || "Content Creator",
-        profilePicture: wpUser.avatar_urls?.[96] || null
-      });
+      res.json({ success: true, synced: results });
     } catch (error: any) {
-      console.error("WP user fetch error:", error);
-      res.status(500).json({ error: "Failed to fetch WP user profile" });
+      console.error("Profile sync error:", error);
+      res.status(500).json({ error: "Failed to sync profile to WordPress" });
     }
   });
 

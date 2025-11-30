@@ -94,6 +94,7 @@ export default function PublishingProfile() {
 
     setIsSaving(true);
     try {
+      // 1. Save to database
       const response = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -108,12 +109,27 @@ export default function PublishingProfile() {
         throw new Error(error.error || 'Failed to update profile');
       }
 
+      // 2. Sync to connected WordPress sites
+      try {
+        await fetch(`/api/sync-profile-to-wp?userId=${userId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            displayName,
+            profilePictureUrl: previewUrl || undefined
+          })
+        });
+      } catch (syncError) {
+        console.error('Failed to sync to WordPress:', syncError);
+        // Don't fail the save if WordPress sync fails
+      }
+
       // Refetch from API to ensure it was saved to database and synced
       await loadPublishingProfileFromAPI(userId);
 
       toast({
         title: "Profile Updated",
-        description: "Your publishing profile has been saved successfully"
+        description: "Your publishing profile has been saved and synced to WordPress"
       });
     } catch (error: any) {
       console.error('Profile save error:', error);
