@@ -36,27 +36,14 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         }
 
         if (profilePictureUrl) {
-          // Upload avatar to WordPress media library if it's a data URL
-          if (profilePictureUrl.startsWith('data:')) {
-            try {
-              const base64Data = profilePictureUrl.split(',')[1];
-              const uploadRes = await fetch(`${site.apiUrl}/wp/v2/media`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Basic ${auth}`,
-                  'Content-Type': 'image/jpeg',
-                  'Content-Disposition': 'attachment; filename="avatar.jpg"'
-                },
-                body: Buffer.from(base64Data, 'base64')
-              });
-
-              if (uploadRes.ok) {
-                const media = await uploadRes.json();
-                updateData.avatar_urls = { 96: media.source_url };
-              }
-            } catch (e) {
-              console.error('Avatar upload failed:', e);
-            }
+          // Store profile picture URL as user meta
+          try {
+            updateData.meta = {
+              profile_picture_url: profilePictureUrl
+            };
+            console.log('Setting profile picture meta for user:', credential.wpUserId, 'URL length:', profilePictureUrl.length);
+          } catch (e) {
+            console.error('Failed to set profile picture meta:', e);
           }
         }
 

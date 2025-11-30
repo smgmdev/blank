@@ -156,7 +156,7 @@ export default function PublishingProfile() {
 
       // 2. Sync to connected WordPress sites
       try {
-        await fetch(`/api/sync-profile-to-wp?userId=${userId}`, {
+        const syncRes = await fetch(`/api/sync-profile-to-wp?userId=${userId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -164,6 +164,8 @@ export default function PublishingProfile() {
             profilePictureUrl: previewUrl || undefined
           })
         });
+        const syncData = await syncRes.json();
+        console.log('WordPress sync response:', syncData);
       } catch (syncError) {
         console.error('Failed to sync to WordPress:', syncError);
         // Don't fail the save if WordPress sync fails
@@ -279,7 +281,7 @@ export default function PublishingProfile() {
                     {wpUser ? (
                       <div className="flex items-center gap-2 pt-2 border-t border-gray-300">
                         <Avatar className="w-7 h-7 flex-shrink-0">
-                          <AvatarImage src={wpUser.profilePicture} alt={wpUser.displayName} />
+                          <AvatarImage src={previewUrl || wpUser.profilePicture} alt={wpUser.displayName} />
                           <AvatarFallback className="text-xs">{wpUser.displayName.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
