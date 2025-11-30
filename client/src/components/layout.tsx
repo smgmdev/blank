@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { 
   LayoutDashboard, 
   Settings, 
-  PenTool, 
+  Plus, 
   LogOut, 
   Globe,
   User,
@@ -73,7 +73,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { label: "Media Network", headerLabel: "Media Network", icon: LayoutDashboard, href: "/dashboard", show: true },
     { label: "My Articles", headerLabel: "My Articles", icon: FileText, href: "/my-articles", show: true },
-    { label: "Write New Article", headerLabel: "Editor", icon: PenTool, href: "/editor", show: true },
+    { label: "New Article", headerLabel: "Editor", icon: Plus, href: "/editor", show: true },
     { label: "Site Management", headerLabel: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
     { label: "User Management", headerLabel: "User Management", icon: Users, href: "/admin/users", show: isAdmin },
   ];
