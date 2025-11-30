@@ -37,24 +37,18 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [favicons, setFavicons] = useState<{ [key: string]: string }>({});
 
-  // Fetch real sites from API on mount - with localStorage cache
+  // Fetch real sites from API on mount - always get fresh auth status
   useEffect(() => {
     const fetchSites = async () => {
       try {
         if (!userId) return;
         
-        // Check cache first
-        const cached = localStorage.getItem(`sites_${userId}`);
-        if (cached) {
-          setSites(JSON.parse(cached));
-        }
-        
-        // Fetch fresh data in background
+        // Always fetch fresh data from database (not cache)
         const response = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
           setSites(data);
-          // Cache for 5 minutes
+          // Cache for reference only
           localStorage.setItem(`sites_${userId}`, JSON.stringify(data));
         }
       } catch (error) {
