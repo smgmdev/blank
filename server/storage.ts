@@ -30,6 +30,7 @@ export interface IStorage {
   getWordPressSite(id: string): Promise<WordPressSite | undefined>;
   getAllWordPressSites(): Promise<WordPressSite[]>;
   updateWordPressSiteConnection(id: string, isConnected: boolean): Promise<void>;
+  updateWordPressSiteAdminCredentials(id: string, adminUsername: string, adminPassword: string, apiToken: string): Promise<void>;
   deleteWordPressSite(id: string): Promise<void>;
 
   // Users
@@ -116,6 +117,10 @@ export class Storage implements IStorage {
       .update(wordPressSites)
       .set({ isConnected })
       .where(eq(wordPressSites.id, id));
+  }
+
+  async updateWordPressSiteAdminCredentials(id: string, adminUsername: string, adminPassword: string, apiToken: string): Promise<void> {
+    await db.update(wordPressSites).set({ adminUsername, adminPassword, apiToken }).where(eq(wordPressSites.id, id));
   }
 
   async deleteWordPressSite(id: string): Promise<void> {

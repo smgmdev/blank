@@ -986,7 +986,10 @@ export async function registerRoutes(
         try {
           // Fetch all published posts from WordPress with admin credentials
           const headers: any = {};
-          if (site.adminUsername && site.apiToken) {
+          if (site.adminUsername && site.adminPassword) {
+            const auth = Buffer.from(`${site.adminUsername}:${site.adminPassword}`).toString("base64");
+            headers.Authorization = `Basic ${auth}`;
+          } else if (site.adminUsername && site.apiToken) {
             const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
             headers.Authorization = `Basic ${auth}`;
           }
@@ -1171,6 +1174,18 @@ export async function registerRoutes(
         }
         
         res.json({ success: true, message: "Disconnected from site" });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    } else if (action === "update-credentials") {
+      try {
+        const { siteId, adminUsername, adminPassword, apiToken } = req.body;
+        if (!siteId || !adminUsername || !adminPassword || !apiToken) {
+          return res.status(400).json({ error: "siteId, adminUsername, adminPassword, and apiToken required" });
+        }
+        
+        await storage.updateWordPressSiteAdminCredentials(siteId, adminUsername, adminPassword, apiToken);
+        res.json({ success: true, message: "Admin credentials updated" });
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
