@@ -115,17 +115,17 @@ export default function Editor() {
               content: article.content || "",
               image: null,
               imagePreview: article.featuredImageUrl || "",
-              imageCaption: "",
+              imageCaption: article.imageCaption || "",
               categories: Array.isArray(article.categories) ? article.categories : [],
               tags: Array.isArray(article.tags) ? article.tags.map((t: any) => typeof t === 'object' ? t.id : t) : [],
               currentTag: "",
               seo: {
-                focusKeyword: "",
-                description: "",
-                indexed: true
+                focusKeyword: (article.seo?.focusKeyword) || "",
+                description: (article.seo?.description) || "",
+                indexed: article.seo?.indexed !== false
               }
             });
-            console.log("[Draft Load] Restored article:", { title: article.title, categories: article.categories, tags: article.tags });
+            console.log("[Draft Load] Restored article:", { title: article.title, categories: article.categories, tags: article.tags, imageCaption: article.imageCaption, seo: article.seo });
             // Mark editor as not empty
             if (article.content) {
               setIsEditorEmpty(false);
@@ -426,7 +426,13 @@ export default function Editor() {
         status: 'draft',
         categories: formData.categories.length > 0 ? formData.categories : null,
         tags: formData.tags.length > 0 ? formData.tags : null,
-        featuredImageUrl: imageUrl
+        featuredImageUrl: imageUrl,
+        imageCaption: formData.imageCaption || null,
+        seo: {
+          focusKeyword: formData.seo?.focusKeyword || "",
+          description: formData.seo?.description || "",
+          indexed: formData.seo?.indexed !== false
+        }
       };
       
       console.log("[Draft Save] Full data being saved:", draftData);

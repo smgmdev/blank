@@ -1,4 +1,26 @@
 import { getDb } from "@shared/db-client";
+import { sql } from "drizzle-orm";
 
 // Use shared database client to avoid connection pool exhaustion
 export const db = getDb();
+
+// Auto-migrate missing columns on startup
+export async function ensureSchemaColumns() {
+  try {
+    // Check and create imageCaption column if missing
+    await db.execute(sql`
+      ALTER TABLE articles 
+      ADD COLUMN IF NOT EXISTS image_caption TEXT
+    `);
+    
+    // Check and create seo column if missing  
+    await db.execute(sql`
+      ALTER TABLE articles 
+      ADD COLUMN IF NOT EXISTS seo JSONB
+    `);
+    
+    console.log("[DB] Schema columns verified");
+  } catch (error) {
+    console.error("[DB] Failed to ensure schema columns:", error);
+  }
+}
