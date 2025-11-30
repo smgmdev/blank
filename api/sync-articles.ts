@@ -9,20 +9,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     const db = getDatabase();
     
-    // Fast path: Just return all articles immediately (don't check WordPress)
-    // Background sync checks can happen in a separate webhook/cron job
+    // Always perform full sync including deletion checks
     const allArticles = await db.select().from(articles);
-    
-    console.log(`[Sync] Returning ${allArticles.length} articles (skipping WordPress checks for speed)`);
-    
-    // Do WordPress checks in background (fire and forget) to avoid timeout on Vercel
-    if (process.env.VERCEL) {
-      // On Vercel, skip the WordPress checks entirely - they're too slow
-      res.json({ success: true, deletedCount: 0, deletedIds: [], articles: allArticles });
-      return;
-    }
-    
-    // On local dev, do full sync
     const publishingRecords = await db.select().from(articlePublishing);
     const articlesToCheck = allArticles.filter((a: any) => a.status === 'published');
     const sitesMap = new Map((await db.select().from(wordPressSites)).map(s => [s.id, s]));
