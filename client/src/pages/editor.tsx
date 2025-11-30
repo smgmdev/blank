@@ -73,6 +73,7 @@ export default function Editor() {
     content: "",
     image: null as File | null,
     imagePreview: "",
+    imageCaption: "",
     categories: [] as (string | number)[],
     tags: [] as (string | number)[],
     currentTag: "",
@@ -1313,6 +1314,7 @@ export default function Editor() {
             {step < 4 ? (
               <Button 
                 onClick={handleNext} 
+                disabled={isPublishing}
                 className="gap-2 group flex-1 hover:bg-black hover:text-white transition-all duration-200"
                 variant="outline"
               >
@@ -1326,7 +1328,7 @@ export default function Editor() {
                 title={!isFormValid ? "Please fill in all required fields" : ""}
               >
                 {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Publish Now
+                {isPublishing ? "Publishing..." : "Publish Now"}
               </Button>
             )}
           </div>
