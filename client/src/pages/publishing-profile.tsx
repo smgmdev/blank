@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, Globe } from "lucide-react";
 
 // Fetch WordPress user profile data from the API
 const fetchWPProfile = async (userId: string) => {
@@ -30,19 +30,29 @@ export default function PublishingProfile() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState(profilePicture);
+  const [connectedSites, setConnectedSites] = useState<any[]>([]);
+  const [favicons, setFavicons] = useState<{ [key: string]: string }>({});
   
   const userId = localStorage.getItem('userId');
 
-  // Fetch WP profile data on mount and update local state
+  // Fetch connected sites and WP profile
   useEffect(() => {
-    const loadWPProfile = async () => {
+    const loadData = async () => {
       setIsLoading(true);
       try {
         if (userId) {
+          // Fetch connected sites
+          const sitesRes = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
+          if (sitesRes.ok) {
+            const sites = await sitesRes.json();
+            const connected = sites.filter((s: any) => s.userIsConnected);
+            setConnectedSites(connected);
+          }
+          
+          // Fetch WP profile
           const wpData = await fetchWPProfile(userId);
           if (wpData && typeof wpData === 'object') {
             const { displayName: wpDisplayName, profilePicture: wpProfilePicture } = wpData as { displayName: string; profilePicture?: string };
-            // Always use WP data if available - it's the source of truth
             setDisplayName(wpDisplayName || publishingProfile?.displayName || "");
             if (wpProfilePicture) {
               setPreviewUrl(wpProfilePicture);
@@ -52,13 +62,26 @@ export default function PublishingProfile() {
           }
         }
       } catch (e) {
-        console.error('Failed to fetch WP profile', e);
+        console.error('Failed to load data', e);
       } finally {
         setIsLoading(false);
       }
     };
-    loadWPProfile();
+    loadData();
   }, [publishingProfile, userId]);
+
+  // Get favicon for a site URL
+  const getFavicon = (url: string) => {
+    if (favicons[url]) return favicons[url];
+    try {
+      const domain = new URL(url).hostname;
+      const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+      setFavicons(prev => ({ ...prev, [url]: iconUrl }));
+      return iconUrl;
+    } catch (e) {
+      return null;
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -258,11 +281,60 @@ export default function PublishingProfile() {
 
       <Separator />
 
+      {/* Connected Sites */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="w-5 h-5" />
+            Connected Sites
+          </CardTitle>
+          <CardDescription>
+            WordPress sites where you can publish articles.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {connectedSites.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {connectedSites.map((site) => {
+                const favicon = getFavicon(site.url);
+                return (
+                  <div
+                    key={site.id}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors bg-gray-50"
+                    data-testid={`connected-site-${site.id}`}
+                  >
+                    {favicon ? (
+                      <img src={favicon} alt={site.name} className="w-6 h-6 rounded flex-shrink-0" />
+                    ) : (
+                      <div className="w-6 h-6 rounded bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                        <Globe className="w-3 h-3 text-primary" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{site.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{site.url}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              <p className="text-sm">No connected sites yet.</p>
+              <p className="text-xs">Authenticate to sites in the dashboard to start publishing.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
       {/* Update Button */}
       <Button
         onClick={handleSave}
         disabled={isSaving}
         className="hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        data-testid="button-update-profile"
       >
         {isSaving ? "Updating..." : "Update Profile"}
       </Button>
