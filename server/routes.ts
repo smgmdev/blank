@@ -1026,39 +1026,20 @@ export async function registerRoutes(
                 if (data?.id) {
                   console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS on WordPress`);
                 } else {
-                  // No post data - apply 5-minute grace period for recently published articles
-                  const publishedTime = new Date(publishing.createdAt || article.publishedAt).getTime();
-                  const now = Date.now();
-                  const graceMinutes = 5;
-                  const gracePeriodMs = graceMinutes * 60 * 1000;
-                  
-                  if (now - publishedTime < gracePeriodMs) {
-                    console.log(`[Sync] ⏳ Article "${article.title}" (post ${postId}): Grace period active (${Math.round((gracePeriodMs - (now - publishedTime)) / 1000)}s remaining) - SKIPPING`);
-                  } else {
-                    // Grace period expired, safe to delete
-                    console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No post data - DELETING`);
-                    await storage.deleteArticle(article.id);
-                    console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
-                    deletedCount++;
-                    deletedIds.push(article.id);
-                  }
-                }
-              } catch {
-                // Can't parse JSON - post doesn't exist
-                const publishedTime = new Date(publishing.createdAt || article.publishedAt).getTime();
-                const now = Date.now();
-                const graceMinutes = 5;
-                const gracePeriodMs = graceMinutes * 60 * 1000;
-                
-                if (now - publishedTime < gracePeriodMs) {
-                  console.log(`[Sync] ⏳ Article "${article.title}" (post ${postId}): Grace period active (${Math.round((gracePeriodMs - (now - publishedTime)) / 1000)}s remaining) - SKIPPING`);
-                } else {
-                  console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No valid JSON - DELETING`);
+                  // No post data - article doesn't exist on WordPress, delete it
+                  console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No post data - DELETING`);
                   await storage.deleteArticle(article.id);
                   console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
                   deletedCount++;
                   deletedIds.push(article.id);
                 }
+              } catch {
+                // Can't parse JSON - post doesn't exist on WordPress, delete it
+                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No valid JSON - DELETING`);
+                await storage.deleteArticle(article.id);
+                console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                deletedCount++;
+                deletedIds.push(article.id);
               }
             } catch (checkError: any) {
               console.error(`[Sync] Error checking article ${article.id}:`, checkError.message);
