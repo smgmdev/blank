@@ -146,6 +146,13 @@ export default function Editor() {
   const [categoriesCache, setCategoriesCache] = useState<Record<string, any[]>>({});
   const [tagsCache, setTagsCache] = useState<Record<string, any[]>>({});
 
+  // Load categories and tags when site is selected or draft is loaded
+  useEffect(() => {
+    if (selectedSiteId && !loadingCategories) {
+      loadCategoriesAndTags();
+    }
+  }, [selectedSiteId]);
+
   // Lazy load categories and tags ONLY when needed (called manually, not on mount)
   const loadCategoriesAndTags = async () => {
     if (!selectedSiteId || !userId) return;
@@ -407,19 +414,10 @@ export default function Editor() {
     }
 
     try {
-      let imageUrl = null;
-      // Upload image if provided
-      if (formData.imagePreview && !isEditingDraft) {
-        const base64Data = formData.imagePreview.split(',')[1] || formData.imagePreview;
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-        const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
-        const formDataImg = new FormData();
-        formDataImg.append('image', blob, 'draft-image.jpg');
-        // For now, store image as data URL since we don't have a direct upload endpoint
-        imageUrl = formData.imagePreview;
-      } else if (isEditingDraft && formData.imagePreview && formData.imagePreview.startsWith('http')) {
-        imageUrl = formData.imagePreview;
-      }
+      // Store image - either base64 data URL or HTTP URL
+      const imageUrl = (formData.imagePreview && (formData.imagePreview.startsWith('data:') || formData.imagePreview.startsWith('http'))) 
+        ? formData.imagePreview 
+        : null;
 
       const draftData = {
         title: formData.title,
