@@ -43,12 +43,13 @@ export default function MyArticles() {
     setActiveTab(tab);
   }, [location]);
 
-  // Fetch real articles and sites
+  // Fetch real articles and sites - SHOW IMMEDIATELY, fetch WordPress links in background
   useEffect(() => {
     const fetchData = async () => {
       if (!userId) return;
       setIsLoading(true);
       try {
+        // FAST: Fetch articles and sites immediately
         const [articlesRes, sitesRes] = await Promise.all([
           fetch(`/api/content?type=articles`, { headers: { "x-user-id": userId } }),
           fetch(`/api/sites`)
@@ -62,39 +63,46 @@ export default function MyArticles() {
           // Filter to only this user's articles
           const userArticles = allArticles.filter((a: any) => a.userId === userId);
           
-          // Optimize: Batch fetch WordPress links for published articles with concurrency limit
+          // SHOW ARTICLES IMMEDIATELY - don't wait for WordPress links
+          setArticles(userArticles);
+          setIsLoading(false);
+          
+          // BACKGROUND: Fetch WordPress links for published articles
           const publishedArticles = userArticles.filter((a: any) => a.status === 'published');
-          const draftArticles = userArticles.filter((a: any) => a.status === 'draft');
-          
-          // Fetch WordPress links only for published articles, max 3 concurrent requests
-          const articlesWithLinks = [...draftArticles];
-          const publishBatch = async (articles: any[], batchSize = 3) => {
-            for (let i = 0; i < articles.length; i += batchSize) {
-              const batch = articles.slice(i, i + batchSize);
-              const results = await Promise.all(batch.map(async (article: any) => {
-                try {
-                  const publishRes = await fetch(`/api/content?type=publishing&articleId=${article.id}&siteId=${article.siteId}`);
-                  if (publishRes.ok) {
-                    const pubData = await publishRes.json();
-                    return { ...article, wpLink: pubData.wpLink };
+          if (publishedArticles.length > 0) {
+            const fetchLinksInBackground = async () => {
+              const updatedArticles = [...userArticles];
+              for (let i = 0; i < publishedArticles.length; i += 3) {
+                const batch = publishedArticles.slice(i, i + 3);
+                const results = await Promise.all(batch.map(async (article: any) => {
+                  try {
+                    const publishRes = await fetch(`/api/content?type=publishing&articleId=${article.id}&siteId=${article.siteId}`);
+                    if (publishRes.ok) {
+                      const pubData = await publishRes.json();
+                      return { ...article, wpLink: pubData.wpLink };
+                    }
+                  } catch (e) {
+                    // Silently fail
                   }
-                } catch (e) {
-                  // Silently fail
-                }
-                return article;
-              }));
-              articlesWithLinks.push(...results);
-            }
-          };
-          
-          await publishBatch(publishedArticles, 3);
-          setArticles(articlesWithLinks);
+                  return article;
+                }));
+                // Update articles with new wpLink data
+                results.forEach(result => {
+                  const idx = updatedArticles.findIndex(a => a.id === result.id);
+                  if (idx >= 0) updatedArticles[idx] = result;
+                });
+                setArticles([...updatedArticles]);
+              }
+            };
+            // Don't wait - run in background
+            fetchLinksInBackground();
+          }
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
         toast({ variant: "destructive", title: "Error", description: "Failed to load articles" });
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     fetchData();
   }, [userId]);
