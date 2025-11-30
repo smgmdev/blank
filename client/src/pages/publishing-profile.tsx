@@ -109,7 +109,7 @@ export default function PublishingProfile() {
   return (
     <div className="max-w-2xl space-y-8 pb-20">
       <div>
-        <p className="text-muted-foreground mt-1">Manage how your profile appear on your published article.</p>
+        <p className="text-muted-foreground text-sm mt-1">Manage how your profile appear on your published article.</p>
       </div>
 
       {/* Profile Preview */}
