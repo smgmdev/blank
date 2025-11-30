@@ -117,30 +117,43 @@ export const useStore = create<AppState>((set) => ({
     set({ user: type });
   },
   logout: () => {
-    localStorage.removeItem('userSession');
+    // Clear all session data
+    localStorage.removeItem('sessionId');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userSession'); // Old key, cleanup
     set({ user: null });
   },
-  initializeFromStorage: () => set((state) => {
-    const session = localStorage.getItem('userSession');
-    if (session) {
-      try {
-        const { user, expiryDate } = JSON.parse(session);
-        const now = new Date();
-        const expiry = new Date(expiryDate);
-        // Check if session is still valid
-        if (now < expiry && user) {
-          return { user };
-        } else {
-          localStorage.removeItem('userSession');
-          return { user: null };
-        }
-      } catch (e) {
-        localStorage.removeItem('userSession');
-        return { user: null };
-      }
+  initializeFromStorage: () => {
+    const sessionId = localStorage.getItem('sessionId');
+    const userRole = localStorage.getItem('userRole');
+    
+    // Verify session with server (works on both Replit & Vercel)
+    if (sessionId && userRole) {
+      fetch(`/api/auth/session?sessionId=${sessionId}`)
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(() => {
+          // Session is valid on server, keep user logged in
+          const set = useStore.setState;
+          set({ user: userRole as 'admin' | 'user' });
+        })
+        .catch(() => {
+          // Session invalid or expired, clear localStorage
+          localStorage.removeItem('sessionId');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('userRole');
+          const set = useStore.setState;
+          set({ user: null });
+        });
     }
-    return { user: null };
-  }),
+    
+    // Return initial state (will be updated by async fetch above)
+    return (state) => {
+      // Check localStorage as fallback for immediate load
+      const role = localStorage.getItem('userRole');
+      return { user: role ? (role as 'admin' | 'user') : null };
+    };
+  },
   addSite: (site, authCode) => set((state) => ({
     sites: [...state.sites, { ...site, authCode, id: Math.random().toString(36).substr(2, 9), isConnected: false }]
   })),
