@@ -135,18 +135,21 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           // Log response for debugging
           console.log(`[Sync] Article ${article.id}: Response body: ${JSON.stringify(data).substring(0, 200)}`);
           
+          // Check if post is missing/empty - WordPress returns 200 for deleted posts
+          const isMissing = !data.id || !data.title || data.title.raw === '';
+          
           // Check for various error patterns in successful response
           const isNotFound = 
+            isMissing ||
             data.code === 'rest_post_invalid_id' ||
             data.code === 'rest_invalid_param' ||
             data.code === 'not_found' ||
             data.message?.toLowerCase().includes('not found') ||
             data.message?.toLowerCase().includes('invalid post') ||
-            data.message?.toLowerCase().includes('no post') ||
-            !data.id; // 200 response but no post data
+            data.message?.toLowerCase().includes('no post');
           
           if (isNotFound) {
-            const reason = data.code || data.message || 'no post data';
+            const reason = isMissing ? `post empty/missing (id: ${data.id}, title: ${data.title?.raw || 'missing'})` : (data.code || data.message || 'no post data');
             console.log(`[Sync] Article ${article.id} marked for deletion - ${reason}`);
             return article.id;
           }

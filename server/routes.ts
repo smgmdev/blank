@@ -1046,13 +1046,18 @@ export async function registerRoutes(
                   deletedCount++;
                   deletedIds.push(article.id);
                 } else {
-                  // For 200 OK, verify we got actual post data
+                  // For 200 OK, verify we got actual post data (not empty/deleted)
                   try {
                     const responseText = await checkRes.text();
                     const data = JSON.parse(responseText) as any;
                     
-                    if (!data.id) {
-                      console.log(`[Sync] Article ${article.id} marked for deletion - 200 response but no post data`);
+                    console.log(`[Sync] Article ${article.id}: Parsed data - id: ${data.id}, has title: ${!!data.title}, has content: ${!!data.content}`);
+                    
+                    // Check if post data is missing/empty - WordPress returns 200 for deleted posts
+                    const isMissing = !data.id || !data.title || (typeof data.title === 'string' ? data.title === '' : data.title.raw === '');
+                    
+                    if (isMissing) {
+                      console.log(`[Sync] Article ${article.id} marked for deletion - 200 response but post is empty/missing`);
                       await storage.deleteArticle(article.id);
                       deletedCount++;
                       deletedIds.push(article.id);
@@ -1060,7 +1065,11 @@ export async function registerRoutes(
                       console.log(`[Sync] Article ${article.id}: Post exists on WordPress`);
                     }
                   } catch (readError) {
-                    console.error(`[Sync] Error reading response for post ${postId}:`, readError);
+                    // Error parsing response - also treat as deleted
+                    console.log(`[Sync] Article ${article.id} marked for deletion - Error parsing 200 response: ${(readError as any).message}`);
+                    await storage.deleteArticle(article.id);
+                    deletedCount++;
+                    deletedIds.push(article.id);
                   }
                 }
               } catch (fetchError: any) {
