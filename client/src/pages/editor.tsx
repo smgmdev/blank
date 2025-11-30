@@ -321,6 +321,7 @@ export default function Editor() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId,
+            siteId: selectedSiteId,
             title: formData.title,
             content: formData.content,
             status: 'draft'
@@ -490,6 +491,7 @@ export default function Editor() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId,
+            siteId: selectedSiteId,
             title: formData.title,
             content: formData.content,
             status: 'draft'
@@ -499,7 +501,7 @@ export default function Editor() {
       })();
 
       // Publish to WordPress
-      const publishRes = await fetch(`/api/articles/${article.id}/publish-to-site`, {
+      const publishRes = await fetch(`/api/publish?articleId=${article.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

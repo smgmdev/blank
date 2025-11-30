@@ -695,7 +695,137 @@ export async function registerRoutes(
     }
   });
 
-  // Publish article to WordPress
+  // Publish article to WordPress (query-param version for Vercel compatibility)
+  app.post("/api/publish", async (req, res) => {
+    try {
+      const articleId = req.query.articleId as string;
+      const { siteId, userId, title, content, categories, tags, featuredImageBase64 } = req.body;
+
+      if (!articleId) {
+        return res.status(400).json({ error: "articleId required in query" });
+      }
+
+      const site = await storage.getWordPressSite(siteId);
+      if (!site) return res.status(404).json({ error: "Site not found" });
+
+      const credential = await storage.getUserSiteCredential(userId, siteId);
+      if (!credential || !credential.isVerified) {
+        return res.status(403).json({ error: "Not authenticated to this site" });
+      }
+
+      const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+      const adminAuth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+      
+      let featuredMediaId = null;
+      
+      if (featuredImageBase64) {
+        try {
+          const base64Data = featuredImageBase64.split(',')[1] || featuredImageBase64;
+          const imageBuffer = Buffer.from(base64Data, 'base64');
+          const mediaUrl = `${site.apiUrl}/wp/v2/media`;
+          
+          let contentType = "image/jpeg";
+          let extension = "jpg";
+          if (featuredImageBase64.includes("data:image/png")) {
+            contentType = "image/png";
+            extension = "png";
+          } else if (featuredImageBase64.includes("data:image/webp")) {
+            contentType = "image/webp";
+            extension = "webp";
+          } else if (featuredImageBase64.includes("data:image/gif")) {
+            contentType = "image/gif";
+            extension = "gif";
+          }
+          
+          const mediaResponse = await fetch(mediaUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${adminAuth}`,
+              "Content-Type": contentType,
+              "Content-Disposition": `attachment; filename="featured-image.${extension}"`
+            },
+            body: imageBuffer
+          });
+          
+          if (mediaResponse.ok) {
+            const mediaData = await mediaResponse.json();
+            featuredMediaId = mediaData.id;
+          }
+        } catch (imgError) {
+          console.error("Image upload error:", imgError);
+        }
+      }
+
+      const postUrl = `${site.apiUrl}/wp/v2/posts`;
+      const postData = {
+        title,
+        content,
+        status: "publish",
+        categories: Array.isArray(categories) ? categories : [],
+        tags: Array.isArray(tags) ? tags : []
+      };
+      
+      if (featuredMediaId) {
+        postData.featured_media = featuredMediaId;
+      }
+
+      const wpResponse = await fetch(postUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(postData)
+      });
+
+      if (!wpResponse.ok) {
+        const error = await wpResponse.text();
+        console.error("WordPress publish error:", error);
+        return res.status(wpResponse.status).json({ error: "Failed to publish to WordPress" });
+      }
+
+      const wpPost = await wpResponse.json();
+
+      let featuredImageUrl = null;
+      if (featuredMediaId) {
+        try {
+          const mediaUrl = `${site.apiUrl}/wp/v2/media/${featuredMediaId}`;
+          const mediaRes = await fetch(mediaUrl, {
+            headers: { Authorization: `Basic ${auth}` }
+          });
+          if (mediaRes.ok) {
+            const mediaData = await mediaRes.json();
+            featuredImageUrl = mediaData.source_url;
+          }
+        } catch (e) {
+          console.error("Failed to fetch featured image URL:", e);
+        }
+      }
+
+      await storage.createArticlePublishing({
+        articleId,
+        siteId,
+        wpPostId: String(wpPost.id),
+        status: "published"
+      });
+
+      await storage.updateArticle(articleId, {
+        status: 'published',
+        publishedAt: new Date(),
+        siteId,
+        featuredImageUrl,
+        categories,
+        tags
+      });
+
+      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, featuredImageUrl });
+    } catch (error: any) {
+      console.error("Publish error:", error);
+      res.status(500).json({ error: "Failed to publish article" });
+    }
+  });
+
+  // Publish article to WordPress (path-param version)
   app.post("/api/articles/:articleId/publish-to-site", async (req, res) => {
     try {
       const { articleId } = req.params;
