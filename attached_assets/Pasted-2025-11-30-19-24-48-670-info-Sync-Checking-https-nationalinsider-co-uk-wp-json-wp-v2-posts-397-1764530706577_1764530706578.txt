@@ -1,0 +1,19 @@
+2025-11-30 19:24:48.670 [info] [Sync] Checking https://nationalinsider.co.uk/wp-json/wp/v2/posts/3970 - Status: 400
+2025-11-30 19:24:48.670 [info] [Sync] Response data for post 3970: {"status":"error","error":"INVALID_PASSWORD","code":"400","error_description":"Incorrect password."}
+2025-11-30 19:24:48.670 [info] [Sync] ⚠ Article "44242323423" (post 3970): Auth error - SKIPPING (cannot verify)
+2025-11-30 19:24:49.693 [info] [Sync] Checking https://nationalinsider.co.uk/wp-json/wp/v2/posts/3973 - Status: 400
+2025-11-30 19:24:49.693 [info] [Sync] Response data for post 3973: {"status":"error","error":"INVALID_PASSWORD","code":"400","error_description":"Incorrect password."}
+2025-11-30 19:24:49.693 [info] [Sync] ⚠ Article "00000" (post 3973): Auth error - SKIPPING (cannot verify)
+2025-11-30 19:24:49.778 [info] [Sync] Complete: 0 deleted
+2025-11-30 19:24:46.473 [info] [Sync] Database articles: 3, Sites: 1, Publishing records: 3
+2025-11-30 19:24:46.473 [info] [Sync] Sites in database: National Insider(b00d9ad3-6922-48f0-aff3-0d93bf254284)
+2025-11-30 19:24:46.473 [info] [Sync] First site credentials - username: natinsider, has password: true, has apiToken: true
+2025-11-30 19:24:46.473 [info] [Sync] Starting - checking 3 published articles
+2025-11-30 19:24:46.473 [info] [Sync] Site: National Insider - checking 3 articles with admin API
+2025-11-30 19:24:46.473 [info] [Sync] DEBUG: FULL apiToken: "vpZTp3sZmoeUCuow7ibXOWrU"
+2025-11-30 19:24:46.473 [info] [Sync] DEBUG: apiToken length: 24
+2025-11-30 19:24:46.473 [info] [Sync] Using apiToken for Basic Auth with natinsider
+2025-11-30 19:24:46.473 [info] [Sync] DEBUG: FULL Auth header: Basic bmF0aW5zaWRlcjp2cFpUcDNzWm1vZVVDdW93N2liWE9XclU=
+2025-11-30 19:24:47.491 [info] [Sync] Checking https://nationalinsider.co.uk/wp-json/wp/v2/posts/3963 - Status: 400
+2025-11-30 19:24:47.492 [info] [Sync] Response data for post 3963: {"status":"error","error":"INVALID_PASSWORD","code":"400","error_description":"Incorrect password."}
+2025-11-30 19:24:47.492 [info] [Sync] ⚠ Article "21441224" (post 3963): Auth error - SKIPPING (cannot verify)
