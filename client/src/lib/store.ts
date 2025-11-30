@@ -61,6 +61,7 @@ interface AppState {
   login: (type: 'admin' | 'user') => void;
   logout: () => void;
   initializeFromStorage: () => void;
+  loadPublishingProfileFromAPI: (userId: string) => Promise<void>;
   addSite: (site: Omit<Site, 'id' | 'isConnected' | 'authCode'>, authCode: string) => void;
   connectSite: (siteId: string) => void;
   disconnectSite: (siteId: string) => void;
@@ -167,5 +168,24 @@ export const useStore = create<AppState>((set) => ({
     users: state.users.filter(u => u.id !== id)
   })),
   updatePublishingProfile: (profile) => set({ publishingProfile: profile }),
-  setIsPublishing: (isPublishing) => set({ isPublishing })
+  setIsPublishing: (isPublishing) => set({ isPublishing }),
+  loadPublishingProfileFromAPI: async (userId: string) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`);
+      if (response.ok) {
+        const user = await response.json();
+        if (user.displayName || user.profilePicture) {
+          useStore.setState({
+            publishingProfile: {
+              userId,
+              displayName: user.displayName || 'Content Creator',
+              profilePicture: user.profilePicture
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load publishing profile:', error);
+    }
+  }
 }));

@@ -68,7 +68,7 @@ export default function PublishingProfile() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!displayName.trim()) {
       toast({
         variant: "destructive",
@@ -79,7 +79,18 @@ export default function PublishingProfile() {
     }
 
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch(`/api/users/${currentUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          displayName,
+          profilePicture: previewUrl || undefined
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to update profile');
+
       updatePublishingProfile({
         userId: currentUser.id,
         displayName,
@@ -90,9 +101,15 @@ export default function PublishingProfile() {
         title: "Profile Updated",
         description: "Your publishing profile has been saved successfully"
       });
-
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save profile. Please try again."
+      });
+    } finally {
       setIsSaving(false);
-    }, 1500);
+    }
   };
 
   if (isLoading) {

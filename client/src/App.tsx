@@ -18,7 +18,7 @@ import MyArticles from "@/pages/my-articles";
 import Settings from "@/pages/settings";
 
 function Router() {
-  const { user, initializeFromStorage } = useStore();
+  const { user, initializeFromStorage, loadPublishingProfileFromAPI } = useStore();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +27,16 @@ function Router() {
     const timer = setTimeout(() => setIsLoading(false), 1500);
     return () => clearTimeout(timer);
   }, [initializeFromStorage]);
+
+  // Load publishing profile from database when user is logged in
+  useEffect(() => {
+    if (user) {
+      const userId = localStorage.getItem('userId');
+      if (userId) {
+        loadPublishingProfileFromAPI(userId);
+      }
+    }
+  }, [user, loadPublishingProfileFromAPI]);
 
   if (isLoading) {
     return <LoadingScreen />;

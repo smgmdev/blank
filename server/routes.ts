@@ -117,6 +117,32 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/users/:id", async (req, res) => {
+    try {
+      const user = await storage.getAppUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+
+  app.patch("/api/users/:id", async (req, res) => {
+    try {
+      const { displayName, profilePicture } = req.body;
+      if (!displayName) {
+        return res.status(400).json({ error: "displayName required" });
+      }
+      await storage.updateAppUserProfile(req.params.id, displayName, profilePicture);
+      const user = await storage.getAppUser(req.params.id);
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update user profile" });
+    }
+  });
+
   app.delete("/api/users/:id", async (req, res) => {
     try {
       await storage.deleteAppUser(req.params.id);

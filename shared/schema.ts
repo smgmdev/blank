@@ -25,6 +25,8 @@ export const appUsers = pgTable("app_users", {
   role: varchar("role", { length: 20 }).notNull().default("creator"), // "admin" or "creator"
   email: text("email"),
   companyName: text("company_name"),
+  displayName: text("display_name"),
+  profilePicture: text("profile_picture"),
   twoFactorSecret: text("two_factor_secret"), // For 2FA
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
