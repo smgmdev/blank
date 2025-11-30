@@ -37,7 +37,8 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Palette
+  Palette,
+  X
 } from "lucide-react";
 
 export default function Editor() {
@@ -840,7 +841,7 @@ export default function Editor() {
 
                 {formData.imagePreview && (
                   <div className="space-y-2">
-                    <Label>Image Caption</Label>
+                    <Label>Image Caption <span className="text-destructive">*</span></Label>
                     <Input 
                       placeholder="Add caption for your image"
                       value={formData.imageCaption}
@@ -1097,17 +1098,18 @@ export default function Editor() {
                         ? availableTags.find((t: any) => t.id === tag)?.name || tag
                         : tag;
                       return (
-                        <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs" style={{maxWidth: '200px', wordBreak: 'break-word', whiteSpace: 'normal'}}>
+                        <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs group" style={{maxWidth: '200px', wordBreak: 'break-word', whiteSpace: 'normal'}}>
                           <span style={{display: 'block', wordBreak: 'break-word'}}>
                             {tagName}
                           </span>
                           <button 
-                            className="ml-1 cursor-pointer hover:bg-destructive/20 rounded-full p-0.5 flex-shrink-0"
+                            className="ml-1 cursor-pointer hover:bg-red-500 hover:text-white rounded-full p-0.5 flex-shrink-0 transition-colors opacity-60 hover:opacity-100"
                             onClick={() => removeTag(tag)}
                             data-testid="button-remove-tag"
                             type="button"
+                            title="Remove tag"
                           >
-                            <Search className="w-3 h-3 rotate-45" />
+                            <X className="w-3 h-3" />
                           </button>
                         </Badge>
                       );

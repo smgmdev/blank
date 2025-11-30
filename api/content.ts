@@ -249,7 +249,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         }
       }
 
-      console.log("[Publish] Received tags:", tags, "categories:", categories);
+      console.log("[Publish] Received tags:", tags, "categories:", categories, "tagIds:", tags?.map((t: any) => ({ type: typeof t, value: t })));
       
       const postData: any = {
         title,
@@ -259,7 +259,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         tags: Array.isArray(tags) ? tags : []
       };
       
-      console.log("[Publish] postData being sent to WP:", postData);
+      console.log("[Publish] ✓ Posting to WordPress with:", { 
+        tagIds: postData.tags, 
+        categoryIds: postData.categories,
+        title: postData.title,
+        hasFeaturedMedia: !!featuredMediaId
+      });
       
       if (featuredMediaId) postData.featured_media = featuredMediaId;
 
