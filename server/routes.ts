@@ -283,39 +283,8 @@ export async function registerRoutes(
       const wpUser = await wpResponse.json();
       console.log(`[WP Auth] User ${wpUsername} verified as WP user ID: ${wpUser.id}`);
 
-      // Check if user already has credentials for this site
-      let existing = await storage.getUserSiteCredential(userId, siteId);
-      
-      if (existing) {
-        // Re-authentication: update credentials with new password
-        console.log(`[WP Auth] User already authenticated, updating credentials`);
-        // Get the database connection to update
-        const { db } = await import("./db");
-        const { userSiteCredentials } = await import("@shared/schema");
-        const { eq, and } = await import("drizzle-orm");
-        
-        await db
-          .update(userSiteCredentials)
-          .set({
-            wpPassword,
-            wpUserId: String(wpUser.id),
-            isVerified: true,
-          })
-          .where(and(
-            eq(userSiteCredentials.userId, userId),
-            eq(userSiteCredentials.siteId, siteId)
-          ));
-        
-        res.json({ 
-          success: true, 
-          message: "Credentials updated successfully. You can now publish to this site.",
-          profile: { userId, siteId, credentialId: existing.id }
-        });
-        return;
-      }
-
-      // Store new credentials
-      const credential = await storage.createUserSiteCredential({
+      // Upsert credentials (create or update if already exists)
+      const credential = await storage.upsertUserSiteCredential({
         userId,
         siteId,
         wpUsername,
@@ -325,12 +294,18 @@ export async function registerRoutes(
       // Mark as verified with actual WP user ID
       await storage.updateUserSiteCredentialVerification(credential.id, String(wpUser.id));
 
-      // Create publishing profile
-      const profile = await storage.createPublishingProfile({
-        userId,
-        siteId,
-        credentialId: credential.id,
-      });
+      // Check if publishing profile already exists
+      const existingProfiles = await storage.getPublishingProfilesByUserId(userId);
+      let profile = existingProfiles.find(p => p.siteId === siteId);
+      
+      if (!profile) {
+        // Create publishing profile if it doesn't exist
+        profile = await storage.createPublishingProfile({
+          userId,
+          siteId,
+          credentialId: credential.id,
+        });
+      }
 
       res.json({ 
         success: true, 

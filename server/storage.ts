@@ -219,6 +219,26 @@ export class Storage implements IStorage {
     return result;
   }
 
+  async upsertUserSiteCredential(
+    credential: InsertUserSiteCredential
+  ): Promise<UserSiteCredential> {
+    // Check if credential already exists
+    const existing = await this.getUserSiteCredential(credential.userId, credential.siteId);
+    
+    if (existing) {
+      // Delete the old one and create a new one
+      await db.delete(userSiteCredentials).where(eq(userSiteCredentials.id, existing.id));
+    }
+    
+    // Create new credential
+    const [result] = await db
+      .insert(userSiteCredentials)
+      .values(credential)
+      .returning();
+    if (!result) throw new Error("Failed to upsert user site credential");
+    return result;
+  }
+
   async getUserSiteCredential(
     userId: string,
     siteId: string
