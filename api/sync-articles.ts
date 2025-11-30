@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { db } from "./db-utils";
-import { articles, articlePublishing, wordPressSites } from "../shared/schema";
+import { db } from "./db-utils.js";
+import { articles, articlePublishing, wordPressSites } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
