@@ -66,8 +66,18 @@ export default async (req: VercelRequest, res: VercelResponse) => {
                       (checkRes.ok && !data.id);
                     
                     if (isNotFound) {
-                      console.log(`[Sync] Article ${article.id} marked for deletion (post not found on WordPress)`);
-                      return article.id;
+                      // Grace period: only delete if published more than 5 minutes ago
+                      const publishedTime = article.publishedAt ? new Date(article.publishedAt).getTime() : 0;
+                      const now = Date.now();
+                      const ageMs = now - publishedTime;
+                      const fiveMinutesMs = 5 * 60 * 1000;
+                      
+                      if (ageMs > fiveMinutesMs) {
+                        console.log(`[Sync] Article ${article.id} marked for deletion (post not found on WordPress, age: ${(ageMs/1000).toFixed(0)}s)`);
+                        return article.id;
+                      } else {
+                        console.log(`[Sync] Article ${article.id}: Post not found but too recent (age: ${(ageMs/1000).toFixed(0)}s), skipping delete`);
+                      }
                     }
                   } catch {
                     if (!checkRes.ok) {
@@ -121,10 +131,19 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         
         console.log(`[Sync] Article ${article.id}: WordPress returned status ${checkRes.status}`);
         
-        // ANY non-OK response means post is deleted/not found
+        // ANY non-OK response means post is deleted/not found, BUT only delete if old enough (grace period for recent publishes)
         if (!checkRes.ok) {
-          console.log(`[Sync] Article ${article.id} marked for deletion - HTTP ${checkRes.status}`);
-          return article.id;
+          const publishedTime = article.publishedAt ? new Date(article.publishedAt).getTime() : 0;
+          const now = Date.now();
+          const ageMs = now - publishedTime;
+          const fiveMinutesMs = 5 * 60 * 1000;
+          
+          if (ageMs > fiveMinutesMs) {
+            console.log(`[Sync] Article ${article.id} marked for deletion - HTTP ${checkRes.status} (age: ${(ageMs/1000).toFixed(0)}s)`);
+            return article.id;
+          } else {
+            console.log(`[Sync] Article ${article.id}: HTTP ${checkRes.status} but too recent (age: ${(ageMs/1000).toFixed(0)}s), skipping delete`);
+          }
         }
         
         // For successful responses, verify we got actual post data
