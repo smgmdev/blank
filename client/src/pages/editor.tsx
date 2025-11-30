@@ -471,27 +471,25 @@ export default function Editor() {
         t.name.toLowerCase() === tagName.toLowerCase()
       );
 
-      if (!existingTag) {
-        toast({ 
-          variant: "destructive", 
-          title: "Tag not found", 
-          description: `"${tagName}" doesn't exist. Please select from suggestions or contact admin.` 
-        });
-        return;
-      }
+      // Use numeric ID if exists, otherwise use tag name (will be created on WordPress during publishing)
+      const tagValue = existingTag?.id || tagName;
 
-      if (formData.tags.includes(existingTag.id)) {
+      if (formData.tags.includes(tagValue)) {
         toast({ variant: "destructive", title: "Tag exists", description: "This tag is already added" });
         return;
       }
 
-      // Add numeric tag ID (required by WordPress API)
+      // Add tag (either numeric ID or new tag name)
       setFormData({
         ...formData,
-        tags: [...formData.tags, existingTag.id],
+        tags: [...formData.tags, tagValue],
         currentTag: ""
       });
-      toast({ title: "Tag added", description: `"${tagName}" added successfully` });
+      const isNew = !existingTag;
+      toast({ 
+        title: "Tag added", 
+        description: isNew ? `"${tagName}" will be created when you publish` : `"${tagName}" added successfully` 
+      });
     }
   };
 

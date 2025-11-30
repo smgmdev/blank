@@ -251,15 +251,55 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
       console.log("[Publish] Received tags:", tags, "categories:", categories);
       
-      // Ensure tags are numeric IDs (WordPress API requirement)
-      const validTags = Array.isArray(tags) ? tags.filter(t => typeof t === 'number' && t > 0) : [];
+      // Handle tags: numeric IDs go directly, strings are created as new tags
+      const tagIds: number[] = [];
+      const newTagNames: string[] = [];
+      
+      if (Array.isArray(tags)) {
+        for (const tag of tags) {
+          if (typeof tag === 'number' && tag > 0) {
+            tagIds.push(tag);
+          } else if (typeof tag === 'string' && tag.trim()) {
+            newTagNames.push(tag.trim());
+          }
+        }
+      }
+      
+      // Create new tags on WordPress if needed
+      let allTagIds = [...tagIds];
+      if (newTagNames.length > 0) {
+        console.log("[Publish] Creating new tags:", newTagNames);
+        for (const tagName of newTagNames) {
+          try {
+            const tagRes = await fetch(`${site.apiUrl}/wp/v2/tags`, {
+              method: "POST",
+              headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ name: tagName, description: "" })
+            });
+            
+            if (tagRes.ok) {
+              const newTag = await tagRes.json();
+              allTagIds.push(newTag.id);
+              console.log("[Publish] ✓ Created new tag:", { name: tagName, id: newTag.id });
+            } else {
+              const error = await tagRes.text();
+              console.error("[Publish] Failed to create tag:", tagName, error);
+            }
+          } catch (e) {
+            console.error("[Publish] Error creating tag:", tagName, e);
+          }
+        }
+      }
       
       const postData: any = {
         title,
         content,
         status: "publish",
         categories: Array.isArray(categories) ? categories : [],
-        tags: validTags  // Only send numeric IDs
+        tags: allTagIds  // Send all numeric tag IDs (existing + newly created)
       };
       
       console.log("[Publish] ✓ Posting to WordPress with:", { 

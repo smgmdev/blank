@@ -90,6 +90,18 @@ export default function MyArticles() {
           setArticles(articlesWithCachedLinks);
           setIsLoading(false);
           
+          // BACKGROUND: Sync with WordPress to remove deleted articles
+          fetch(`/api/sync-articles`, { method: 'POST' })
+            .then(res => res.ok && res.json())
+            .then(syncData => {
+              if (syncData?.deletedIds?.length > 0) {
+                console.log('[MyArticles] Removed deleted articles:', syncData.deletedIds);
+                // Remove deleted articles from state
+                setArticles(prev => prev.filter(a => !syncData.deletedIds.includes(a.id)));
+              }
+            })
+            .catch(e => console.error('[MyArticles] Sync failed:', e));
+          
           // BACKGROUND: Fetch categories for each site and populate categoryMap
           const newCategoryMap: Record<string, Record<number, string>> = {};
           for (const site of allSites) {
