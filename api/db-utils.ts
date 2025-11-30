@@ -34,3 +34,10 @@ export async function getArticlesByUserId(userId: string): Promise<Article[]> {
 export async function getAllWordPressSites(): Promise<WordPressSite[]> {
   return await db.select().from(schema.wordPressSites);
 }
+
+export async function getUserSiteCredentialsByUserId(userId: string): Promise<any[]> {
+  return await db
+    .select()
+    .from(schema.userSiteCredentials)
+    .where(eq(schema.userSiteCredentials.userId, userId));
+}
