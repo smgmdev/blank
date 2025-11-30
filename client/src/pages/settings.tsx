@@ -181,22 +181,17 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl space-y-8 pb-20">
-      <div className="relative">
-        <h2 className="text-2xl font-bold tracking-tight">Account Settings</h2>
-        {isAdmin && (
-          <Badge className="absolute top-0 right-0 bg-black text-white rounded-full px-2 py-1 text-xs font-semibold">
-            Global
-          </Badge>
-        )}
-        <p className="text-muted-foreground mt-1">Manage your account information and security.</p>
-      </div>
-
       {/* Account Information */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserIcon className="w-5 h-5" />
             Account Information
+            {isAdmin && (
+              <Badge className="ml-auto bg-black text-white rounded-full px-1.5 py-0.5 text-xs font-semibold h-fit">
+                Global
+              </Badge>
+            )}
           </CardTitle>
           <CardDescription>
             {isAdmin ? "Edit your account details." : "View your account details."}
