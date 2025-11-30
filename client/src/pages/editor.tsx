@@ -594,7 +594,7 @@ export default function Editor() {
     
     try {
       // Create custom tags on WordPress first (tags that aren't already in availableTags)
-      const tagIds = [];
+      const tagData = [];
       for (const tag of formData.tags) {
         if (typeof tag === 'string') {
           // Custom tag - create on WordPress
@@ -605,14 +605,14 @@ export default function Editor() {
           });
           if (createRes.ok) {
             const newTag = await createRes.json();
-            tagIds.push(newTag.id);
+            tagData.push({ id: newTag.id, name: tag }); // Store both id and name
           }
         } else {
-          // Existing tag
-          tagIds.push(tag);
+          // Existing tag - just have ID
+          tagData.push({ id: tag, name: null });
         }
       }
-      console.log("[Publish] tagIds before sending:", tagIds, "formData.tags:", formData.tags);
+      console.log("[Publish] tagData before sending:", tagData, "formData.tags:", formData.tags);
 
       // Create article locally first
       const article = await (async () => {
@@ -640,7 +640,7 @@ export default function Editor() {
           title: formData.title,
           content: formData.content,
           categories: formData.categories,
-          tags: tagIds && tagIds.length > 0 ? tagIds : [],
+          tags: tagData && tagData.length > 0 ? tagData : [],
           featuredImageBase64: formData.imagePreview,
           imageCaption: formData.imageCaption
         })

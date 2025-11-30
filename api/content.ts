@@ -254,50 +254,24 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
       console.log("[Publish] Received tags:", tags, "categories:", categories);
       
-      // Handle tags: numeric IDs go directly, strings are created as new tags
+      // Handle tags: can be objects {id, name} or numbers
       const tagIds: number[] = [];
-      const newTagNames: string[] = [];
-      const createdTagMap: Record<number, string> = {}; // Track newly created tags
+      const createdTagMap: Record<number, string> = {}; // Track tag names for all tags
       
       if (Array.isArray(tags)) {
         for (const tag of tags) {
-          if (typeof tag === 'number' && tag > 0) {
+          if (typeof tag === 'object' && tag.id) {
+            // New format from frontend: {id, name}
+            tagIds.push(tag.id);
+            if (tag.name) createdTagMap[tag.id] = tag.name; // Store the name if provided
+          } else if (typeof tag === 'number' && tag > 0) {
+            // Old format or direct ID
             tagIds.push(tag);
-          } else if (typeof tag === 'string' && tag.trim()) {
-            newTagNames.push(tag.trim());
           }
         }
       }
       
-      // Create new tags on WordPress if needed
       let allTagIds = [...tagIds];
-      if (newTagNames.length > 0) {
-        console.log("[Publish] Creating new tags:", newTagNames);
-        for (const tagName of newTagNames) {
-          try {
-            const tagRes = await fetch(`${site.apiUrl}/wp/v2/tags`, {
-              method: "POST",
-              headers: {
-                Authorization: `Basic ${auth}`,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({ name: tagName, description: "" })
-            });
-            
-            if (tagRes.ok) {
-              const newTag = await tagRes.json();
-              allTagIds.push(newTag.id);
-              createdTagMap[newTag.id] = tagName; // Store mapping
-              console.log("[Publish] ✓ Created new tag:", { name: tagName, id: newTag.id });
-            } else {
-              const error = await tagRes.text();
-              console.error("[Publish] Failed to create tag:", tagName, error);
-            }
-          } catch (e) {
-            console.error("[Publish] Error creating tag:", tagName, e);
-          }
-        }
-      }
       
       const postData: any = {
         title,
@@ -311,7 +285,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         tagIds: postData.tags, 
         categoryIds: postData.categories,
         title: postData.title,
-        hasFeaturedMedia: !!featuredMediaId
+        hasFeaturedMedia: !!featuredMediaId,
+        tagNames: createdTagMap
       });
       
       if (featuredMediaId) postData.featured_media = featuredMediaId;
