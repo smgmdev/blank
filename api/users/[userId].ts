@@ -4,10 +4,13 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   try {
     const { userId } = req.query;
     
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
     if (req.method === "GET") {
-      // Get user profile
-      const { getDb } = await import("../../server/db-utils.js");
-      const db = getDb();
+      const { initializeDb } = await import("../../shared/db-client.js");
+      const db = initializeDb();
       const { appUsers } = await import("../../shared/schema.js");
       const { eq } = await import("drizzle-orm");
       
@@ -19,20 +22,19 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       
       res.json(user);
     } else if (req.method === "PATCH") {
-      // Update user profile
       const { displayName, profilePicture, email, password } = req.body;
       
-      const { getDb } = await import("../../server/db-utils.js");
-      const db = getDb();
+      const { initializeDb } = await import("../../shared/db-client.js");
+      const db = initializeDb();
       const { appUsers } = await import("../../shared/schema.js");
       const { eq } = await import("drizzle-orm");
       
-      // Update only provided fields
-      const updateData: any = {};
-      if (displayName !== undefined) updateData.displayName = displayName;
-      if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
-      if (email !== undefined) updateData.email = email;
-      if (password !== undefined) updateData.password = password;
+      // Build update data - only include fields that are provided
+      const updateData: Record<string, any> = {};
+      if (displayName !== undefined && displayName !== null) updateData.displayName = displayName;
+      if (profilePicture !== undefined && profilePicture !== null) updateData.profilePicture = profilePicture;
+      if (email !== undefined && email !== null) updateData.email = email;
+      if (password !== undefined && password !== null) updateData.password = password;
       
       if (Object.keys(updateData).length === 0) {
         return res.status(400).json({ error: "No fields to update" });
