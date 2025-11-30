@@ -185,7 +185,8 @@ export const useStore = create<AppState>((set) => ({
         }
       }
     } catch (error) {
-      console.error('Failed to load publishing profile:', error);
+      // Silently fail - profile loading is optional and shouldn't break login
+      console.debug('Profile loading skipped');
     }
   }
 }));
