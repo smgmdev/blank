@@ -106,16 +106,18 @@ export default function Editor() {
               return;
             }
             const article = await articleRes.json();
-            // Load article data into form
+            // Load ALL article data into form
             setIsEditingDraft(true);
+            setSelectedSiteId(article.siteId || "");
             setFormData({
               title: article.title || "",
               slug: article.title ? article.title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').trim() : "",
               content: article.content || "",
               image: null,
-              imagePreview: "",
-              categories: [],
-              tags: [],
+              imagePreview: article.featuredImageUrl || "",
+              imageCaption: article.imageCaption || "",
+              categories: Array.isArray(article.categories) ? article.categories : [],
+              tags: Array.isArray(article.tags) ? article.tags.map((t: any) => typeof t === 'object' ? t.id : t) : [],
               currentTag: "",
               seo: {
                 focusKeyword: "",
@@ -405,16 +407,36 @@ export default function Editor() {
     }
 
     try {
+      let imageUrl = null;
+      // Upload image if provided
+      if (formData.imagePreview && !isEditingDraft) {
+        const base64Data = formData.imagePreview.split(',')[1] || formData.imagePreview;
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
+        const formDataImg = new FormData();
+        formDataImg.append('image', blob, 'draft-image.jpg');
+        // For now, store image as data URL since we don't have a direct upload endpoint
+        imageUrl = formData.imagePreview;
+      } else if (isEditingDraft && formData.imagePreview && formData.imagePreview.startsWith('http')) {
+        imageUrl = formData.imagePreview;
+      }
+
+      const draftData = {
+        title: formData.title,
+        content: formData.content,
+        status: 'draft',
+        categories: formData.categories.length > 0 ? formData.categories : null,
+        tags: formData.tags.length > 0 ? formData.tags : null,
+        featuredImageUrl: imageUrl,
+        imageCaption: formData.imageCaption || null
+      };
+
       if (isEditingDraft && articleId) {
-        // Update existing draft
+        // Update existing draft - save ALL form data
         const res = await fetch(`/api/content?type=articles&articleId=${articleId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: formData.title,
-            content: formData.content,
-            status: 'draft'
-          })
+          body: JSON.stringify(draftData)
         });
 
         if (!res.ok) {
@@ -425,19 +447,16 @@ export default function Editor() {
           title: "Draft Updated",
           description: "Your article draft has been updated successfully."
         });
-        // Navigate to drafts tab to see updated draft
         setLocation("/my-articles?tab=drafts");
       } else {
-        // Create new draft
+        // Create new draft - save ALL form data
         const res = await fetch('/api/content?type=articles', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId,
             siteId: selectedSiteId,
-            title: formData.title,
-            content: formData.content,
-            status: 'draft'
+            ...draftData
           })
         });
 
@@ -449,7 +468,6 @@ export default function Editor() {
           title: "Draft Saved",
           description: "Your article draft has been saved successfully."
         });
-        // Navigate to drafts tab
         setLocation("/my-articles?tab=drafts");
       }
     } catch (error: any) {
