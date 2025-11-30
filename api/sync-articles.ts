@@ -47,17 +47,19 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       // Build admin auth header
       const headers: any = {};
       if (site.adminUsername && site.apiToken) {
-        console.log(`[Sync] DEBUG: apiToken length: ${site.apiToken.length}, first 10 chars: ${site.apiToken.substring(0, 10)}`);
+        console.log(`[Sync] DEBUG: FULL apiToken: "${site.apiToken}"`);
+        console.log(`[Sync] DEBUG: apiToken length: ${site.apiToken.length}`);
         const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
         headers.Authorization = `Basic ${auth}`;
         console.log(`[Sync] Using apiToken for Basic Auth with ${site.adminUsername}`);
-        console.log(`[Sync] DEBUG: Auth header (first 20 chars): ${headers.Authorization.substring(0, 20)}`);
+        console.log(`[Sync] DEBUG: FULL Auth header: ${headers.Authorization}`);
       } else if (site.adminUsername && site.adminPassword) {
-        console.log(`[Sync] DEBUG: adminPassword length: ${site.adminPassword.length}, first 10 chars: ${site.adminPassword.substring(0, 10)}`);
+        console.log(`[Sync] DEBUG: FULL adminPassword: "${site.adminPassword}"`);
+        console.log(`[Sync] DEBUG: adminPassword length: ${site.adminPassword.length}`);
         const auth = Buffer.from(`${site.adminUsername}:${site.adminPassword}`).toString("base64");
         headers.Authorization = `Basic ${auth}`;
         console.log(`[Sync] Using adminPassword for Basic Auth with ${site.adminUsername}`);
-        console.log(`[Sync] DEBUG: Auth header (first 20 chars): ${headers.Authorization.substring(0, 20)}`);
+        console.log(`[Sync] DEBUG: FULL Auth header: ${headers.Authorization}`);
       }
       
       // Check each article
