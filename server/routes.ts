@@ -7,6 +7,25 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Health Check
+  app.get("/api/health", async (req, res) => {
+    try {
+      const users = await storage.getAllAppUsers();
+      res.json({ 
+        status: "ok", 
+        database: "connected",
+        usersCount: users.length,
+        users: users.map(u => ({ id: u.id, username: u.username }))
+      });
+    } catch (error: any) {
+      res.status(500).json({ 
+        status: "error", 
+        database: "disconnected",
+        error: error.message 
+      });
+    }
+  });
+
   // WordPress Sites Routes (Admin)
   app.post("/api/sites", async (req, res) => {
     try {
