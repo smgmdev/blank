@@ -1478,7 +1478,7 @@ export async function registerRoutes(
 
 
 
-  // Get WordPress user profile for publishing profile
+  // Get WordPress user profile for publishing profile (first connected site)
   app.get("/api/wp-user-profile", async (req, res) => {
     try {
       const userId = req.query.userId as string;
@@ -1515,6 +1515,51 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("WP user fetch error:", error);
       res.status(500).json({ error: "Failed to fetch WP user profile" });
+    }
+  });
+
+  // Get WordPress user profile for a specific site
+  app.get("/api/wp-site-user", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const siteId = req.query.siteId as string;
+      if (!userId || !siteId) {
+        return res.status(400).json({ error: "userId and siteId required" });
+      }
+
+      const credentials = await storage.getUserSiteCredentialsByUserId(userId);
+      if (!credentials || credentials.length === 0) {
+        return res.status(404).json({ error: "No WordPress credentials" });
+      }
+
+      const cred = credentials.find(c => c.siteId === siteId);
+      if (!cred) {
+        return res.status(404).json({ error: "No credentials for this site" });
+      }
+
+      const site = await storage.getWordPressSite(siteId);
+      if (!site) {
+        return res.status(404).json({ error: "Site not found" });
+      }
+
+      const auth = Buffer.from(`${cred.wpUsername}:${cred.wpPassword}`).toString("base64");
+      const response = await fetch(`${site.apiUrl}/wp/v2/users/me`, {
+        headers: { Authorization: `Basic ${auth}` }
+      });
+
+      if (!response.ok) {
+        return res.status(response.status).json({ error: "Failed to fetch WP user" });
+      }
+
+      const wpUser = await response.json();
+      res.json({
+        username: cred.wpUsername,
+        displayName: wpUser.name || wpUser.display_name || cred.wpUsername,
+        profilePicture: wpUser.avatar_urls?.[96] || null
+      });
+    } catch (error: any) {
+      console.error("WP site user fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch WP user for site" });
     }
   });
 

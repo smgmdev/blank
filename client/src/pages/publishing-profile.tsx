@@ -32,6 +32,7 @@ export default function PublishingProfile() {
   const [previewUrl, setPreviewUrl] = useState(profilePicture);
   const [connectedSites, setConnectedSites] = useState<any[]>([]);
   const [favicons, setFavicons] = useState<{ [key: string]: string }>({});
+  const [siteUsers, setSiteUsers] = useState<{ [key: string]: any }>({});
   
   const userId = localStorage.getItem('userId');
 
@@ -47,6 +48,20 @@ export default function PublishingProfile() {
             const sites = await sitesRes.json();
             const connected = sites.filter((s: any) => s.userIsConnected);
             setConnectedSites(connected);
+            
+            // Fetch WP user info for each connected site
+            const users: { [key: string]: any } = {};
+            for (const site of connected) {
+              try {
+                const userRes = await fetch(`/api/wp-site-user?userId=${userId}&siteId=${site.id}`);
+                if (userRes.ok) {
+                  users[site.id] = await userRes.json();
+                }
+              } catch (e) {
+                console.error(`Failed to fetch WP user for site ${site.id}:`, e);
+              }
+            }
+            setSiteUsers(users);
           }
           
           // Fetch WP profile
@@ -209,23 +224,45 @@ export default function PublishingProfile() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {connectedSites.map((site) => {
                 const favicon = getFavicon(site.url);
+                const wpUser = siteUsers[site.id];
                 return (
                   <div
                     key={site.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors bg-gray-50"
+                    className="p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors bg-gray-50"
                     data-testid={`connected-site-${site.id}`}
                   >
-                    {favicon ? (
-                      <img src={favicon} alt={site.name} className="w-6 h-6 rounded flex-shrink-0" />
+                    {/* Site header */}
+                    <div className="flex items-center gap-2 mb-3">
+                      {favicon ? (
+                        <img src={favicon} alt={site.name} className="w-5 h-5 rounded flex-shrink-0" />
+                      ) : (
+                        <div className="w-5 h-5 rounded bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                          <Globe className="w-3 h-3 text-primary" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium text-xs truncate">{site.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{site.url}</p>
+                      </div>
+                    </div>
+                    
+                    {/* User info */}
+                    {wpUser ? (
+                      <div className="flex items-center gap-2 pt-2 border-t border-gray-300">
+                        <Avatar className="w-7 h-7 flex-shrink-0">
+                          <AvatarImage src={wpUser.profilePicture} alt={wpUser.displayName} />
+                          <AvatarFallback className="text-xs">{wpUser.displayName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium truncate">{wpUser.displayName}</p>
+                          <p className="text-xs text-muted-foreground truncate">@{wpUser.username}</p>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="w-6 h-6 rounded bg-primary/10 flex-shrink-0 flex items-center justify-center">
-                        <Globe className="w-3 h-3 text-primary" />
+                      <div className="text-xs text-muted-foreground pt-2 border-t border-gray-300">
+                        Loading user info...
                       </div>
                     )}
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">{site.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{site.url}</p>
-                    </div>
                   </div>
                 );
               })}
