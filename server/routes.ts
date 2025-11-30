@@ -995,6 +995,7 @@ export async function registerRoutes(
           const allPostIds = new Set<number>();
           let page = 1;
           let hasMore = true;
+          let fetchSucceeded = false;
           
           while (hasMore) {
             const postsUrl = `${site.apiUrl}/wp/v2/posts?per_page=100&page=${page}&status=publish`;
@@ -1003,9 +1004,11 @@ export async function registerRoutes(
             const postsRes = await fetch(postsUrl, { headers });
             if (!postsRes.ok) {
               console.error(`[Sync] Failed to fetch posts from ${site.name}: HTTP ${postsRes.status}`);
+              console.log(`[Sync] Skipping deletion check for ${site.name} due to fetch error`);
               break;
             }
             
+            fetchSucceeded = true;
             const posts = await postsRes.json() as any[];
             if (posts.length === 0) {
               hasMore = false;
@@ -1017,23 +1020,28 @@ export async function registerRoutes(
           
           console.log(`[Sync] Found ${allPostIds.size} published posts on ${site.name}`);
           
-          // Now check each article - if its post ID is NOT in WordPress, delete it
-          for (const { article, publishing } of siteArticles) {
-            const postId = parseInt(publishing.wpPostId, 10);
-            
-            if (allPostIds.has(postId)) {
-              console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
-            } else {
-              console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING`);
-              try {
-                await storage.deleteArticle(article.id);
-                console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
-                deletedCount++;
-                deletedIds.push(article.id);
-              } catch (delError: any) {
-                console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+          // Only check for deletions if we successfully fetched posts
+          if (fetchSucceeded) {
+            // Now check each article - if its post ID is NOT in WordPress, delete it
+            for (const { article, publishing } of siteArticles) {
+              const postId = parseInt(publishing.wpPostId, 10);
+              
+              if (allPostIds.has(postId)) {
+                console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
+              } else {
+                console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING`);
+                try {
+                  await storage.deleteArticle(article.id);
+                  console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                  deletedCount++;
+                  deletedIds.push(article.id);
+                } catch (delError: any) {
+                  console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                }
               }
             }
+          } else {
+            console.log(`[Sync] Skipping article deletion checks for ${site.name} - fetch failed`);
           }
         } catch (siteError: any) {
           console.error(`[Sync] Error syncing site ${site.name}:`, siteError.message);
