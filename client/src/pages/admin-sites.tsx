@@ -285,7 +285,7 @@ export default function AdminSites() {
               </div>
 
               <div className="border-t pt-4">
-                <Label className="text-sm font-semibold mb-3 block">Verify WordPress Connection</Label>
+                <Label className="text-sm font-semibold mb-3 block">Admin Credentials</Label>
                 <div className="space-y-2">
                   <Input 
                     placeholder="WordPress admin username" 
@@ -294,7 +294,15 @@ export default function AdminSites() {
                     disabled={isVerifying}
                     data-testid="input-admin-username"
                   />
-                  <p className="text-xs text-muted-foreground">Will verify using the API token above</p>
+                  <Input 
+                    type="password"
+                    placeholder="WordPress admin password" 
+                    value={adminCreds.password}
+                    onChange={e => setAdminCreds({...adminCreds, password: e.target.value})}
+                    disabled={isVerifying}
+                    data-testid="input-admin-password"
+                  />
+                  <p className="text-xs text-muted-foreground">Your WordPress admin username and password</p>
                   <Button 
                     onClick={handleVerifyConnection}
                     disabled={isVerifying}
