@@ -67,6 +67,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           
           console.log(`[Sync] Response status: ${res.status}`);
           
+          // If 404, post doesn't exist on WordPress - delete it from our database
+          if (res.status === 404) {
+            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): NOT FOUND on WordPress (404) - DELETING`);
+            await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
+            await db.delete(articles).where(eq(articles.id, article.id));
+            deletedCount++;
+            deletedIds.push(article.id);
+            continue;
+          }
+          
           // Check if it's an auth error
           if (res.status === 400 || res.status === 401 || res.status === 403) {
             try {
@@ -78,7 +88,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             } catch {}
           }
           
-          // Try to parse response to check if post exists
+          // Try to parse response to check if post exists (200 with post data)
           try {
             const data = JSON.parse(resText);
             

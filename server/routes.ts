@@ -1007,6 +1007,16 @@ export async function registerRoutes(
               
               console.log(`[Sync] Response status: ${checkRes.status}`);
               
+              // If 404, post doesn't exist on WordPress - delete it from our database
+              if (checkRes.status === 404) {
+                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): NOT FOUND on WordPress (404) - DELETING`);
+                await storage.deleteArticle(article.id);
+                console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                deletedCount++;
+                deletedIds.push(article.id);
+                continue;
+              }
+              
               // Check if it's an auth error
               if (checkRes.status === 400 || checkRes.status === 401 || checkRes.status === 403) {
                 try {
@@ -1018,7 +1028,7 @@ export async function registerRoutes(
                 } catch {}
               }
               
-              // Try to parse response
+              // Try to parse response (200 with post data)
               try {
                 const data = JSON.parse(resText);
                 
