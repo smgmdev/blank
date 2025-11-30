@@ -54,14 +54,23 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
         
         console.log(`[Sync] Checking "${article.title}" (post ${postId}) at ${checkUrl}`);
-        console.log(`[Sync] Auth headers: ${Object.keys(headers).join(', ')}`);
         
         try {
           const res = await fetch(checkUrl, { headers });
           const resText = await res.text();
           
-          console.log(`[Sync] Response status: ${res.status}, length: ${resText.length}`);
-          console.log(`[Sync] Response text: ${resText.substring(0, 500)}`);
+          console.log(`[Sync] Response status: ${res.status}`);
+          
+          // Check if it's an auth error
+          if (res.status === 400 || res.status === 401 || res.status === 403) {
+            try {
+              const data = JSON.parse(resText);
+              if (data?.error === "INVALID_PASSWORD" || data?.code === "rest_authentication_required") {
+                console.log(`[Sync] ⚠ Article "${article.title}" (post ${postId}): Auth failed - SKIPPING (not deleting)`);
+                continue; // Skip this article, don't delete
+              }
+            } catch {}
+          }
           
           // Try to parse response to check if post exists
           try {
@@ -69,10 +78,10 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             
             // If we can parse JSON and get post data with ID, it exists
             if (data?.id) {
-              console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS (id=${data.id})`);
+              console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS on WordPress`);
             } else {
               // Got response but no post data - delete it
-              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No ID field - DELETING`);
+              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No post data - DELETING`);
               await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
               await db.delete(articles).where(eq(articles.id, article.id));
               deletedCount++;
@@ -80,7 +89,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             }
           } catch (parseErr: any) {
             // Can't parse as JSON - post doesn't exist - delete it
-            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Parse error: ${parseErr.message} - DELETING`);
+            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No valid JSON response - DELETING`);
             await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
             await db.delete(articles).where(eq(articles.id, article.id));
             deletedCount++;

@@ -1004,17 +1004,31 @@ export async function registerRoutes(
             
             try {
               const checkRes = await fetch(checkUrl, { headers });
+              const resText = await checkRes.text();
+              
+              console.log(`[Sync] Response status: ${checkRes.status}`);
+              
+              // Check if it's an auth error
+              if (checkRes.status === 400 || checkRes.status === 401 || checkRes.status === 403) {
+                try {
+                  const data = JSON.parse(resText);
+                  if (data?.error === "INVALID_PASSWORD" || data?.code === "rest_authentication_required") {
+                    console.log(`[Sync] ⚠ Article "${article.title}" (post ${postId}): Auth failed - SKIPPING (not deleting)`);
+                    continue; // Skip this article, don't delete
+                  }
+                } catch {}
+              }
               
               // Try to parse response
               try {
-                const data = await checkRes.json();
+                const data = JSON.parse(resText);
                 
                 // If we get post data with ID, it exists
                 if (data?.id) {
                   console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS on WordPress`);
                 } else {
                   // No post data - delete it
-                  console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No data - DELETING`);
+                  console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No post data - DELETING`);
                   await storage.deleteArticle(article.id);
                   console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
                   deletedCount++;
