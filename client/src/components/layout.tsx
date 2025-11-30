@@ -95,7 +95,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           size="icon"
           onClick={() => !isPublishing && setMobileMenuOpen(!mobileMenuOpen)}
           disabled={isPublishing}
-          className="lg:hidden hover:shadow-sm hover:bg-muted/50"
+          className="lg:hidden hover:bg-gray-200 rounded-full"
         >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </Button>
@@ -172,7 +172,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             variant="ghost"
             size="icon"
             onClick={() => setMobileMenuOpen(false)}
-            className="lg:hidden hover:shadow-sm hover:bg-muted/50"
+            className="lg:hidden hover:bg-gray-200 rounded-full"
           >
             <X className="w-5 h-5" />
           </Button>
