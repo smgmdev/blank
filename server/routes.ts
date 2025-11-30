@@ -1051,18 +1051,33 @@ export async function registerRoutes(
                     console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
                   }
                 } else if (checkRes.ok) {
-                  // For 200 OK, verify we got actual post data (not empty/deleted)
+                  // For 200 OK, verify we got actual post data (not error/empty/deleted)
                   try {
                     const responseText = await checkRes.text();
                     const data = JSON.parse(responseText) as any;
                     
-                    console.log(`[Sync] Article ${article.id}: Parsed data - id: ${data.id}, has title: ${!!data.title}, has content: ${!!data.content}`);
+                    console.log(`[Sync] Article ${article.id}: Response code=${data.code}, id=${data.id}, title=${typeof data.title === 'string' ? data.title : (data.title?.raw || '')}`);
                     
-                    // Check if post data is missing/empty - WordPress returns 200 for deleted posts
-                    const isMissing = !data.id || !data.title || (typeof data.title === 'string' ? data.title === '' : data.title.raw === '');
-                    
-                    if (isMissing) {
-                      console.log(`[Sync] Article ${article.id} marked for deletion - 200 response but post is empty/missing`);
+                    // Check if it's an error response disguised as 200
+                    if (data.code || data.message) {
+                      const errorCode = (data.code || '').toLowerCase();
+                      const errorMsg = (data.message || '').toLowerCase();
+                      if (errorCode.includes('invalid_id') || errorCode.includes('not_found') || errorMsg.includes('not found')) {
+                        console.log(`[Sync] Article ${article.id} marked for deletion - 200 response with error code (${errorCode})`);
+                        try {
+                          await storage.deleteArticle(article.id);
+                          console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                          deletedCount++;
+                          deletedIds.push(article.id);
+                        } catch (delError: any) {
+                          console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                        }
+                      } else {
+                        console.log(`[Sync] Article ${article.id}: 200 with error but not a deletion (${errorCode})`);
+                      }
+                    } else if (!data.id) {
+                      // No ID means post doesn't exist
+                      console.log(`[Sync] Article ${article.id} marked for deletion - 200 response but no post ID`);
                       try {
                         await storage.deleteArticle(article.id);
                         console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
@@ -1075,8 +1090,16 @@ export async function registerRoutes(
                       console.log(`[Sync] Article ${article.id}: Post exists on WordPress`);
                     }
                   } catch (readError) {
-                    // Error parsing response - skip deletion, just log
-                    console.log(`[Sync] Article ${article.id}: Could not parse 200 response: ${(readError as any).message}`);
+                    // Error parsing response - assume post doesn't exist if we can't parse it
+                    console.log(`[Sync] Article ${article.id}: Could not parse 200 response, treating as deleted - ${(readError as any).message}`);
+                    try {
+                      await storage.deleteArticle(article.id);
+                      console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                      deletedCount++;
+                      deletedIds.push(article.id);
+                    } catch (delError: any) {
+                      console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                    }
                   }
                 } else if (checkRes.status === 400) {
                   // HTTP 400 - only delete if we confirm it's a "post not found" error
