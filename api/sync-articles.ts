@@ -45,8 +45,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         }
         
         if (checkRes.status === 401) {
-          console.log(`[Sync] Unauthorized checking post ${pub.wpPostId} - skipping (may need admin username stored)`);
-          return null;
+          console.log(`[Sync] Unauthorized checking post ${pub.wpPostId} - treating as deleted`);
+          return article.id;
         }
       } catch (e) {
         console.error(`[Sync] Check failed for ${article.id}:`, e);

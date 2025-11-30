@@ -466,6 +466,12 @@ export default function Editor() {
       e.preventDefault();
       const tagName = formData.currentTag.trim();
       
+      // Max 3 tags limit
+      if (formData.tags.length >= 3) {
+        toast({ variant: "destructive", title: "Limit reached", description: "Maximum 3 tags allowed" });
+        return;
+      }
+      
       // Look up tag in availableTags to get numeric ID
       const existingTag = availableTags.find((t: any) => 
         t.name.toLowerCase() === tagName.toLowerCase()
@@ -1038,6 +1044,11 @@ export default function Editor() {
                                 categories: formData.categories.filter((c: any) => c !== cat.id)
                               });
                             } else {
+                              // Max 2 categories limit
+                              if (formData.categories.length >= 2) {
+                                toast({ variant: "destructive", title: "Limit reached", description: "Maximum 2 categories allowed" });
+                                return;
+                              }
                               setFormData({
                                 ...formData,
                                 categories: [...formData.categories, cat.id]
@@ -1091,7 +1102,13 @@ export default function Editor() {
                               .slice(0, 5)
                               .map((tag: any) => (
                                 <Badge key={tag.id} variant="outline" className="text-xs cursor-pointer hover:bg-primary/10" style={{maxWidth: '150px', wordBreak: 'break-word', whiteSpace: 'normal', display: 'inline-flex'}}
-                                  onClick={() => setFormData({...formData, tags: [...formData.tags, tag.id], currentTag: ""})}
+                                  onClick={() => {
+                                    if (formData.tags.length >= 3) {
+                                      toast({ variant: "destructive", title: "Limit reached", description: "Maximum 3 tags allowed" });
+                                      return;
+                                    }
+                                    setFormData({...formData, tags: [...formData.tags, tag.id], currentTag: ""});
+                                  }}
                                 >
                                   <span style={{wordBreak: 'break-word'}}>{tag.name}</span>
                                 </Badge>
