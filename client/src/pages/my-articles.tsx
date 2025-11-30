@@ -330,9 +330,13 @@ export default function MyArticles() {
         if (typeof tag === 'object' && tag.name) {
           return tag.name;
         }
+        // New format with object but no name
+        if (typeof tag === 'object' && tag.id) {
+          return siteTags[tag.id] || `Tag ${tag.id}`;
+        }
         // Old format: tag is just an ID number
         if (typeof tag === 'number') {
-          return siteTags[tag] || null;
+          return siteTags[tag] || `Tag ${tag}`;
         }
         // String tag name
         if (typeof tag === 'string') return tag;
