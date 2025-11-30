@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Mail, User as UserIcon, Edit2 } from "lucide-react";
+import { Plus, Trash2, Mail, User as UserIcon, Edit2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Users() {
@@ -29,6 +29,8 @@ export default function Users() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [newUser, setNewUser] = useState({
     username: "",
     email: "",
@@ -177,13 +179,24 @@ export default function Users() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password *</Label>
-                <Input 
-                  id="password" 
-                  type="password"
-                  placeholder="Enter password" 
-                  value={newUser.password}
-                  onChange={e => setNewUser({...newUser, password: e.target.value})}
-                />
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showCreatePassword ? "text" : "password"}
+                    placeholder="Enter password" 
+                    value={newUser.password}
+                    onChange={e => setNewUser({...newUser, password: e.target.value})}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                    onClick={() => setShowCreatePassword(!showCreatePassword)}
+                  >
+                    {showCreatePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name *</Label>
@@ -265,13 +278,24 @@ export default function Users() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-password">Password</Label>
-                <Input 
-                  id="edit-password" 
-                  type="password"
-                  placeholder="Leave blank to keep current password" 
-                  value={editUser.password}
-                  onChange={e => setEditUser({...editUser, password: e.target.value})}
-                />
+                <div className="relative">
+                  <Input 
+                    id="edit-password" 
+                    type={showEditPassword ? "text" : "password"}
+                    placeholder="Leave blank to keep current password" 
+                    value={editUser.password}
+                    onChange={e => setEditUser({...editUser, password: e.target.value})}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                  >
+                    {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
               </div>
             </div>
             <DialogFooter className="justify-between flex gap-2 flex-col-reverse sm:flex-row w-full">
