@@ -211,7 +211,16 @@ export default function Editor() {
     });
   };
 
-  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleImageDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -219,10 +228,11 @@ export default function Editor() {
     if (files && files.length > 0) {
       const file = files[0];
       if (file.type.startsWith('image/')) {
+        const base64 = await fileToBase64(file);
         setFormData({
           ...formData,
           image: file,
-          imagePreview: URL.createObjectURL(file)
+          imagePreview: base64
         });
         toast({
           title: "Image Uploaded",
@@ -232,14 +242,15 @@ export default function Editor() {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
     if (files && files.length > 0) {
       const file = files[0];
+      const base64 = await fileToBase64(file);
       setFormData({
         ...formData,
         image: file,
-        imagePreview: URL.createObjectURL(file)
+        imagePreview: base64
       });
     }
   };

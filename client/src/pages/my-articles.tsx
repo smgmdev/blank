@@ -306,26 +306,29 @@ export default function MyArticles() {
           </div>
           
           {/* Actions */}
-          <div className="flex gap-2 flex-shrink-0 p-4 sm:p-0 border-t sm:border-t-0">
+          <div className="flex flex-col gap-1 flex-shrink-0 p-4 sm:p-0 border-t sm:border-t-0 sm:border-t-0">
             {article.wpLink && (
-              <Button variant="ghost" size="icon" asChild title="View on WordPress" className="h-8 w-8">
+              <Button variant="outline" size="sm" asChild title="View on WordPress" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap">
                 <a href={article.wpLink} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-4 h-4 text-blue-600" />
+                  <ExternalLink className="w-3 h-3 mr-1" />
+                  View WP
                 </a>
               </Button>
             )}
-            <Button variant="ghost" size="icon" title="Edit Article" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={() => handleEdit(article.id)}>
-              <Edit className="w-4 h-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
-              onClick={() => handleDeleteClick(article.id)}
-              title="Delete"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="icon" title="Edit Article" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={() => handleEdit(article.id)}>
+                <Edit className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                onClick={() => handleDeleteClick(article.id)}
+                title="Delete"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
