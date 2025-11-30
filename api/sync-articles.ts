@@ -29,7 +29,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       try {
         const checkRes = await Promise.race([
           fetch(checkUrl),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000))
         ]) as Response;
         
         if (checkRes.status === 404) {
