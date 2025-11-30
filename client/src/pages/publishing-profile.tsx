@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 
 // Fetch WordPress user profile data from the API
 const fetchWPProfile = async (userId: string) => {
@@ -252,10 +252,8 @@ export default function PublishingProfile() {
       <Button
         onClick={handleSave}
         disabled={isSaving}
-        size="lg"
-        className="gap-2"
+        className="hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <Save className="w-4 h-4" />
         {isSaving ? "Updating..." : "Update Profile"}
       </Button>
     </div>
