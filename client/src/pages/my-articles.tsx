@@ -91,14 +91,14 @@ export default function MyArticles() {
           setArticles(articlesWithCachedLinks);
           setIsLoading(false);
           
-          // FETCH CATEGORIES AND TAGS IMMEDIATELY FOR INITIAL LOAD
+          // FETCH CATEGORIES AND TAGS IMMEDIATELY FOR INITIAL LOAD (always fresh, no cache)
           const newCategoryMap: Record<string, Record<number, string>> = {};
           const newTagMap: Record<string, Record<number, string>> = {};
           for (const site of allSites) {
             try {
               const [catRes, tagRes] = await Promise.all([
-                fetch(`/api/content?type=categories&userId=${userId}&siteId=${site.id}`),
-                fetch(`/api/content?type=tags&userId=${userId}&siteId=${site.id}`)
+                fetch(`/api/content?type=categories&userId=${userId}&siteId=${site.id}`, { cache: 'no-store' }),
+                fetch(`/api/content?type=tags&userId=${userId}&siteId=${site.id}`, { cache: 'no-store' })
               ]);
               if (catRes.ok) {
                 const categories = await catRes.json();
@@ -113,6 +113,8 @@ export default function MyArticles() {
                 tags.forEach((tag: any) => {
                   newTagMap[site.id][tag.id] = tag.name;
                 });
+                // Also clear any stale localStorage cache for this site's tags
+                localStorage.removeItem(`tagMap_${site.id}`);
               }
             } catch (e) {
               console.error(`Failed to fetch categories/tags for site ${site.id}:`, e);
@@ -325,11 +327,11 @@ export default function MyArticles() {
       return article.tags.map((tagId: any) => {
         if (typeof tagId === 'number') {
           const tagName = siteTags[tagId];
-          if (!tagName) console.warn(`[MyArticles] Tag ID ${tagId} not found in map for site ${site.id}`, siteTags);
-          return tagName || `Tag ${tagId}`;
+          // Only return if we have the name, otherwise skip (don't show "Tag 123")
+          return tagName || null;
         }
         if (typeof tagId === 'string') return tagId;
-        return String(tagId);
+        return null;
       }).filter(Boolean);
     };
     

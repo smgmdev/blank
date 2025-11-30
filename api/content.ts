@@ -151,13 +151,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       if (!credential || !credential.isVerified) return res.status(403).json({ error: "Not authenticated" });
 
       const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
-      const response = await fetch(`${site.apiUrl}/wp/v2/tags?per_page=100`, {
-        headers: { Authorization: `Basic ${auth}` }
+      
+      // Fetch with higher per_page to get all tags and disable caching
+      const response = await fetch(`${site.apiUrl}/wp/v2/tags?per_page=100&_cache_control=no-cache`, {
+        headers: { Authorization: `Basic ${auth}`, "Cache-Control": "no-cache" }
       });
       
       if (!response.ok) return res.status(response.status).json({ error: "Failed to fetch tags" });
 
       const tags = await response.json();
+      console.log("[Tags] ✓ Fetched:", tags.length, "tags");
       res.json(tags.map((tag: any) => ({ id: tag.id, name: tag.name })));
     }
     // /api/content?type=publishing - GET publishing info
