@@ -125,13 +125,18 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       if (!credential || !credential.isVerified) return res.status(403).json({ error: "Not authenticated" });
 
       const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+      console.log("[Categories] Fetching from:", site.apiUrl, "with user:", credential.wpUsername);
       const response = await fetch(`${site.apiUrl}/wp/v2/categories?per_page=100`, {
         headers: { Authorization: `Basic ${auth}` }
       });
       
-      if (!response.ok) return res.status(response.status).json({ error: "Failed to fetch categories" });
+      if (!response.ok) {
+        console.error("[Categories] Failed:", response.status, await response.text());
+        return res.status(response.status).json({ error: "Failed to fetch categories" });
+      }
 
       const categories = await response.json();
+      console.log("[Categories] ✓ Fetched:", categories.length, "categories");
       res.json(categories.map((cat: any) => ({ id: cat.id, name: cat.name })));
     }
     // /api/content?type=tags

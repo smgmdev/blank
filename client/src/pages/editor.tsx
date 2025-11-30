@@ -556,6 +556,7 @@ export default function Editor() {
     if (formData.categories.length === 0) errors.push("At least one category must be selected");
     if (formData.tags.length === 0) errors.push("At least one tag is required");
     if (!formData.imagePreview) errors.push("Featured image is required");
+    if (!formData.imageCaption) errors.push("Image caption is required");
     if (!selectedSiteId) errors.push("Destination site is required");
     if (plugin === 'aioseo' && !formData.seo.focusKeyword) errors.push("Focus keyword is required for AIOSEO");
     if (plugin === 'rankmath' && !formData.seo.focusKeyword) errors.push("Focus keyword is required for Rank Math");
@@ -1292,11 +1293,19 @@ export default function Editor() {
 
               {/* Featured Image Preview */}
               {formData.imagePreview && (
-                <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Featured Image</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Featured Image</Label>
+                    {formData.imageCaption && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                  </div>
                   <div className="mt-2 rounded-lg border overflow-hidden bg-muted/20 p-2 max-w-xs">
                     <img src={formData.imagePreview} alt="Featured" className="w-full h-auto rounded" />
                   </div>
+                  {formData.imageCaption && (
+                    <div className="text-xs text-green-600 font-medium flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Caption: {formData.imageCaption}
+                    </div>
+                  )}
                 </div>
               )}
 
