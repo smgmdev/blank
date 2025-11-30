@@ -62,6 +62,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       }
       
       console.log(`[Sync] Checking ${siteArticles.length} article post IDs directly...`);
+      console.log(`[Sync] Auth headers set: ${!!headers.Authorization}, username: ${site.adminUsername}`);
       
       for (const { article, publishing } of siteArticles) {
         const postId = parseInt(publishing.wpPostId, 10);
@@ -72,11 +73,11 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           console.log(`[Sync] Checking article "${article.title}" (wpPostId: ${publishing.wpPostId}) at ${checkUrl}`);
           const checkRes = await fetch(checkUrl, { headers });
           
-          console.log(`[Sync] WordPress response: status=${checkRes.status}, ok=${checkRes.ok}`);
+          const resText = await checkRes.text();
+          console.log(`[Sync] WordPress response: status=${checkRes.status}, ok=${checkRes.ok}, body=${resText.substring(0, 300)}`);
           
           if (!checkRes.ok) {
             // Post not found on WordPress - delete it
-            const resText = await checkRes.text();
             console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress (response: ${resText.substring(0, 200)}) - DELETING`);
             try {
               // Delete publishing record first (foreign key constraint)
