@@ -5,13 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Mail, Save, User as UserIcon } from "lucide-react";
 
 export default function Settings() {
-  const { users } = useStore();
+  const { users, user: currentUserRole } = useStore();
   const { toast } = useToast();
   const currentUser = users[0]; // Demo: using first user
+  const isAdmin = currentUserRole === 'admin';
   const [email, setEmail] = useState(currentUser?.email || "user@example.com");
   const [username, setUsername] = useState(currentUser?.username || "");
   const [fullName, setFullName] = useState(currentUser?.fullName || "");
@@ -20,6 +22,41 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const handleUsernameUpdate = async () => {
+    if (!username) {
+      toast({
+        variant: "destructive",
+        title: "Missing Username",
+        description: "Please enter a valid username.",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/users/${currentUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+
+      if (!response.ok) throw new Error('Failed to update username');
+
+      toast({
+        title: "Username Updated",
+        description: "Your username has been changed successfully.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update username. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleEmailUpdate = async () => {
     if (!email) {
@@ -116,9 +153,12 @@ export default function Settings() {
           <CardTitle className="flex items-center gap-2">
             <UserIcon className="w-5 h-5" />
             Account Information
+            <Badge className="ml-auto bg-black text-white rounded-full px-3 py-1 text-xs font-semibold">
+              Global
+            </Badge>
           </CardTitle>
           <CardDescription>
-            View your account details.
+            {isAdmin ? "Edit your account details." : "View your account details."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -128,8 +168,9 @@ export default function Settings() {
               <Input
                 id="username"
                 value={username}
-                disabled
-                className="bg-muted"
+                disabled={!isAdmin}
+                className={!isAdmin ? "bg-muted" : ""}
+                onChange={(e) => isAdmin && setUsername(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -146,8 +187,9 @@ export default function Settings() {
               <Input
                 id="email2"
                 value={email}
-                disabled
-                className="bg-muted"
+                disabled={!isAdmin}
+                className={!isAdmin ? "bg-muted" : ""}
+                onChange={(e) => isAdmin && setEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -160,6 +202,18 @@ export default function Settings() {
               />
             </div>
           </div>
+          {isAdmin && (
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleUsernameUpdate} disabled={isSaving} className="gap-2">
+                <Save className="w-4 h-4" />
+                {isSaving ? "Updating..." : "Update Username"}
+              </Button>
+              <Button onClick={handleEmailUpdate} disabled={isSaving} className="gap-2">
+                <Save className="w-4 h-4" />
+                {isSaving ? "Updating..." : "Update Email"}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
