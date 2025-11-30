@@ -85,7 +85,7 @@ export default function Editor() {
       if (!userId) return;
       setLoadingSites(true);
       try {
-        const res = await fetch(`/api/users/${userId}/sites-with-auth`);
+        const res = await fetch(`/api/user-sites?userId=${userId}`);
         if (res.ok) {
           const data = await res.json();
           setSitesUser(data.filter((s: any) => s.userIsConnected));
