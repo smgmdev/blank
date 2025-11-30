@@ -140,8 +140,8 @@ export default function Editor() {
       setLoadingTags(true);
       try {
         const [catRes, tagRes] = await Promise.all([
-          fetch(`/api/sites/${selectedSiteId}/categories?userId=${userId}`),
-          fetch(`/api/sites/${selectedSiteId}/tags?userId=${userId}`)
+          fetch(`/api/categories?userId=${userId}&siteId=${selectedSiteId}`),
+          fetch(`/api/tags?userId=${userId}&siteId=${selectedSiteId}`)
         ]);
         
         if (catRes.ok) {
