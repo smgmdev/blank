@@ -141,17 +141,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile Menu Header */}
         <div className="lg:hidden h-16 flex items-center justify-between px-6 border-b border-border">
-          <div className={`flex items-center gap-3 ${isPublishing ? 'cursor-not-allowed opacity-50' : ''}`}>
-            <img 
-              src="https://www.worldimpactmedia.org/images/wimb.png" 
-              alt="WIMB Logo" 
-              className="w-8 h-8"
-            />
-            <div className="flex flex-col text-primary font-normal text-xs leading-tight">
-              <span>Media</span>
-              <span>Manager</span>
+          {isPublishing ? (
+            <div className="flex items-center gap-3 cursor-not-allowed opacity-50">
+              <img 
+                src="https://www.worldimpactmedia.org/images/wimb.png" 
+                alt="WIMB Logo" 
+                className="w-8 h-8"
+              />
+              <div className="flex flex-col text-primary font-normal text-xs leading-tight">
+                <span>Media</span>
+                <span>Manager</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <Link href="/dashboard" onClick={handleNavClick}>
+              <div className="flex items-center gap-3 cursor-pointer">
+                <img 
+                  src="https://www.worldimpactmedia.org/images/wimb.png" 
+                  alt="WIMB Logo" 
+                  className="w-8 h-8"
+                />
+                <div className="flex flex-col text-primary font-normal text-xs leading-tight">
+                  <span>Media</span>
+                  <span>Manager</span>
+                </div>
+              </div>
+            </Link>
+          )}
           <Button
             variant="ghost"
             size="icon"
