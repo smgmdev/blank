@@ -49,16 +49,29 @@ export default function MyArticles() {
       if (!userId) return;
       setIsLoading(true);
       try {
-        // FAST: Fetch articles and sites immediately
-        const [articlesRes, sitesRes] = await Promise.all([
-          fetch(`/api/content?type=articles`, { headers: { "x-user-id": userId } }),
-          fetch(`/api/sites`)
-        ]);
-        
-        if (articlesRes.ok && sitesRes.ok) {
-          const allArticles = await articlesRes.json();
-          const allSites = await sitesRes.json();
+        // FAST: Check cache for sites first
+        let allSites: any[] = [];
+        const cachedSites = localStorage.getItem(`sites_${userId}`);
+        if (cachedSites) {
+          allSites = JSON.parse(cachedSites);
           setSites(allSites);
+        }
+        
+        // Fetch articles ONLY - don't fetch sites here
+        const articlesRes = await fetch(`/api/content?type=articles`, { headers: { "x-user-id": userId } });
+        
+        if (articlesRes.ok) {
+          const allArticles = await articlesRes.json();
+          
+          // Fetch sites if not cached
+          if (allSites.length === 0) {
+            const sitesRes = await fetch(`/api/sites`);
+            if (sitesRes.ok) {
+              allSites = await sitesRes.json();
+              setSites(allSites);
+              localStorage.setItem(`sites_${userId}`, JSON.stringify(allSites));
+            }
+          }
           
           // Filter to only this user's articles
           const userArticles = allArticles.filter((a: any) => a.userId === userId);
@@ -67,13 +80,13 @@ export default function MyArticles() {
           setArticles(userArticles);
           setIsLoading(false);
           
-          // BACKGROUND: Fetch WordPress links for published articles
-          const publishedArticles = userArticles.filter((a: any) => a.status === 'published');
+          // BACKGROUND: Fetch WordPress links for published articles ONLY if there are any
+          const publishedArticles = userArticles.filter((a: any) => a.status === 'published' && !a.wpLink);
           if (publishedArticles.length > 0) {
             const fetchLinksInBackground = async () => {
               const updatedArticles = [...userArticles];
-              for (let i = 0; i < publishedArticles.length; i += 3) {
-                const batch = publishedArticles.slice(i, i + 3);
+              for (let i = 0; i < publishedArticles.length; i += 2) {
+                const batch = publishedArticles.slice(i, i + 2);
                 const results = await Promise.all(batch.map(async (article: any) => {
                   try {
                     const publishRes = await fetch(`/api/content?type=publishing&articleId=${article.id}&siteId=${article.siteId}`);

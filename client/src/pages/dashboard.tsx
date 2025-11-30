@@ -37,41 +37,31 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [favicons, setFavicons] = useState<{ [key: string]: string }>({});
 
-  // Fetch real sites from API on mount
+  // Fetch real sites from API on mount - with localStorage cache
   useEffect(() => {
     const fetchSites = async () => {
       try {
         if (!userId) return;
         
+        // Check cache first
+        const cached = localStorage.getItem(`sites_${userId}`);
+        if (cached) {
+          setSites(JSON.parse(cached));
+        }
+        
+        // Fetch fresh data in background
         const response = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
           setSites(data);
+          // Cache for 5 minutes
+          localStorage.setItem(`sites_${userId}`, JSON.stringify(data));
         }
       } catch (error) {
         console.error('Failed to fetch sites:', error);
       }
     };
     fetchSites();
-  }, [userId]);
-
-  // Auto-refresh sites every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        if (!userId) return;
-        
-        const response = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setSites(data);
-        }
-      } catch (error) {
-        console.error('Failed to refresh sites:', error);
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
   }, [userId]);
 
   const handleAuthenticateClick = (siteId: string) => {
