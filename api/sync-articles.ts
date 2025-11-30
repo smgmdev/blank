@@ -121,57 +121,41 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         
         console.log(`[Sync] Article ${article.id}: WordPress returned status ${checkRes.status}`);
         
-        // Always read and check the response body regardless of status code
-        // Different WordPress installations might return different errors
+        // ANY non-OK response means post is deleted/not found
+        if (!checkRes.ok) {
+          console.log(`[Sync] Article ${article.id} marked for deletion - HTTP ${checkRes.status}`);
+          return article.id;
+        }
+        
+        // For successful responses, verify we got actual post data
         try {
           const responseText = await checkRes.text();
+          const data = JSON.parse(responseText) as any;
           
-          // Try to parse as JSON to check for error indicators
-          try {
-            const data = JSON.parse(responseText) as any;
-            
-            // Log response for debugging
-            console.log(`[Sync] Article ${article.id}: Response body: ${JSON.stringify(data).substring(0, 200)}`);
-            
-            // Check for various error patterns indicating post doesn't exist
-            const isNotFound = 
-              data.code === 'rest_post_invalid_id' ||
-              data.code === 'rest_invalid_param' ||
-              data.code === 'not_found' ||
-              data.message?.toLowerCase().includes('not found') ||
-              data.message?.toLowerCase().includes('invalid post') ||
-              data.message?.toLowerCase().includes('no post') ||
-              data.message?.toLowerCase().includes('deleted') ||
-              data.error?.toLowerCase().includes('not found') ||
-              data.error?.toLowerCase().includes('invalid') ||
-              data.error?.toLowerCase().includes('deleted');
-            
-            if (isNotFound || !checkRes.ok) {
-              const reason = isNotFound ? (data.code || data.message || data.error) : `HTTP ${checkRes.status}`;
-              console.log(`[Sync] Article ${article.id} marked for deletion - ${reason}`);
-              return article.id;
-            }
-            
-            // For successful 200 responses, verify we got actual post data
-            if (checkRes.ok && !data.id) {
-              console.log(`[Sync] Article ${article.id}: 200 response but no post data - marked for deletion`);
-              return article.id;
-            }
-          } catch {
-            // Not JSON response - treat any non-OK status as deleted
-            if (!checkRes.ok) {
-              console.log(`[Sync] Article ${article.id}: Non-JSON error response (status ${checkRes.status}) - marked for deletion`);
-              return article.id;
-            }
+          // Log response for debugging
+          console.log(`[Sync] Article ${article.id}: Response body: ${JSON.stringify(data).substring(0, 200)}`);
+          
+          // Check for various error patterns in successful response
+          const isNotFound = 
+            data.code === 'rest_post_invalid_id' ||
+            data.code === 'rest_invalid_param' ||
+            data.code === 'not_found' ||
+            data.message?.toLowerCase().includes('not found') ||
+            data.message?.toLowerCase().includes('invalid post') ||
+            data.message?.toLowerCase().includes('no post') ||
+            !data.id; // 200 response but no post data
+          
+          if (isNotFound) {
+            const reason = data.code || data.message || 'no post data';
+            console.log(`[Sync] Article ${article.id} marked for deletion - ${reason}`);
+            return article.id;
           }
           
-          // Log successful responses for debugging
-          if (checkRes.ok) {
-            console.log(`[Sync] Article ${article.id}: Post exists (status ${checkRes.status})`);
-          }
+          console.log(`[Sync] Article ${article.id}: Post exists (status ${checkRes.status})`);
         } catch (e) {
-          // Couldn't read response - log for debugging
-          console.log(`[Sync] Article ${article.id}: Error reading response: ${(e as any).message}`);
+          // Error reading/parsing response - treat as deleted
+          console.log(`[Sync] Article ${article.id}: Error reading response (${(e as any).message}) - treating as deleted`);
+          return article.id;
         }
       } catch (e: any) {
         console.error(`[Sync] Check failed for article ${article.id}:`, e.message);

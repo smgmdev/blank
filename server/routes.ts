@@ -1039,49 +1039,29 @@ export async function registerRoutes(
                 
                 console.log(`[Sync] Response status: ${checkRes.status}`);
                 
-                // Always read and check response body - different WordPress sites behave differently
-                try {
-                  const responseText = await checkRes.text();
-                  let isDeleted = false;
-                  let reason = '';
-                  
-                  // Try to parse as JSON
+                // ANY non-OK response means post is deleted/not found
+                if (!checkRes.ok) {
+                  console.log(`[Sync] Article ${article.id} marked for deletion - HTTP ${checkRes.status}`);
+                  await storage.deleteArticle(article.id);
+                  deletedCount++;
+                  deletedIds.push(article.id);
+                } else {
+                  // For 200 OK, verify we got actual post data
                   try {
+                    const responseText = await checkRes.text();
                     const data = JSON.parse(responseText) as any;
                     
-                    // Check for error patterns
-                    if (data.code === 'rest_post_invalid_id' || 
-                        data.code === 'rest_invalid_param' || 
-                        data.code === 'not_found' ||
-                        data.message?.toLowerCase().includes('not found') ||
-                        data.message?.toLowerCase().includes('invalid post')) {
-                      isDeleted = true;
-                      reason = `error code: ${data.code || data.message}`;
+                    if (!data.id) {
+                      console.log(`[Sync] Article ${article.id} marked for deletion - 200 response but no post data`);
+                      await storage.deleteArticle(article.id);
+                      deletedCount++;
+                      deletedIds.push(article.id);
+                    } else {
+                      console.log(`[Sync] Article ${article.id}: Post exists on WordPress`);
                     }
-                    
-                    // For 200 responses, verify we got actual post data
-                    if (checkRes.ok && !data.id) {
-                      isDeleted = true;
-                      reason = '200 response but no post data';
-                    }
-                  } catch {
-                    // Not JSON - for non-JSON error responses, treat as deleted
-                    if (!checkRes.ok) {
-                      isDeleted = true;
-                      reason = `non-JSON error (status ${checkRes.status})`;
-                    }
+                  } catch (readError) {
+                    console.error(`[Sync] Error reading response for post ${postId}:`, readError);
                   }
-                  
-                  if (isDeleted) {
-                    console.log(`[Sync] Article ${article.id} marked for deletion - ${reason}`);
-                    await storage.deleteArticle(article.id);
-                    deletedCount++;
-                    deletedIds.push(article.id);
-                  } else if (checkRes.ok) {
-                    console.log(`[Sync] Article ${article.id}: Post exists on WordPress`);
-                  }
-                } catch (readError) {
-                  console.error(`[Sync] Error reading response for post ${postId}:`, readError);
                 }
               } catch (fetchError: any) {
                 console.error(`[Sync] Fetch error for post ${postId}:`, fetchError.message);
