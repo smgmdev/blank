@@ -258,13 +258,36 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
       console.log("[Publish] Received tags:", tags, "categories:", categories);
       
-      // Handle tags: can be objects {id, name} or numbers
+      // Handle tags: can be strings (custom), numbers (existing IDs), or objects {id, name}
       const tagIds: number[] = [];
       const createdTagMap: Record<number, string> = {}; // Track tag names for all tags
       
       if (Array.isArray(tags)) {
         for (const tag of tags) {
-          if (typeof tag === 'object' && tag.id) {
+          if (typeof tag === 'string') {
+            // Custom tag name - create it on WordPress
+            try {
+              const createTagRes = await fetch(`${site.apiUrl}/wp/v2/tags`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Basic ${auth}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ name: tag })
+              });
+              
+              if (createTagRes.ok) {
+                const tagData = await createTagRes.json();
+                tagIds.push(tagData.id);
+                createdTagMap[tagData.id] = tag;
+                console.log("[Publish] ✓ Created tag:", { id: tagData.id, name: tag });
+              } else {
+                console.warn("[Publish] ⚠ Failed to create tag:", tag, createTagRes.status);
+              }
+            } catch (tagErr) {
+              console.error("[Publish] Tag creation error:", tagErr);
+            }
+          } else if (typeof tag === 'object' && tag.id) {
             // New format from frontend: {id, name}
             tagIds.push(tag.id);
             if (tag.name) createdTagMap[tag.id] = tag.name; // Store the name if provided

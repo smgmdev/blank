@@ -630,18 +630,9 @@ export default function Editor() {
     setIsPublishing(true);
     
     try {
-      // Prepare tag data - map tags to their names
-      const tagData = formData.tags.map((tag: string | number) => {
-        if (typeof tag === 'string') {
-          // Custom tag - will be created on WordPress during publishing
-          return { id: tag, name: tag };
-        } else {
-          // Existing tag - fetch its name
-          const existingTag = availableTags.find((t: any) => t.id === tag);
-          return { id: tag, name: existingTag?.name || `tag-${tag}` };
-        }
-      });
-      console.log("[Publish] Sending tags:", tagData);
+      // Send tags as-is (mix of string names and numeric IDs)
+      // Backend will handle creating string tags and using numeric tag IDs
+      console.log("[Publish] Sending tags:", formData.tags);
 
       // Create article locally first
       const article = await (async () => {
@@ -669,7 +660,7 @@ export default function Editor() {
           title: formData.title,
           content: formData.content,
           categories: formData.categories,
-          tags: tagData && tagData.length > 0 ? tagData : [],
+          tags: formData.tags && formData.tags.length > 0 ? formData.tags : [],
           featuredImageBase64: formData.imagePreview,
           imageCaption: formData.imageCaption
         })
