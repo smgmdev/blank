@@ -1,5 +1,4 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getAppUser, initializeDb } from "../db-utils.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
@@ -7,8 +6,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     if (req.method === "GET") {
       // Get user profile
-      initializeDb();
-      const { getDb } = await import("../db-utils.js");
+      const { getDb } = await import("../../server/db-utils.js");
       const db = getDb();
       const { appUsers } = await import("../../shared/schema.js");
       const { eq } = await import("drizzle-orm");
@@ -24,18 +22,17 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       // Update user profile
       const { displayName, profilePicture, email, password } = req.body;
       
-      initializeDb();
-      const { getDb } = await import("../db-utils.js");
+      const { getDb } = await import("../../server/db-utils.js");
       const db = getDb();
       const { appUsers } = await import("../../shared/schema.js");
       const { eq } = await import("drizzle-orm");
       
       // Update only provided fields
       const updateData: any = {};
-      if (displayName) updateData.displayName = displayName;
-      if (profilePicture) updateData.profilePicture = profilePicture;
-      if (email) updateData.email = email;
-      if (password) updateData.password = password;
+      if (displayName !== undefined) updateData.displayName = displayName;
+      if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+      if (email !== undefined) updateData.email = email;
+      if (password !== undefined) updateData.password = password;
       
       if (Object.keys(updateData).length === 0) {
         return res.status(400).json({ error: "No fields to update" });

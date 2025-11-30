@@ -1551,7 +1551,7 @@ export default function Editor() {
               variant="outline" 
               onClick={() => setShowCancelConfirm(true)}
               disabled={isPublishing}
-              className="gap-2 hover:bg-red-500 hover:text-white hover:border-red-500 flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              className="gap-2 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="sm:hidden">Cancel</span>
               <span className="hidden sm:inline">Cancel Article</span>
@@ -1561,7 +1561,7 @@ export default function Editor() {
               variant="outline"
               onClick={handleSaveDraft}
               disabled={isPublishing}
-              className="gap-2 hover:bg-black hover:text-white flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              className="gap-2 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" /> <span className="sm:inline">Save Draft</span>
             </Button>
@@ -1572,7 +1572,7 @@ export default function Editor() {
               variant="outline" 
               onClick={handleBack} 
               disabled={step === 1 || isPublishing}
-              className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent flex-1 hover:bg-black hover:text-white"
+              className="gap-2 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </Button>
@@ -1580,7 +1580,7 @@ export default function Editor() {
               <Button 
                 onClick={handleNext} 
                 disabled={isPublishing}
-                className="gap-2 group flex-1 hover:bg-black hover:text-white"
+                className="gap-2 group flex-1 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600"
                 variant="outline"
               >
                 Next <ChevronRight className="w-4 h-4" />
