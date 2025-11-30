@@ -426,6 +426,34 @@ export async function registerRoutes(
     }
   });
 
+  // Get sites with user auth status (query-based for Vercel compatibility)
+  app.get("/api/user-sites", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID required" });
+      }
+
+      const sites = await storage.getAllWordPressSites();
+      
+      const sitesWithAuth = await Promise.all(
+        sites.map(async (site) => {
+          const credential = await storage.getUserSiteCredential(userId, site.id);
+          return {
+            ...site,
+            userIsConnected: !!credential && credential.isVerified,
+            hasCredentials: !!credential
+          };
+        })
+      );
+
+      res.json(sitesWithAuth);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch sites", details: error.message });
+    }
+  });
+
   // Disconnect user from site (remove credentials)
   app.post("/api/users/:userId/sites/:siteId/disconnect", async (req, res) => {
     try {
