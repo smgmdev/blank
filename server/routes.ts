@@ -1590,38 +1590,19 @@ export async function registerRoutes(
           const updateData: any = {};
 
           if (displayName) {
-            updateData.name = displayName;
             updateData.display_name = displayName;
           }
 
           if (profilePictureUrl) {
-            // Upload avatar to WordPress media library if it's a data URL
-            if (profilePictureUrl.startsWith('data:')) {
-              try {
-                const base64Data = profilePictureUrl.split(',')[1];
-                const uploadRes = await fetch(`${site.apiUrl}/wp/v2/media`, {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Basic ${auth}`,
-                    'Content-Type': 'image/jpeg',
-                    'Content-Disposition': 'attachment; filename="avatar.jpg"'
-                  },
-                  body: Buffer.from(base64Data, 'base64')
-                });
-
-                if (uploadRes.ok) {
-                  const media = await uploadRes.json();
-                  updateData.avatar_urls = { 96: media.source_url };
-                }
-              } catch (e) {
-                console.error('Avatar upload failed:', e);
-              }
-            }
+            // Store profile picture URL as user meta
+            updateData.meta = {
+              profile_picture_url: profilePictureUrl
+            };
           }
 
-          // Update WordPress user profile
+          // Update WordPress user profile using PUT method
           const updateRes = await fetch(`${site.apiUrl}/wp/v2/users/${credential.wpUserId || 'me'}`, {
-            method: 'POST',
+            method: 'PUT',
             headers: {
               'Authorization': `Basic ${auth}`,
               'Content-Type': 'application/json'

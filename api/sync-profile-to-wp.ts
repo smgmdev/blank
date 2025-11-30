@@ -31,7 +31,6 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         const updateData: any = {};
 
         if (displayName) {
-          updateData.name = displayName;
           updateData.display_name = displayName;
         }
 
@@ -47,9 +46,10 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           }
         }
 
-        // Update WordPress user profile
+        // Update WordPress user profile using PUT method
+        console.log(`Updating WP user ${credential.wpUserId || 'me'} with data:`, updateData);
         const updateRes = await fetch(`${site.apiUrl}/wp/v2/users/${credential.wpUserId || 'me'}`, {
-          method: 'POST',
+          method: 'PUT',
           headers: {
             'Authorization': `Basic ${auth}`,
             'Content-Type': 'application/json'
@@ -57,10 +57,14 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           body: JSON.stringify(updateData)
         });
 
+        const updateResultData = await updateRes.json();
+        console.log(`WP user update response status:`, updateRes.status, 'data:', updateResultData);
+        
         results.push({
           siteId: credential.siteId,
           success: updateRes.ok,
-          status: updateRes.status
+          status: updateRes.status,
+          response: updateResultData
         });
       } catch (error: any) {
         results.push({
