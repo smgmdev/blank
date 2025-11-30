@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   Table,
   TableBody,
@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function MyArticles() {
   const { toast } = useToast();
+  const [location] = useLocation();
   const userId = localStorage.getItem('userId');
   const [articles, setArticles] = useState<any[]>([]);
   const [sites, setSites] = useState<any[]>([]);
@@ -33,6 +34,10 @@ export default function MyArticles() {
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    return params.get('tab') || 'published';
+  });
 
   // Fetch real articles and sites
   useEffect(() => {
@@ -333,7 +338,7 @@ export default function MyArticles() {
         </div>
       ) : (
         <>
-          <Tabs defaultValue="published" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList>
               <TabsTrigger value="published" className="flex items-center gap-2">
                 Published <Badge variant="secondary" className="ml-2">{publishedArticles.length}</Badge>

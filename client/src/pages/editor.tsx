@@ -336,8 +336,8 @@ export default function Editor() {
           title: "Draft Saved",
           description: "Your article draft has been saved successfully."
         });
-        // Navigate to drafts
-        setLocation("/my-articles");
+        // Navigate to drafts tab
+        setLocation("/my-articles?tab=drafts");
       }
     } catch (error: any) {
       toast({
