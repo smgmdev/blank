@@ -220,10 +220,10 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             const mediaData = await mediaResponse.json();
             featuredMediaId = mediaData.id;
             featuredImageUrl = mediaData.source_url;
-            console.log("[Publish] Image uploaded successfully, mediaId:", featuredMediaId, "url:", featuredImageUrl);
+            console.log("[Publish] ✓ Image uploaded:", { mediaId: featuredMediaId, url: featuredImageUrl });
           } else {
             const errorText = await mediaResponse.text();
-            console.error("[Publish] Image upload failed:", mediaResponse.status, errorText);
+            console.error("[Publish] ✗ Image upload failed:", mediaResponse.status, errorText);
           }
         } catch (imgError) {
           console.error("[Publish] Image upload error:", imgError);
@@ -288,6 +288,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         status: "published"
       });
 
+      console.log("[Publish] Updating article with:", { featuredImageUrl, categories, tags });
       await updateArticle(articleId as string, {
         status: 'published',
         publishedAt: new Date(),
@@ -297,7 +298,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         tags
       });
 
-      console.log("Final response - featured image URL:", featuredImageUrl, "wpLink:", wpLink);
+      console.log("[Publish] ✓ Article published successfully:", { wpPostId: wpPost.id, wpLink, featuredImageUrl });
       res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, wpLink: wpLink, featuredImageUrl });
     }
     else {
