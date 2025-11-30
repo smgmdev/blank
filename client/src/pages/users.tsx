@@ -147,7 +147,7 @@ export default function Users() {
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
-              Create User
+              Add New User
             </Button>
           </DialogTrigger>
           <DialogContent className="animate-fade-in w-full sm:max-w-md flex flex-col">
@@ -225,7 +225,7 @@ export default function Users() {
               >
                 Cancel
               </Button>
-              <Button onClick={handleAdd} className="w-full sm:w-auto">Create User</Button>
+              <Button onClick={handleAdd} className="w-full sm:w-auto">Add New User</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
