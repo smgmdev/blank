@@ -90,42 +90,6 @@ export default function MyArticles() {
           // SHOW ARTICLES IMMEDIATELY with cached wpLinks
           setArticles(articlesWithCachedLinks);
           setIsLoading(false);
-          
-          // FETCH CATEGORIES AND TAGS IMMEDIATELY FOR INITIAL LOAD (always fresh, no cache)
-          const newCategoryMap: Record<string, Record<number, string>> = {};
-          const newTagMap: Record<string, Record<number, string>> = {};
-          for (const site of allSites) {
-            try {
-              const [catRes, tagRes] = await Promise.all([
-                fetch(`/api/content?type=categories&userId=${userId}&siteId=${site.id}`, { cache: 'no-store' }),
-                fetch(`/api/content?type=tags&userId=${userId}&siteId=${site.id}`, { cache: 'no-store' })
-              ]);
-              if (catRes.ok) {
-                const categories = await catRes.json();
-                newCategoryMap[site.id] = {};
-                categories.forEach((cat: any) => {
-                  newCategoryMap[site.id][cat.id] = cat.name;
-                });
-              }
-              if (tagRes.ok) {
-                const tags = await tagRes.json();
-                newTagMap[site.id] = {};
-                tags.forEach((tag: any) => {
-                  newTagMap[site.id][tag.id] = tag.name;
-                });
-                // Also clear any stale localStorage cache for this site's tags
-                localStorage.removeItem(`tagMap_${site.id}`);
-              }
-            } catch (e) {
-              console.error(`Failed to fetch categories/tags for site ${site.id}:`, e);
-            }
-          }
-          if (Object.keys(newCategoryMap).length > 0) {
-            setCategoryMap(newCategoryMap);
-          }
-          if (Object.keys(newTagMap).length > 0) {
-            setTagMap(newTagMap);
-          }
           setIsCategoriesLoading(false);
           
           // BACKGROUND: Sync with WordPress to remove deleted articles
