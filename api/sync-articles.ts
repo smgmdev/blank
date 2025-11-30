@@ -53,27 +53,34 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         const postId = publishing.wpPostId;
         const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
         
+        console.log(`[Sync] Checking "${article.title}" (post ${postId}) at ${checkUrl}`);
+        console.log(`[Sync] Auth headers: ${Object.keys(headers).join(', ')}`);
+        
         try {
           const res = await fetch(checkUrl, { headers });
+          const resText = await res.text();
+          
+          console.log(`[Sync] Response status: ${res.status}, length: ${resText.length}`);
+          console.log(`[Sync] Response text: ${resText.substring(0, 500)}`);
           
           // Try to parse response to check if post exists
           try {
-            const data = await res.json();
+            const data = JSON.parse(resText);
             
             // If we can parse JSON and get post data with ID, it exists
             if (data?.id) {
-              console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS on WordPress`);
+              console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS (id=${data.id})`);
             } else {
               // Got response but no post data - delete it
-              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No data - DELETING`);
+              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No ID field - DELETING`);
               await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
               await db.delete(articles).where(eq(articles.id, article.id));
               deletedCount++;
               deletedIds.push(article.id);
             }
-          } catch {
+          } catch (parseErr: any) {
             // Can't parse as JSON - post doesn't exist - delete it
-            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No valid JSON - DELETING`);
+            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Parse error: ${parseErr.message} - DELETING`);
             await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
             await db.delete(articles).where(eq(articles.id, article.id));
             deletedCount++;
