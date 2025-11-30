@@ -22,15 +22,15 @@ const fetchWPProfile = async () => {
 };
 
 export default function PublishingProfile() {
-  const { publishingProfile, users, updatePublishingProfile } = useStore();
+  const { publishingProfile, updatePublishingProfile } = useStore();
   const { toast } = useToast();
   const [displayName, setDisplayName] = useState(publishingProfile?.displayName || "");
   const [profilePicture, setProfilePicture] = useState(publishingProfile?.profilePicture || "");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState(profilePicture);
-
-  const currentUser = users[0]; // Demo: using first user
+  
+  const userId = localStorage.getItem('userId');
 
   // Fetch WP profile data on mount
   useEffect(() => {
@@ -78,9 +78,18 @@ export default function PublishingProfile() {
       return;
     }
 
+    if (!userId) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "User not found. Please log in again."
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/users/${currentUser.id}`, {
+      const response = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,10 +98,13 @@ export default function PublishingProfile() {
         })
       });
 
-      if (!response.ok) throw new Error('Failed to update profile');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update profile');
+      }
 
       updatePublishingProfile({
-        userId: currentUser.id,
+        userId,
         displayName,
         profilePicture: previewUrl || undefined
       });
@@ -101,11 +113,12 @@ export default function PublishingProfile() {
         title: "Profile Updated",
         description: "Your publishing profile has been saved successfully"
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Profile save error:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save profile. Please try again."
+        description: error.message || "Failed to save profile. Please try again."
       });
     } finally {
       setIsSaving(false);
