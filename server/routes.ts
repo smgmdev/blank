@@ -949,11 +949,12 @@ export async function registerRoutes(
   // Sync/Refresh - Check for deleted articles on WordPress
   app.post("/api/sync-articles", async (req, res) => {
     try {
+      const isManual = req.body?.manual === true;
       const articles = await storage.getAllArticles();
       let deletedCount = 0;
       const deletedIds: string[] = [];
       
-      console.log(`[Sync] Starting sync - found ${articles.length} total articles`);
+      console.log(`[Sync] Starting sync (manual: ${isManual}) - found ${articles.length} total articles`);
       const publishedArticles = articles.filter(a => a.status === 'published');
       console.log(`[Sync] Checking ${publishedArticles.length} published articles`);
       
@@ -1008,14 +1009,14 @@ export async function registerRoutes(
               if (checkRes.ok) {
                 console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
               } else if (checkRes.status === 404) {
-                // Post not found - only delete if published more than 5 minutes ago
+                // Post not found - delete if manual sync OR published more than 5 minutes ago
                 const publishedTime = article.publishedAt ? new Date(article.publishedAt).getTime() : 0;
                 const now = Date.now();
                 const ageMs = now - publishedTime;
                 const fiveMinutesMs = 5 * 60 * 1000;
                 
-                if (ageMs > fiveMinutesMs) {
-                  console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING (age: ${(ageMs/1000).toFixed(0)}s)`);
+                if (isManual || ageMs > fiveMinutesMs) {
+                  console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING (manual: ${isManual}, age: ${(ageMs/1000).toFixed(0)}s)`);
                   try {
                     await storage.deleteArticle(article.id);
                     console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);

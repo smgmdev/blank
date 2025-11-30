@@ -205,7 +205,9 @@ export default function MyArticles() {
     setSyncError(null);
     try {
       const syncRes = await fetch(`/api/sync-articles`, {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manual: true })
       });
       
       if (syncRes.ok) {

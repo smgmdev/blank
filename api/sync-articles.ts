@@ -7,6 +7,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
     
+    const isManual = (req.body as any)?.manual === true;
     const db = getDatabase();
     
     // Get all data needed for sync
@@ -20,7 +21,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     const deletedIds: string[] = [];
     
-    console.log(`[Sync] Starting sync - found ${allArticles.length} total articles, ${articlesToCheck.length} published`);
+    console.log(`[Sync] Starting sync (manual: ${isManual}) - found ${allArticles.length} total articles, ${articlesToCheck.length} published`);
     console.log(`[Sync] Found ${publishingRecords.length} publishing records`);
     console.log(`[Sync] Article IDs to check: ${articlesToCheck.map((a: any) => a.id).join(', ')}`);
     console.log(`[Sync] Publishing record article IDs: ${publishingRecords.map((p: any) => p.articleId).join(', ')}`);
@@ -168,15 +169,15 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             data.message?.toLowerCase().includes('no post');
           
           if (isNotFound) {
-            // Grace period: only delete if published more than 5 minutes ago
+            // Grace period: only delete if manual sync OR published more than 5 minutes ago
             const publishedTime = article.publishedAt ? new Date(article.publishedAt).getTime() : 0;
             const now = Date.now();
             const ageMs = now - publishedTime;
             const fiveMinutesMs = 5 * 60 * 1000;
             
-            if (ageMs > fiveMinutesMs) {
+            if (isManual || ageMs > fiveMinutesMs) {
               const reason = isMissing ? `post empty/missing (id: ${data.id}, title: ${data.title?.raw || 'missing'})` : (data.code || data.message || 'no post data');
-              console.log(`[Sync] Article ${article.id} marked for deletion - ${reason} (age: ${(ageMs/1000).toFixed(0)}s)`);
+              console.log(`[Sync] Article ${article.id} marked for deletion - ${reason} (manual: ${isManual}, age: ${(ageMs/1000).toFixed(0)}s)`);
               return article.id;
             } else {
               const reason = isMissing ? `post empty/missing (id: ${data.id}, title: ${data.title?.raw || 'missing'})` : (data.code || data.message || 'no post data');
