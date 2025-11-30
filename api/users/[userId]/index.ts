@@ -1,8 +1,23 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
+  // Set proper headers for PATCH support
+  res.setHeader('Allow', 'GET, PATCH, OPTIONS');
+  res.setHeader('Content-Type', 'application/json');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
-    const userId = req.query.userId as string;
+    // Extract userId from dynamic route parameter
+    let userId = req.query.userId as string;
+    
+    // Fallback: if userId is not in query, try to parse from URL
+    if (!userId && req.url) {
+      const match = req.url.match(/\/users\/([a-f0-9-]+)/i);
+      if (match) userId = match[1];
+    }
     
     if (!userId) {
       return res.status(400).json({ error: "userId is required" });
@@ -20,10 +35,10 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           return res.status(404).json({ error: "User not found" });
         }
         
-        res.json(user);
+        return res.status(200).json(user);
       } catch (error: any) {
         console.error("Get user error:", error);
-        res.status(500).json({ error: "Failed to fetch user" });
+        return res.status(500).json({ error: "Failed to fetch user" });
       }
     } else if (req.method === "PATCH") {
       try {
@@ -41,16 +56,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         }
         
         const updated = await updateAppUser(userId, updateData);
-        res.json(updated);
+        return res.status(200).json(updated);
       } catch (error: any) {
         console.error("Update user error:", error);
-        res.status(500).json({ error: error.message || "Failed to update user" });
+        return res.status(500).json({ error: error.message || "Failed to update user" });
       }
     } else {
-      res.status(405).json({ error: "Method not allowed" });
+      return res.status(405).json({ error: "Method not allowed" });
     }
   } catch (error: any) {
     console.error("User API error:", error.message);
-    res.status(500).json({ error: error.message || "Failed to process request" });
+    return res.status(500).json({ error: error.message || "Failed to process request" });
   }
 };
