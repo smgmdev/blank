@@ -20,19 +20,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Mail, User as UserIcon } from "lucide-react";
+import { Plus, Trash2, Mail, User as UserIcon, Edit2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Users() {
-  const { users, addUser, deleteUser } = useStore();
+  const { users, addUser, deleteUser, user: currentUser } = useStore();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
   const [newUser, setNewUser] = useState({
     username: "",
     email: "",
     password: "",
     fullName: "",
     companyName: ""
+  });
+  const [editUser, setEditUser] = useState({
+    fullName: "",
+    email: ""
   });
 
   const handleAdd = () => {
@@ -58,8 +64,56 @@ export default function Users() {
       description: `${newUser.fullName} has been added successfully`
     });
 
-    setIsOpen(false);
+    setIsCreateOpen(false);
     setNewUser({ username: "", email: "", password: "", fullName: "", companyName: "" });
+  };
+
+  const handleEditOpen = (user: any) => {
+    setEditingUser(user);
+    setEditUser({ fullName: user.fullName, email: user.email });
+    setIsEditOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!editUser.fullName || !editUser.email) {
+      toast({
+        variant: "destructive",
+        title: "Missing Fields",
+        description: "Please fill in all required fields"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/${editingUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: editUser.fullName,
+          email: editUser.email
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to update user");
+
+      toast({
+        title: "User Updated",
+        description: `${editUser.fullName} has been updated successfully`
+      });
+
+      setIsEditOpen(false);
+      setEditingUser(null);
+      setEditUser({ fullName: "", email: "" });
+      
+      // Refresh users list by reloading page
+      window.location.reload();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update user"
+      });
+    }
   };
 
   const handleDelete = (id: string, name: string) => {
@@ -73,7 +127,7 @@ export default function Users() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
@@ -139,12 +193,54 @@ export default function Users() {
             <DialogFooter className="justify-between flex gap-2 flex-col-reverse sm:flex-row w-full">
               <Button 
                 variant="outline" 
-                onClick={() => setIsOpen(false)}
+                onClick={() => setIsCreateOpen(false)}
                 className="hover:bg-red-500 hover:text-white hover:border-red-500 w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button onClick={handleAdd} className="w-full sm:w-auto">Create User</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent className="animate-fade-in w-full sm:max-w-md flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>
+                Update user details.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-fullName">Full Name *</Label>
+                <Input 
+                  id="edit-fullName" 
+                  placeholder="e.g. John Smith" 
+                  value={editUser.fullName}
+                  onChange={e => setEditUser({...editUser, fullName: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email *</Label>
+                <Input 
+                  id="edit-email" 
+                  type="email"
+                  placeholder="user@example.com" 
+                  value={editUser.email}
+                  onChange={e => setEditUser({...editUser, email: e.target.value})}
+                />
+              </div>
+            </div>
+            <DialogFooter className="justify-between flex gap-2 flex-col-reverse sm:flex-row w-full">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditOpen(false)}
+                className="hover:bg-red-500 hover:text-white hover:border-red-500 w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleEditSave} className="w-full sm:w-auto">Save Changes</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -179,12 +275,22 @@ export default function Users() {
                   <TableCell className="hidden sm:table-cell text-sm truncate">{user.username}</TableCell>
                   <TableCell className="hidden md:table-cell text-sm text-muted-foreground truncate">{user.email}</TableCell>
                   <TableCell className="hidden lg:table-cell text-sm text-muted-foreground truncate">{user.companyName || '-'}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right flex gap-2 justify-end">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
+                      onClick={() => handleEditOpen(user)}
+                      data-testid={`button-edit-user-${user.id}`}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
                       onClick={() => handleDelete(user.id, user.fullName)}
+                      data-testid={`button-delete-user-${user.id}`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
