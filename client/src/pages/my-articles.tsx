@@ -80,6 +80,26 @@ export default function MyArticles() {
           setArticles(userArticles);
           setIsLoading(false);
           
+          // BACKGROUND: Fetch categories for each site and populate categoryMap
+          const newCategoryMap: Record<string, Record<number, string>> = {};
+          for (const site of allSites) {
+            try {
+              const catRes = await fetch(`/api/content?type=categories&userId=${userId}&siteId=${site.id}`);
+              if (catRes.ok) {
+                const categories = await catRes.json();
+                newCategoryMap[site.id] = {};
+                categories.forEach((cat: any) => {
+                  newCategoryMap[site.id][cat.id] = cat.name;
+                });
+              }
+            } catch (e) {
+              // Silently fail
+            }
+          }
+          if (Object.keys(newCategoryMap).length > 0) {
+            setCategoryMap(newCategoryMap);
+          }
+          
           // BACKGROUND: Fetch WordPress links for published articles ONLY if there are any
           const publishedArticles = userArticles.filter((a: any) => a.status === 'published' && !a.wpLink);
           if (publishedArticles.length > 0) {
@@ -298,9 +318,9 @@ export default function MyArticles() {
           
           {/* Actions */}
           <div className="flex flex-col gap-1 flex-shrink-0 p-4 sm:p-0 border-t sm:border-t-0 sm:border-t-0">
-            {article.status === 'published' && article.wpLink && (
-              <Button variant="outline" size="sm" asChild title="View Article" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap">
-                <a href={article.wpLink} target="_blank" rel="noopener noreferrer">
+            {article.status === 'published' && (
+              <Button variant="outline" size="sm" asChild title="View Article" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap" disabled={!article.wpLink}>
+                <a href={article.wpLink || '#'} target={article.wpLink ? '_blank' : undefined} rel={article.wpLink ? 'noopener noreferrer' : undefined}>
                   View Article
                   <ExternalLink className="w-3 h-3 ml-1" />
                 </a>

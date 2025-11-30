@@ -138,6 +138,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const adminAuth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
       
       let featuredMediaId = null;
+      let featuredImageUrl = null;
       if (featuredImageBase64) {
         try {
           console.log("Image upload started, base64 length:", featuredImageBase64?.length || 0);
@@ -167,7 +168,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           if (mediaResponse.ok) {
             const mediaData = await mediaResponse.json();
             featuredMediaId = mediaData.id;
-            console.log("Image uploaded successfully, mediaId:", featuredMediaId);
+            featuredImageUrl = mediaData.source_url;
+            console.log("Image uploaded successfully, mediaId:", featuredMediaId, "url:", featuredImageUrl);
           } else {
             const errorText = await mediaResponse.text();
             console.error("Image upload failed:", mediaResponse.status, errorText);
@@ -203,8 +205,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
       const wpPost = await wpResponse.json();
 
-      let featuredImageUrl = null;
-      if (featuredMediaId) {
+      // If we didn't already get the featured image URL, fetch it now
+      if (featuredMediaId && !featuredImageUrl) {
         try {
           const mediaRes = await fetch(`${site.apiUrl}/wp/v2/media/${featuredMediaId}`, {
             headers: { Authorization: `Basic ${auth}` }
@@ -213,7 +215,9 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             const mediaData = await mediaRes.json();
             featuredImageUrl = mediaData.source_url;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error("Failed to fetch media data:", e);
+        }
       }
 
       await createArticlePublishing({
