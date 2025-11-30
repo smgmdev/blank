@@ -1,7 +1,6 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getWordPressSiteById, getUserSiteCredential, getArticle, createArticle, updateArticle, createArticlePublishing, getArticlePublishingBySiteAndArticle, getArticlesByUserId, deleteArticle } from "./db-utils.js";
+import { getWordPressSiteById, getUserSiteCredential, getArticle, createArticle, updateArticle, createArticlePublishing, getArticlePublishingBySiteAndArticle, getArticlesByUserId, deleteArticle, getDatabase } from "./db-utils.js";
 import { insertArticleSchema, articles, articlePublishing, wordPressSites } from "../shared/schema.js";
-import { db } from "./db-utils.js";
 import { eq } from "drizzle-orm";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
@@ -67,16 +66,18 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           console.log('[Delete] Starting article deletion:', articleId);
           
           // Get article and check if published
-          const article = await db.select().from(articles).where(eq(articles.id, articleId));
+          const database = getDatabase();
+          const article = await database.select().from(articles).where(eq(articles.id, articleId));
           if (!article.length) return res.status(404).json({ error: "Article not found" });
           
-          const pub = await db.select().from(articlePublishing).where(eq(articlePublishing.articleId, articleId));
+          const pub = await database.select().from(articlePublishing).where(eq(articlePublishing.articleId, articleId));
           
           // If published to WordPress, delete from WP first
           if (pub.length > 0 && pub[0].wpPostId) {
             try {
               const publishRec = pub[0];
-              const [site] = await db.select().from(wordPressSites).where(eq(wordPressSites.id, publishRec.siteId));
+              const database = getDatabase();
+              const [site] = await database.select().from(wordPressSites).where(eq(wordPressSites.id, publishRec.siteId));
               
               if (site && publishRec.wpPostId) {
                 const credential = await getUserSiteCredential(userId as string, publishRec.siteId);
