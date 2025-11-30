@@ -1078,8 +1078,40 @@ export async function registerRoutes(
                     // Error parsing response - skip deletion, just log
                     console.log(`[Sync] Article ${article.id}: Could not parse 200 response: ${(readError as any).message}`);
                   }
+                } else if (checkRes.status === 400) {
+                  // HTTP 400 likely means post was deleted or doesn't exist on WordPress
+                  try {
+                    const responseText = await checkRes.text();
+                    const data = JSON.parse(responseText) as any;
+                    const errorCode = (data.code || '').toLowerCase();
+                    const errorMessage = (data.message || '').toLowerCase();
+                    
+                    // WordPress returns 400 with specific error codes for deleted/missing posts
+                    // Common codes: rest_post_invalid_id, rest_invalid_param
+                    // Or just treat 400 as deletion if we can't verify the post exists
+                    console.log(`[Sync] Article ${article.id} marked for deletion - HTTP 400 (WordPress post not found). Error: ${errorCode || errorMessage || 'unknown'}`);
+                    try {
+                      await storage.deleteArticle(article.id);
+                      console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                      deletedCount++;
+                      deletedIds.push(article.id);
+                    } catch (delError: any) {
+                      console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                    }
+                  } catch (parseError) {
+                    // If we can't even parse the 400 response, treat it as deletion (post doesn't exist)
+                    console.log(`[Sync] Article ${article.id} marked for deletion - HTTP 400 (unparseable response)`);
+                    try {
+                      await storage.deleteArticle(article.id);
+                      console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                      deletedCount++;
+                      deletedIds.push(article.id);
+                    } catch (delError: any) {
+                      console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                    }
+                  }
                 } else {
-                  // Other error codes (400, 401, 403, 500, etc.) - skip deletion, just skip
+                  // Other error codes (401, 403, 500, etc.) - skip deletion
                   console.log(`[Sync] Article ${article.id}: HTTP ${checkRes.status} - skipping (not a definite deletion code)`);
                 }
               } catch (fetchError: any) {
