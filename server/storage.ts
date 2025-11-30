@@ -295,11 +295,12 @@ export class Storage implements IStorage {
 
   async updateArticle(
     id: string,
-    updates: Partial<InsertArticle>
+    updates: Partial<InsertArticle> & { featuredImageUrl?: string | null }
   ): Promise<void> {
+    const updateData: any = { ...updates, updatedAt: new Date() };
     await db
       .update(articles)
-      .set({ ...updates, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(articles.id, id));
   }
 

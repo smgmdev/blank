@@ -180,7 +180,12 @@ export default function MyArticles() {
       
       if (syncRes.ok) {
         const syncData = await syncRes.json();
-        const userArticles = syncData.articles.filter((a: any) => a.userId === userId);
+        // Filter articles excluding deleted ones
+        const userArticles = syncData.articles
+          .filter((a: any) => a.userId === userId)
+          .filter((a: any) => !syncData.deletedIds || !syncData.deletedIds.includes(a.id));
+        
+        console.log("Sync deleted IDs:", syncData.deletedIds);
         
         // Fetch category names for each site
         const [sitesRes] = await Promise.all([fetch(`/api/sites`)]);
@@ -208,7 +213,7 @@ export default function MyArticles() {
         const articlesWithLinks = await Promise.all(userArticles.map(async (article: any) => {
           if (article.status === 'published') {
             try {
-              const publishRes = await fetch(`/api/articles/${article.id}/publishing`);
+              const publishRes = await fetch(`/api/content?type=publishing&articleId=${article.id}&siteId=${article.siteId}`);
               if (publishRes.ok) {
                 const pubData = await publishRes.json();
                 return { ...article, wpLink: pubData.wpLink };

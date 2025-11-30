@@ -951,6 +951,7 @@ export async function registerRoutes(
     try {
       const articles = await storage.getAllArticles();
       let deletedCount = 0;
+      const deletedIds: string[] = [];
       
       for (const article of articles) {
         if (article.status === 'published' && article.siteId) {
@@ -974,6 +975,7 @@ export async function registerRoutes(
                     console.log(`Article ${article.id} deleted from WordPress - removing from app`);
                     await storage.deleteArticle(article.id);
                     deletedCount++;
+                    deletedIds.push(article.id);
                   }
                 } catch (fetchError) {
                   console.error(`Fetch error for post ${postId}:`, fetchError);
@@ -987,7 +989,7 @@ export async function registerRoutes(
       }
       
       const syncedArticles = await storage.getAllArticles();
-      res.json({ success: true, deletedCount, articles: syncedArticles });
+      res.json({ success: true, deletedCount, deletedIds, articles: syncedArticles });
     } catch (error) {
       console.error("Sync error:", error);
       res.status(500).json({ error: "Failed to sync articles" });
