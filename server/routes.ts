@@ -1039,9 +1039,9 @@ export async function registerRoutes(
                 
                 console.log(`[Sync] Response status: ${checkRes.status}`);
                 
-                // ANY non-OK response means post is deleted/not found
-                if (!checkRes.ok) {
-                  console.log(`[Sync] Article ${article.id} marked for deletion - HTTP ${checkRes.status}`);
+                // Only treat 404 or 410 as definite deletion indicators
+                if (checkRes.status === 404 || checkRes.status === 410) {
+                  console.log(`[Sync] Article ${article.id} marked for deletion - HTTP ${checkRes.status} (post deleted from WordPress)`);
                   try {
                     await storage.deleteArticle(article.id);
                     console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
@@ -1050,7 +1050,7 @@ export async function registerRoutes(
                   } catch (delError: any) {
                     console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
                   }
-                } else {
+                } else if (checkRes.ok) {
                   // For 200 OK, verify we got actual post data (not empty/deleted)
                   try {
                     const responseText = await checkRes.text();
@@ -1075,17 +1075,12 @@ export async function registerRoutes(
                       console.log(`[Sync] Article ${article.id}: Post exists on WordPress`);
                     }
                   } catch (readError) {
-                    // Error parsing response - also treat as deleted
-                    console.log(`[Sync] Article ${article.id} marked for deletion - Error parsing 200 response: ${(readError as any).message}`);
-                    try {
-                      await storage.deleteArticle(article.id);
-                      console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
-                      deletedCount++;
-                      deletedIds.push(article.id);
-                    } catch (delError: any) {
-                      console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
-                    }
+                    // Error parsing response - skip deletion, just log
+                    console.log(`[Sync] Article ${article.id}: Could not parse 200 response: ${(readError as any).message}`);
                   }
+                } else {
+                  // Other error codes (400, 401, 403, 500, etc.) - skip deletion, just skip
+                  console.log(`[Sync] Article ${article.id}: HTTP ${checkRes.status} - skipping (not a definite deletion code)`);
                 }
               } catch (fetchError: any) {
                 console.error(`[Sync] Fetch error for post ${postId}:`, fetchError.message);
