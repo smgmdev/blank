@@ -1583,7 +1583,7 @@ export default function Editor() {
                 className="gap-2 group flex-1 hover:bg-black hover:text-white"
                 variant="outline"
               >
-                Next <ChevronRight className="w-4 h-4 group-hover:translate-x-1" />
+                Next <ChevronRight className="w-4 h-4" />
               </Button>
             ) : (
               <Button 

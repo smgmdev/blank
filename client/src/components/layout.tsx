@@ -164,10 +164,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* System Account - Top of sidebar */}
         <div className="p-4 border-b border-border">
-          <DropdownMenu>
+          <DropdownMenu open={isPublishing ? false : undefined} onOpenChange={isPublishing ? () => {} : undefined}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start px-2 hover:bg-muted">
-                <div className="flex items-center gap-3 min-w-0">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start px-2 hover:bg-muted"
+                disabled={isPublishing}
+              >
+                <div className={`flex items-center gap-3 min-w-0 ${isPublishing ? 'opacity-50' : ''}`}>
                   <Avatar className="w-8 h-8 border flex-shrink-0">
                     <AvatarFallback>{isAdmin ? 'AD' : 'US'}</AvatarFallback>
                   </Avatar>
