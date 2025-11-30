@@ -2,6 +2,7 @@ import { db } from "./db";
 import {
   wordPressSites,
   appUsers,
+  userSessions,
   approvedWpUsers,
   userSiteCredentials,
   publishingProfiles,
@@ -11,6 +12,8 @@ import {
   type InsertWordPressSite,
   type AppUser,
   type InsertAppUser,
+  type UserSession,
+  type InsertUserSession,
   type ApprovedWpUser,
   type InsertApprovedWpUser,
   type UserSiteCredential,
@@ -22,7 +25,7 @@ import {
   type ArticlePublishing,
   type InsertArticlePublishing,
 } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 
 export interface IStorage {
   // WordPress Sites
@@ -39,6 +42,13 @@ export interface IStorage {
   getAppUserByUsername(username: string): Promise<AppUser | undefined>;
   getAllAppUsers(): Promise<AppUser[]>;
   deleteAppUser(id: string): Promise<void>;
+
+  // User Sessions (server-side, for unified login across Replit & Vercel)
+  createUserSession(session: InsertUserSession): Promise<UserSession>;
+  getUserSession(sessionId: string): Promise<UserSession | undefined>;
+  getValidUserSession(userId: string): Promise<UserSession | undefined>;
+  clearUserSession(sessionId: string): Promise<void>;
+  clearUserSessions(userId: string): Promise<void>;
 
   // Approved WP Users (Admin)
   createApprovedWpUser(user: InsertApprovedWpUser): Promise<ApprovedWpUser>;
@@ -205,6 +215,40 @@ export class Storage implements IStorage {
 
   async deleteAppUser(id: string): Promise<void> {
     await db.delete(appUsers).where(eq(appUsers.id, id));
+  }
+
+  // User Sessions (server-side)
+  async createUserSession(session: InsertUserSession): Promise<UserSession> {
+    const [result] = await db.insert(userSessions).values(session).returning();
+    if (!result) throw new Error("Failed to create session");
+    return result;
+  }
+
+  async getUserSession(sessionId: string): Promise<UserSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(userSessions)
+      .where(eq(userSessions.id, sessionId));
+    return session;
+  }
+
+  async getValidUserSession(userId: string): Promise<UserSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(userSessions)
+      .where(and(
+        eq(userSessions.userId, userId),
+        gt(userSessions.expiresAt, new Date())
+      ));
+    return session;
+  }
+
+  async clearUserSession(sessionId: string): Promise<void> {
+    await db.delete(userSessions).where(eq(userSessions.id, sessionId));
+  }
+
+  async clearUserSessions(userId: string): Promise<void> {
+    await db.delete(userSessions).where(eq(userSessions.userId, userId));
   }
 
   // User Site Credentials

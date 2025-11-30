@@ -29,6 +29,14 @@ export const appUsers = pgTable("app_users", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// User Sessions (server-side, synced across Replit & Vercel)
+export const userSessions = pgTable("user_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => appUsers.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Approved WordPress Users (admin approves which WP users can publish)
 export const approvedWpUsers = pgTable("approved_wp_users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -131,7 +139,15 @@ export const insertArticlePublishingSchema = createInsertSchema(articlePublishin
   publishedAt: true,
 });
 
+export const insertUserSessionSchema = createInsertSchema(userSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
+export type UserSession = typeof userSessions.$inferSelect;
+export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
+
 export type ApprovedWpUser = typeof approvedWpUsers.$inferSelect;
 export type InsertApprovedWpUser = z.infer<typeof insertApprovedWpUserSchema>;
 

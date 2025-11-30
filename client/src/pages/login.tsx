@@ -45,10 +45,11 @@ export default function Login() {
       }
 
       const user = await response.json();
-      if (!user.id || !user.role) {
+      if (!user.id || !user.role || !user.sessionId) {
         throw new Error('Invalid login response');
       }
-      // Store user ID for authenticated requests
+      // Store ONLY session ID (unified across Replit & Vercel)
+      localStorage.setItem('sessionId', user.sessionId);
       localStorage.setItem('userId', user.id);
       localStorage.setItem('userRole', user.role);
       login(user.role);
