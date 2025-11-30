@@ -342,7 +342,9 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       }));
       
       console.log("[Publish] Updating article with:", { featuredImageUrl, categories, tagsWithNames });
-      await updateArticle(articleId as string, {
+      console.log("[Publish] DEBUG: About to store tags, type:", typeof tagsWithNames, "value:", JSON.stringify(tagsWithNames));
+      
+      const updateResult = await updateArticle(articleId as string, {
         status: 'published',
         publishedAt: new Date(),
         siteId: sid,
@@ -350,6 +352,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         categories,
         tags: tagsWithNames  // Store with names for reliable display
       });
+      
+      console.log("[Publish] DEBUG: After update, tags in article:", updateResult?.tags, "type:", typeof updateResult?.tags);
 
       console.log("[Publish] ✓ Article published successfully:", { wpPostId: wpPost.id, wpLink, featuredImageUrl, tags: tagsWithNames });
       res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, wpLink: wpLink, featuredImageUrl });
