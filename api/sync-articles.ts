@@ -62,29 +62,19 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         try {
           const res = await fetch(checkUrl, { headers });
           
-          if (res.ok) {
-            // Response is OK - article might exist
-            const data = await res.json();
-            if (data?.id) {
-              console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS`);
-            } else {
-              // No ID in response - delete it
-              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No ID - DELETING`);
-              await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
-              await db.delete(articles).where(eq(articles.id, article.id));
-              deletedCount++;
-              deletedIds.push(article.id);
-            }
-          } else if (res.status === 404) {
-            // Explicitly not found - delete it
-            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): 404 NOT FOUND - DELETING`);
+          if (res.status === 404) {
+            // Article not found on WordPress - delete it
+            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Cannot detect on WP (404) - DELETING`);
             await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
             await db.delete(articles).where(eq(articles.id, article.id));
             deletedCount++;
             deletedIds.push(article.id);
+          } else if (res.ok) {
+            // Article detected on WordPress - keep it
+            console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): Detected on WP`);
           } else {
-            // Other error (401, 403, 500, etc) - skip, don't delete
-            console.log(`[Sync] ⚠ Article "${article.title}" (post ${postId}): Error ${res.status} - SKIPPING`);
+            // Other error - cannot be sure, skip
+            console.log(`[Sync] ⚠ Article "${article.title}" (post ${postId}): Cannot verify (${res.status}) - SKIPPING`);
           }
         } catch (e: any) {
           console.error(`[Sync] Error checking article ${article.id}:`, e.message);
