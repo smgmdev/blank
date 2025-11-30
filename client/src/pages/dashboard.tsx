@@ -125,14 +125,10 @@ export default function Dashboard() {
         description: "Your WordPress account is verified. You can now publish to this site."
       });
 
-      // Refresh sites to show updated connection status
-      if (userId) {
-        const sitesResponse = await fetch(`/api/user-sites?userId=${userId}`);
-        if (sitesResponse.ok) {
-          const updatedSites = await sitesResponse.json();
-          setSites(updatedSites);
-        }
-      }
+      // Update local state immediately to show connected button
+      setSites(sites.map(s => 
+        s.id === selectedSiteId ? { ...s, userIsConnected: true } : s
+      ));
 
       setAuthDialogOpen(false);
       setCredentials({ username: "", password: "" });
@@ -167,8 +163,12 @@ export default function Dashboard() {
       if (!userId) throw new Error('User session not found');
 
       const response = await fetch(
-        `/api/users/${userId}/sites/${siteId}/disconnect`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+        `/api/disconnect`,
+        { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, siteId })
+        }
       );
 
       if (!response.ok) throw new Error('Failed to disconnect');

@@ -76,3 +76,7 @@ export async function createPublishingProfile(data: any): Promise<any> {
   if (!profile) throw new Error("Failed to create publishing profile");
   return profile;
 }
+
+export async function deleteUserSiteCredential(credentialId: string): Promise<void> {
+  await db.delete(schema.userSiteCredentials).where(eq(schema.userSiteCredentials.id, credentialId));
+}
