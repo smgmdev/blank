@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -275,9 +276,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen lg:h-full overflow-hidden">
         <header className="h-16 border-b border-border bg-background/50 backdrop-blur-sm z-10 flex items-center justify-between px-4 lg:px-8 flex-shrink-0">
-          <h1 className="font-semibold text-lg">
-            {navItems.find(i => i.href === location)?.headerLabel || 'Dashboard'}
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-semibold text-lg">
+              {location === '/settings' ? 'Account Settings' : (navItems.find(i => i.href === location)?.headerLabel || 'Dashboard')}
+            </h1>
+            {location === '/settings' && (
+              <Badge className="bg-black text-white rounded-full px-3 py-1 text-xs font-semibold">
+                Global
+              </Badge>
+            )}
+          </div>
         </header>
         <div className="flex-1 p-4 lg:p-8 w-full animate-fade-in overflow-y-auto">
           {children}
