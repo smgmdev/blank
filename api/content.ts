@@ -360,18 +360,24 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         status: "published"
       });
 
-      console.log("[Publish] Updating article with:", { featuredImageUrl, categories, allTagIds });
+      // Store tags with their names for reliable display (some tags may not be in WordPress API response)
+      const tagsWithNames: any[] = allTagIds.map(id => ({
+        id,
+        name: createdTagMap[id] || `Tag ${id}` // Use created name if available, else use ID as fallback
+      }));
+      
+      console.log("[Publish] Updating article with:", { featuredImageUrl, categories, tagsWithNames });
       await updateArticle(articleId as string, {
         status: 'published',
         publishedAt: new Date(),
         siteId: sid,
         featuredImageUrl,
         categories,
-        tags: allTagIds  // Use all tag IDs (existing + newly created)
+        tags: tagsWithNames  // Store with names for reliable display
       });
 
-      console.log("[Publish] ✓ Article published successfully:", { wpPostId: wpPost.id, wpLink, featuredImageUrl });
-      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, wpLink: wpLink, featuredImageUrl, createdTags: createdTagMap });
+      console.log("[Publish] ✓ Article published successfully:", { wpPostId: wpPost.id, wpLink, featuredImageUrl, tags: tagsWithNames });
+      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, wpLink: wpLink, featuredImageUrl });
     }
     else {
       res.status(400).json({ error: "Invalid type" });

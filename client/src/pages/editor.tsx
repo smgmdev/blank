@@ -659,33 +659,6 @@ export default function Editor() {
         localStorage.setItem(`wpLink_${article.id}`, publishResult.wpLink);
       }
 
-      // Store newly created tags to localStorage for immediate display
-      if (selectedSiteId && publishResult.createdTags && Object.keys(publishResult.createdTags).length > 0) {
-        const cachedTags = localStorage.getItem(`createdTags_${selectedSiteId}`);
-        const existing = cachedTags ? JSON.parse(cachedTags) : {};
-        const merged = { ...existing, ...publishResult.createdTags };
-        localStorage.setItem(`createdTags_${selectedSiteId}`, JSON.stringify(merged));
-        console.log("[Editor] Cached newly created tags:", publishResult.createdTags);
-      }
-
-      // Fetch fresh tags from WordPress to get actual tag names for newly created tags
-      if (selectedSiteId && userId) {
-        try {
-          const tagsRes = await fetch(`/api/content?type=tags&userId=${userId}&siteId=${selectedSiteId}`);
-          if (tagsRes.ok) {
-            const freshTags = await tagsRes.json();
-            const tagMapKey = `tagMap_${selectedSiteId}`;
-            const newTagMap: Record<number, string> = {};
-            freshTags.forEach((tag: any) => {
-              newTagMap[tag.id] = tag.name;
-            });
-            localStorage.setItem(tagMapKey, JSON.stringify(newTagMap));
-          }
-        } catch (e) {
-          console.warn("Failed to fetch fresh tags after publishing:", e);
-        }
-      }
-
       setIsPublishing(false);
       toast({
         title: "Published Successfully!",

@@ -320,20 +320,22 @@ export default function MyArticles() {
       }).filter(Boolean);
     };
     
-    // Get tag names from the tagMap and localStorage cache
+    // Get tag names from article tags or tagMap
     const getTagNames = () => {
       if (!Array.isArray(article.tags) || !site) return [];
       const siteTags = tagMap[site.id] || {};
-      // Also check localStorage for newly created tags
-      const cachedTags = localStorage.getItem(`createdTags_${site.id}`);
-      const cachedMap = cachedTags ? JSON.parse(cachedTags) : {};
       
-      return article.tags.map((tagId: any) => {
-        if (typeof tagId === 'number') {
-          // Check WordPress API first, then localStorage cache for recently created tags
-          return siteTags[tagId] || cachedMap[tagId] || null;
+      return article.tags.map((tag: any) => {
+        // New format: tag is an object {id, name}
+        if (typeof tag === 'object' && tag.name) {
+          return tag.name;
         }
-        if (typeof tagId === 'string') return tagId;
+        // Old format: tag is just an ID number
+        if (typeof tag === 'number') {
+          return siteTags[tag] || null;
+        }
+        // String tag name
+        if (typeof tag === 'string') return tag;
         return null;
       }).filter(Boolean);
     };
