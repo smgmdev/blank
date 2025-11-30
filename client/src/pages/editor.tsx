@@ -1367,6 +1367,11 @@ export default function Editor() {
         </div>
       )}
 
+      {/* Overlay during publishing - disables all clicks */}
+      {isPublishing && (
+        <div className="fixed inset-0 bg-black/10 z-40 pointer-events-auto" />
+      )}
+
       {/* Footer Controls */}
       <div className="fixed bottom-0 left-0 w-full bg-background border-t border-border p-4 z-30 md:pl-64 md:z-20">
         <div className="max-w-4xl mx-auto flex items-center gap-2 px-4 md:px-0 flex-col sm:flex-row justify-end">

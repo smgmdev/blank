@@ -249,14 +249,17 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         }
       }
 
-      console.log("[Publish] Received tags:", tags, "categories:", categories, "tagIds:", tags?.map((t: any) => ({ type: typeof t, value: t })));
+      console.log("[Publish] Received tags:", tags, "categories:", categories);
+      
+      // Ensure tags are numeric IDs (WordPress API requirement)
+      const validTags = Array.isArray(tags) ? tags.filter(t => typeof t === 'number' && t > 0) : [];
       
       const postData: any = {
         title,
         content,
         status: "publish",
         categories: Array.isArray(categories) ? categories : [],
-        tags: Array.isArray(tags) ? tags : []
+        tags: validTags  // Only send numeric IDs
       };
       
       console.log("[Publish] ✓ Posting to WordPress with:", { 

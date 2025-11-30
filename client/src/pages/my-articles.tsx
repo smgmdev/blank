@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, ExternalLink, Trash2, Edit, Globe, PenTool } from "lucide-react";
+import { FileText, ExternalLink, Trash2, Edit, Globe, PenTool, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,6 +37,7 @@ export default function MyArticles() {
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('published');
+  const [loadingLinks, setLoadingLinks] = useState<Record<string, boolean>>({});
 
   // Update tab when location changes - this handles both initial load and URL param changes
   useEffect(() => {
@@ -221,21 +222,23 @@ export default function MyArticles() {
         }
         setCategoryMap(newCategoryMap);
         
-        // Fetch WordPress links
-        const articlesWithLinks = await Promise.all(userArticles.map(async (article: any) => {
-          if (article.status === 'published') {
-            try {
-              const publishRes = await fetch(`/api/content?type=publishing&articleId=${article.id}&siteId=${article.siteId}`);
-              if (publishRes.ok) {
-                const pubData = await publishRes.json();
-                return { ...article, wpLink: pubData.wpLink };
-              }
-            } catch (e) {
-              // Silently fail
-            }
+        // Fetch WordPress links with per-article loading state
+        const articlesWithLinks = userArticles.map((article: any) => {
+          // Load wpLink in background for published articles
+          if (article.status === 'published' && !article.wpLink) {
+            setLoadingLinks(prev => ({ ...prev, [article.id]: true }));
+            fetch(`/api/content?type=publishing&articleId=${article.id}&siteId=${article.siteId}`)
+              .then(res => res.ok && res.json())
+              .then(pubData => {
+                if (pubData?.wpLink) {
+                  setArticles(prev => prev.map(a => a.id === article.id ? { ...a, wpLink: pubData.wpLink } : a));
+                }
+                setLoadingLinks(prev => ({ ...prev, [article.id]: false }));
+              })
+              .catch(() => setLoadingLinks(prev => ({ ...prev, [article.id]: false })));
           }
           return article;
-        }));
+        });
         
         setArticles(articlesWithLinks);
         setSyncStatus(null);
@@ -347,10 +350,18 @@ export default function MyArticles() {
           <div className="flex flex-col gap-1 flex-shrink-0 p-4 sm:p-0 border-t sm:border-t-0 sm:border-t-0">
             <div className="flex gap-2 flex-wrap">
               {article.status === 'published' && (
-                <Button variant="outline" size="sm" asChild title="View Article" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap" disabled={!article.wpLink}>
+                <Button variant="outline" size="sm" asChild title="View Article" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap" disabled={!article.wpLink || loadingLinks[article.id]}>
                   <a href={article.wpLink || '#'} target={article.wpLink ? '_blank' : undefined} rel={article.wpLink ? 'noopener noreferrer' : undefined}>
-                    View Article
-                    <ExternalLink className="w-3 h-3 ml-1" />
+                    {loadingLinks[article.id] ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      </>
+                    ) : (
+                      <>
+                        View Article
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </>
+                    )}
                   </a>
                 </Button>
               )}
