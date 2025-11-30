@@ -40,12 +40,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isAdmin = user === 'admin';
 
   const navItems = [
-    { label: "Media Network", icon: LayoutDashboard, href: "/dashboard", show: true },
-    { label: "My Articles", icon: FileText, href: "/my-articles", show: true },
-    { label: "Editor", icon: PenTool, href: "/editor", show: true },
-    { label: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
-    { label: "User Management", icon: Users, href: "/admin/users", show: isAdmin },
-    { label: "Publisher Profile", icon: User, href: "/publishing-profile", show: !isAdmin },
+    { label: "Media Network", headerLabel: "Media Network", icon: LayoutDashboard, href: "/dashboard", show: true },
+    { label: "My Articles", headerLabel: "My Articles", icon: FileText, href: "/my-articles", show: true },
+    { label: "Write New Article", headerLabel: "Editor", icon: PenTool, href: "/editor", show: true },
+    { label: "Site Management", headerLabel: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
+    { label: "User Management", headerLabel: "User Management", icon: Users, href: "/admin/users", show: isAdmin },
+    { label: "Publisher Profile", headerLabel: "Publisher Profile", icon: User, href: "/publishing-profile", show: !isAdmin },
   ];
 
   const handleNavClick = () => {
@@ -212,7 +212,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 flex flex-col h-screen lg:h-full overflow-hidden">
         <header className="h-16 border-b border-border bg-background/50 backdrop-blur-sm z-10 flex items-center justify-between px-4 lg:px-8 flex-shrink-0">
           <h1 className="font-semibold text-lg">
-            {navItems.find(i => i.href === location)?.label || 'Dashboard'}
+            {navItems.find(i => i.href === location)?.headerLabel || 'Dashboard'}
           </h1>
         </header>
         <div className="flex-1 p-4 lg:p-8 w-full animate-fade-in overflow-y-auto">
