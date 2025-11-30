@@ -85,7 +85,7 @@ export default function Editor() {
       if (!userId) return;
       setLoadingSites(true);
       try {
-        const res = await fetch(`/api/user-sites?userId=${userId}`);
+        const res = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
         if (res.ok) {
           const data = await res.json();
           setSitesUser(data.filter((s: any) => s.userIsConnected));
@@ -94,7 +94,7 @@ export default function Editor() {
         // Load draft article if editing
         if (articleId && articleId !== '') {
           try {
-            const articleRes = await fetch(`/api/articles/${articleId}`);
+            const articleRes = await fetch(`/api/content?type=articles&articleId=${articleId}`);
             if (articleRes.ok) {
               const article = await articleRes.json();
               // Load article data into form
@@ -140,8 +140,8 @@ export default function Editor() {
       setLoadingTags(true);
       try {
         const [catRes, tagRes] = await Promise.all([
-          fetch(`/api/categories?userId=${userId}&siteId=${selectedSiteId}`),
-          fetch(`/api/tags?userId=${userId}&siteId=${selectedSiteId}`)
+          fetch(`/api/content?type=categories&userId=${userId}&siteId=${selectedSiteId}`),
+          fetch(`/api/content?type=tags&userId=${userId}&siteId=${selectedSiteId}`)
         ]);
         
         if (catRes.ok) {
@@ -296,7 +296,7 @@ export default function Editor() {
     try {
       if (isEditingDraft && articleId) {
         // Update existing draft
-        const res = await fetch(`/api/articles/${articleId}`, {
+        const res = await fetch(`/api/content?type=articles&articleId=${articleId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -316,7 +316,7 @@ export default function Editor() {
         });
       } else {
         // Create new draft
-        const res = await fetch('/api/articles', {
+        const res = await fetch('/api/content?type=articles', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -488,7 +488,7 @@ export default function Editor() {
 
       // Create article locally first
       const article = await (async () => {
-        const res = await fetch('/api/articles', {
+        const res = await fetch('/api/content?type=articles', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -503,7 +503,7 @@ export default function Editor() {
       })();
 
       // Publish to WordPress
-      const publishRes = await fetch(`/api/publish?articleId=${article.id}`, {
+      const publishRes = await fetch(`/api/content?type=publish&articleId=${article.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

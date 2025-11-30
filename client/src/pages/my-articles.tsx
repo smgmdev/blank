@@ -46,7 +46,7 @@ export default function MyArticles() {
       setIsLoading(true);
       try {
         const [articlesRes, sitesRes] = await Promise.all([
-          fetch(`/api/articles`, { headers: { "x-user-id": userId } }),
+          fetch(`/api/content?type=articles`, { headers: { "x-user-id": userId } }),
           fetch(`/api/sites`)
         ]);
         
@@ -62,7 +62,7 @@ export default function MyArticles() {
           const newCategoryMap: Record<string, Record<number, string>> = {};
           for (const site of allSites) {
             try {
-              const catRes = await fetch(`/api/sites/${site.id}/categories?userId=${userId}`);
+              const catRes = await fetch(`/api/content?type=categories&userId=${userId}&siteId=${site.id}`);
               if (catRes.ok) {
                 const categories = await catRes.json();
                 newCategoryMap[site.id] = {};
@@ -80,7 +80,7 @@ export default function MyArticles() {
           const articlesWithLinks = await Promise.all(userArticles.map(async (article: any) => {
             if (article.status === 'published') {
               try {
-                const publishRes = await fetch(`/api/articles/${article.id}/publishing`);
+                const publishRes = await fetch(`/api/content?type=publishing&articleId=${article.id}&siteId=${article.siteId}`);
                 if (publishRes.ok) {
                   const pubData = await publishRes.json();
                   return { ...article, wpLink: pubData.wpLink };
@@ -111,7 +111,7 @@ export default function MyArticles() {
   const handleConfirmDelete = async () => {
     if (selectedArticleId) {
       try {
-        const res = await fetch(`/api/articles/${selectedArticleId}`, {
+        const res = await fetch(`/api/content?type=articles&articleId=${selectedArticleId}`, {
           method: 'DELETE'
         });
         if (res.ok) {
@@ -153,7 +153,7 @@ export default function MyArticles() {
         const newCategoryMap: Record<string, Record<number, string>> = {};
         for (const site of allSites) {
           try {
-            const catRes = await fetch(`/api/sites/${site.id}/categories?userId=${userId}`);
+            const catRes = await fetch(`/api/content?type=categories&userId=${userId}&siteId=${site.id}`);
             if (catRes.ok) {
               const categories = await catRes.json();
               newCategoryMap[site.id] = {};

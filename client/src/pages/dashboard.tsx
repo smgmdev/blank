@@ -43,7 +43,7 @@ export default function Dashboard() {
       try {
         if (!userId) return;
         
-        const response = await fetch(`/api/user-sites?userId=${userId}`);
+        const response = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
           setSites(data);
@@ -61,7 +61,7 @@ export default function Dashboard() {
       try {
         if (!userId) return;
         
-        const response = await fetch(`/api/user-sites?userId=${userId}`);
+        const response = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
           setSites(data);
@@ -100,7 +100,7 @@ export default function Dashboard() {
 
       // Call WordPress authentication endpoint
       const authResponse = await fetch(
-        `/api/authenticate`,
+        `/api/auth?action=authenticate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -163,7 +163,7 @@ export default function Dashboard() {
       if (!userId) throw new Error('User session not found');
 
       const response = await fetch(
-        `/api/disconnect`,
+        `/api/sites?action=disconnect`,
         { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' },

@@ -26,29 +26,9 @@ export async function registerRoutes(
     }
   });
 
-  // WordPress Sites Routes (Admin)
-  app.post("/api/sites", async (req, res) => {
-    try {
-      const parsed = insertWordPressSiteSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ error: parsed.error.flatten() });
-      }
-      const site = await storage.createWordPressSite(parsed.data);
-      res.json(site);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to create WordPress site" });
-    }
-  });
+  // WordPress Sites Routes (Admin) - Old handlers removed - now consolidated below
 
-  app.get("/api/sites", async (req, res) => {
-    try {
-      const sites = await storage.getAllWordPressSites();
-      res.json(sites);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch sites" });
-    }
-  });
-
+  // Keep site by ID routes (these use :id param, not query params)
   app.get("/api/sites/:id", async (req, res) => {
     try {
       const site = await storage.getWordPressSite(req.params.id);
@@ -1014,7 +994,253 @@ export async function registerRoutes(
     }
   });
 
-  // Login Route
+  // Consolidated Auth Endpoint (supports query parameter routing)
+  app.post("/api/auth", async (req, res) => {
+    const { action } = req.query;
+    
+    if (action === "login") {
+      try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+          return res.status(400).json({ error: "Email and password required" });
+        }
+
+        const user = await storage.getAppUserByUsername(email);
+        if (!user || user.password !== password) {
+          return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        res.json({
+          id: user.id,
+          email: user.email,
+          isAdmin: user.role === "admin"
+        });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to login" });
+      }
+    } else if (action === "authenticate") {
+      try {
+        const { userId, siteId, wpUsername, wpPassword } = req.body;
+        if (!userId || !siteId || !wpUsername || !wpPassword) {
+          return res.status(400).json({ error: "All fields required" });
+        }
+
+        const site = await storage.getWordPressSite(siteId);
+        if (!site) return res.status(404).json({ error: "Site not found" });
+
+        const apiUrl = `${site.apiUrl}/wp/v2/users/me`;
+        const auth = Buffer.from(`${wpUsername}:${wpPassword}`).toString("base64");
+        
+        const wpResponse = await fetch(apiUrl, {
+          headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" }
+        });
+
+        if (!wpResponse.ok) {
+          return res.status(401).json({ error: "WordPress authentication failed" });
+        }
+
+        // Save credentials
+        await storage.createUserSiteCredential({
+          userId,
+          siteId,
+          wpUsername,
+          wpPassword,
+          isVerified: true
+        });
+
+        res.json({ success: true, message: "Credentials saved" });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    } else {
+      res.status(400).json({ error: "Invalid action" });
+    }
+  });
+
+  // Consolidated Sites Endpoint (supports query parameter routing)
+  app.get("/api/sites", async (req, res) => {
+    const { action, userId } = req.query;
+    
+    if (action === "user-sites" && userId) {
+      try {
+        const credentials = await storage.getUserSiteCredentialsByUserId(userId as string);
+        const allSites = await storage.getAllWordPressSites();
+        
+        const sitesWithAuth = allSites.map(site => {
+          const credential = credentials.find(c => c.siteId === site.id);
+          return {
+            ...site,
+            userIsConnected: credential?.isVerified || false,
+            hasCredentials: !!credential
+          };
+        });
+        
+        res.json(sitesWithAuth);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    } else {
+      // Default: GET all sites
+      try {
+        const sites = await storage.getAllWordPressSites();
+        res.json(sites);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  app.post("/api/sites", async (req, res) => {
+    const { action } = req.query;
+    
+    if (action === "disconnect") {
+      try {
+        const { userId, siteId } = req.body;
+        if (!userId || !siteId) {
+          return res.status(400).json({ error: "userId and siteId required" });
+        }
+        
+        const credential = await storage.getUserSiteCredential(userId, siteId);
+        if (credential) {
+          await storage.deleteUserSiteCredential(credential.id);
+        }
+        
+        res.json({ success: true, message: "Disconnected from site" });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    } else {
+      // Default: Create new site (existing behavior)
+      try {
+        const parsed = insertWordPressSiteSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({ error: parsed.error.flatten() });
+        }
+        const site = await storage.createWordPressSite(parsed.data);
+        res.json(site);
+      } catch (error: any) {
+        res.status(500).json({ error: "Failed to create WordPress site" });
+      }
+    }
+  });
+
+  // Consolidated Content Endpoint (supports query parameter routing)
+  app.get("/api/content", async (req, res) => {
+    const { type, articleId, userId, siteId } = req.query;
+
+    if (type === "categories" && userId && siteId) {
+      try {
+        const site = await storage.getWordPressSite(siteId as string);
+        if (!site) return res.status(404).json({ error: "Site not found" });
+
+        const credential = await storage.getUserSiteCredential(userId as string, siteId as string);
+        if (!credential?.isVerified) return res.status(403).json({ error: "Not authenticated" });
+
+        const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+        const response = await fetch(`${site.apiUrl}/wp/v2/categories?per_page=100`, {
+          headers: { Authorization: `Basic ${auth}` }
+        });
+        
+        if (!response.ok) return res.status(response.status).json({ error: "Failed to fetch categories" });
+
+        const categories = await response.json();
+        res.json(categories.map((cat: any) => ({ id: cat.id, name: cat.name })));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    } else if (type === "tags" && userId && siteId) {
+      try {
+        const site = await storage.getWordPressSite(siteId as string);
+        if (!site) return res.status(404).json({ error: "Site not found" });
+
+        const credential = await storage.getUserSiteCredential(userId as string, siteId as string);
+        if (!credential?.isVerified) return res.status(403).json({ error: "Not authenticated" });
+
+        const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+        const response = await fetch(`${site.apiUrl}/wp/v2/tags?per_page=100`, {
+          headers: { Authorization: `Basic ${auth}` }
+        });
+        
+        if (!response.ok) return res.status(response.status).json({ error: "Failed to fetch tags" });
+
+        const tags = await response.json();
+        res.json(tags.map((tag: any) => ({ id: tag.id, name: tag.name })));
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    } else if (type === "articles") {
+      try {
+        if (articleId) {
+          const article = await storage.getArticle(articleId as string);
+          if (!article) return res.status(404).json({ error: "Article not found" });
+          res.json(article);
+        } else {
+          const userIdHeader = req.headers["x-user-id"] as string;
+          if (!userIdHeader) return res.status(401).json({ error: "User ID required" });
+          
+          const articles = await storage.getArticlesByUserId(userIdHeader);
+          res.json(articles);
+        }
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    } else if (type === "publishing" && articleId && siteId) {
+      try {
+        const publishing = await storage.getArticlePublishingByArticleId(articleId as string);
+        const pub = publishing.find(p => p.siteId === siteId);
+        if (!pub) return res.status(404).json({ error: "Publishing info not found" });
+        
+        const site = await storage.getWordPressSite(pub.siteId);
+        res.json({ wpLink: `${site?.url}/?p=${pub.wpPostId}` });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    } else {
+      res.status(400).json({ error: "Invalid query" });
+    }
+  });
+
+  app.post("/api/content", async (req, res) => {
+    const { type, articleId } = req.query;
+
+    if (type === "articles") {
+      try {
+        if (articleId) {
+          // Update existing article
+          const article = await storage.updateArticle(articleId as string, req.body);
+          res.json(article);
+        } else {
+          // Create new article
+          const parsed = insertArticleSchema.safeParse(req.body);
+          if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+          
+          const article = await storage.createArticle(parsed.data);
+          res.json(article);
+        }
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    } else {
+      res.status(400).json({ error: "Invalid type" });
+    }
+  });
+
+  app.delete("/api/content", async (req, res) => {
+    const { type, articleId } = req.query;
+
+    if (type === "articles" && articleId) {
+      try {
+        await storage.deleteArticle(articleId as string);
+        res.json({ success: true });
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    } else {
+      res.status(400).json({ error: "Invalid request" });
+    }
+  });
+
+  // Legacy Login Route (for backward compat)
   app.post("/api/login", async (req, res) => {
     try {
       const { username, password } = req.body;

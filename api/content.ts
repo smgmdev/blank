@@ -1,14 +1,22 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getWordPressSiteById, getUserSiteCredential, getArticleById, createArticle, updateArticle, createArticlePublishing } from "./db-utils.js";
+import { getWordPressSiteById, getUserSiteCredential, getArticleById, createArticle, updateArticle, createArticlePublishing, getArticlePublishingBySiteAndArticle } from "./db-utils.js";
 import { insertArticleSchema } from "../shared/schema.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
     const { type, userId, siteId, articleId } = req.query;
 
-    // /api/articles - GET articles or POST new article
+    // /api/content?type=articles - GET all articles or POST new article
     if (!type || type === "articles") {
       if (req.method === "GET") {
+        // GET single article by ID if articleId provided
+        if (articleId) {
+          const article = await getArticleById(articleId as string);
+          if (!article) return res.status(404).json({ error: "Article not found" });
+          return res.json(article);
+        }
+        
+        // GET all articles for user
         const userIdHeader = req.headers["x-user-id"] as string;
         if (!userIdHeader) return res.status(401).json({ error: "User ID required" });
         
@@ -20,11 +28,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         
         const article = await createArticle(parsed.data);
         res.json(article);
+      } else if (req.method === "PUT") {
+        // UPDATE article
+        if (!articleId) return res.status(400).json({ error: "articleId required" });
+        const article = await updateArticle(articleId as string, req.body);
+        res.json(article);
       } else {
         res.status(405).json({ error: "Method not allowed" });
       }
     }
-    // /api/categories?userId=...&siteId=...
+    // /api/content?type=categories
     else if (type === "categories") {
       if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
       if (!userId || !siteId) return res.status(400).json({ error: "userId and siteId required" });
@@ -45,7 +58,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const categories = await response.json();
       res.json(categories.map((cat: any) => ({ id: cat.id, name: cat.name })));
     }
-    // /api/tags?userId=...&siteId=...
+    // /api/content?type=tags
     else if (type === "tags") {
       if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
       if (!userId || !siteId) return res.status(400).json({ error: "userId and siteId required" });
@@ -66,7 +79,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const tags = await response.json();
       res.json(tags.map((tag: any) => ({ id: tag.id, name: tag.name })));
     }
-    // /api/publish?articleId=...
+    // /api/content?type=publishing - GET publishing info
+    else if (type === "publishing") {
+      if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+      if (!articleId || !siteId) return res.status(400).json({ error: "articleId and siteId required" });
+      
+      const pub = await getArticlePublishingBySiteAndArticle(siteId as string, articleId as string);
+      if (!pub) return res.status(404).json({ error: "Publishing info not found" });
+      res.json(pub);
+    }
+    // /api/content?type=publish - POST publish article
     else if (type === "publish") {
       if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
       if (!articleId) return res.status(400).json({ error: "articleId required" });
