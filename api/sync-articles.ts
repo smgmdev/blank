@@ -86,20 +86,38 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             if (data?.id) {
               console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS on WordPress`);
             } else {
-              // Got response but no post data - delete it
-              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No post data - DELETING`);
+              // Got response but no post data - apply 5-minute grace period
+              const publishedTime = new Date(publishing.createdAt || article.publishedAt).getTime();
+              const now = Date.now();
+              const graceMinutes = 5;
+              const gracePeriodMs = graceMinutes * 60 * 1000;
+              
+              if (now - publishedTime < gracePeriodMs) {
+                console.log(`[Sync] ⏳ Article "${article.title}" (post ${postId}): Grace period active (${Math.round((gracePeriodMs - (now - publishedTime)) / 1000)}s remaining) - SKIPPING`);
+              } else {
+                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No post data - DELETING`);
+                await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
+                await db.delete(articles).where(eq(articles.id, article.id));
+                deletedCount++;
+                deletedIds.push(article.id);
+              }
+            }
+          } catch (parseErr: any) {
+            // Can't parse as JSON - post doesn't exist
+            const publishedTime = new Date(publishing.createdAt || article.publishedAt).getTime();
+            const now = Date.now();
+            const graceMinutes = 5;
+            const gracePeriodMs = graceMinutes * 60 * 1000;
+            
+            if (now - publishedTime < gracePeriodMs) {
+              console.log(`[Sync] ⏳ Article "${article.title}" (post ${postId}): Grace period active (${Math.round((gracePeriodMs - (now - publishedTime)) / 1000)}s remaining) - SKIPPING`);
+            } else {
+              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No valid JSON response - DELETING`);
               await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
               await db.delete(articles).where(eq(articles.id, article.id));
               deletedCount++;
               deletedIds.push(article.id);
             }
-          } catch (parseErr: any) {
-            // Can't parse as JSON - post doesn't exist - delete it
-            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No valid JSON response - DELETING`);
-            await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
-            await db.delete(articles).where(eq(articles.id, article.id));
-            deletedCount++;
-            deletedIds.push(article.id);
           }
         } catch (e: any) {
           console.error(`[Sync] Error checking article ${article.id}:`, e.message);
