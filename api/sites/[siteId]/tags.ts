@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getWordPressSiteById, getUserSiteCredential } from "../db-utils";
+import { getWordPressSiteById, getUserSiteCredential } from "../db-utils.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
