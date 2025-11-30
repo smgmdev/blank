@@ -384,7 +384,7 @@ export default function AdminSites() {
                       setAdminCreds({ username: "", password: "" });
                       setNewSite({ name: "", url: "", seoPlugin: "rankmath", apiUrl: "", apiToken: "" });
                     }}
-                    className="w-full hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200"
+                    className="w-full hover:bg-red-500 hover:text-white hover:border-red-500"
                   >
                     Cancel
                   </Button>

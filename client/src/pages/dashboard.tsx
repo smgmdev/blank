@@ -241,7 +241,7 @@ export default function Dashboard() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="w-full h-8 text-xs border-green-500 text-green-700 hover:border-red-500 hover:text-destructive hover:bg-red-50 transition-all duration-200 group"
+                    className="w-full h-8 text-xs border-green-500 text-green-700 hover:border-red-500 hover:text-destructive hover:bg-red-50 group"
                     onClick={() => handleDisconnect(site.id)}
                   >
                     <span className="group-hover:hidden">Connected</span>
@@ -251,7 +251,7 @@ export default function Dashboard() {
                   <Button 
                     variant="outline"
                     size="sm"
-                    className="w-full h-8 text-xs border-black text-black hover:bg-black hover:text-white transition-all duration-200"
+                    className="w-full h-8 text-xs border-black text-black hover:bg-black hover:text-white"
                     onClick={() => handleAuthenticateClick(site.id)}
                     data-testid="button-authenticate-site"
                   >

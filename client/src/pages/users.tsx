@@ -140,7 +140,7 @@ export default function Users() {
               <Button 
                 variant="outline" 
                 onClick={() => setIsOpen(false)}
-                className="hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 w-full sm:w-auto"
+                className="hover:bg-red-500 hover:text-white hover:border-red-500 w-full sm:w-auto"
               >
                 Cancel
               </Button>

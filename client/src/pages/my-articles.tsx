@@ -406,7 +406,7 @@ export default function MyArticles() {
               variant="outline" 
               onClick={handleRefresh} 
               disabled={isRefreshing}
-              className="w-full sm:w-auto hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isRefreshing ? "Syncing..." : "Refresh & Sync"}
             </Button>
