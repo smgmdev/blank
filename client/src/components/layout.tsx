@@ -196,7 +196,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* User Account - Top of sidebar */}
-        <div className="p-4 border-b border-border">
+        <div className="p-3 lg:p-4 border-b border-border">
           <DropdownMenu open={isPublishing ? false : undefined} onOpenChange={isPublishing ? () => {} : undefined}>
             <DropdownMenuTrigger asChild>
               <Button 
@@ -206,15 +206,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               >
                 <div className={`flex items-center gap-3 min-w-0 ${isPublishing ? 'opacity-50' : ''}`}>
                   <Avatar className="w-8 h-8 border flex-shrink-0">
-                    <AvatarFallback>
+                    <AvatarFallback className="text-xs lg:text-sm">
                       {userInfo?.fullName 
                         ? userInfo.fullName.split(' ').slice(0, 2).map((n: string) => n.charAt(0)).join('').toUpperCase()
-                        : (isAdmin ? 'AD' : 'U')}
+                        : 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col items-start text-xs min-w-0">
-                    <span className="font-medium">{isAdmin ? 'Administrator' : (userInfo?.fullName || 'User')}</span>
-                    <span className="text-muted-foreground">Account</span>
+                  <div className="flex flex-col items-start text-xs lg:text-sm min-w-0 gap-0.5">
+                    <span className="font-medium truncate">{userInfo?.fullName || 'User'}</span>
+                    <span className="text-muted-foreground text-xs">Account</span>
                   </div>
                 </div>
               </Button>
