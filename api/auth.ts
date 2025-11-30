@@ -14,7 +14,11 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         if (!user || user.password !== password) {
           return res.status(401).json({ error: "Invalid credentials" });
         }
-        res.json({ id: user.id, email: user.email, role: user.role });
+        
+        // For now, return userId as sessionId (session table support will be added)
+        res.json({ id: user.id, email: user.email, role: user.role, sessionId: user.id });
+      } else if (action === "logout") {
+        res.json({ success: true });
       } 
       else if (action === "authenticate") {
         const { userId, siteId, wpUsername, wpPassword } = req.body;
