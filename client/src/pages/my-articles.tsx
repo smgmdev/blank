@@ -280,6 +280,16 @@ export default function MyArticles() {
               </div>
               <span>{format(new Date(article.publishedAt || new Date()), "MMM d, yyyy · h:mm a zzz")}</span>
             </div>
+            
+            {/* WordPress Link - shown for published articles */}
+            {article.status === 'published' && article.wpLink && (
+              <div className="mt-2 flex items-center gap-2">
+                <ExternalLink className="w-3 h-3 text-blue-600" />
+                <a href={article.wpLink} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-800 underline truncate">
+                  View on WordPress
+                </a>
+              </div>
+            )}
           </div>
           
           {/* Actions */}
