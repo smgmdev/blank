@@ -258,8 +258,16 @@ export default function Editor() {
     }
   };
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
   const compressImage = (file: File, maxWidth = 1200, maxHeight = 800, quality = 0.85): Promise<File> => {
     return new Promise((resolve, reject) => {
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        reject(new Error(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum of 10MB`));
+        return;
+      }
+
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
@@ -290,7 +298,7 @@ export default function Editor() {
           canvas.toBlob((blob) => {
             if (blob) {
               const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
-              console.log(`[Image] Compressed: ${file.size} → ${compressedFile.size} bytes`);
+              console.log(`[Image] Compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
               resolve(compressedFile);
             } else {
               reject(new Error('Compression failed'));
@@ -809,6 +817,7 @@ export default function Editor() {
                     <div className="space-y-2">
                       <img src={formData.imagePreview} alt="Preview" className="w-32 h-32 object-cover mx-auto rounded" />
                       <p className="text-sm font-medium text-green-600">Image selected: {formData.image?.name}</p>
+                      <p className="text-xs text-muted-foreground">{formData.image && `${(formData.image.size / 1024 / 1024).toFixed(2)} MB`}</p>
                     </div>
                   ) : (
                     <>
@@ -816,7 +825,7 @@ export default function Editor() {
                         <UploadCloud className="w-6 h-6" />
                       </div>
                       <p className="text-sm font-medium">Drag & drop or click to upload</p>
-                      <p className="text-xs text-muted-foreground mt-1">Supports JPG, PNG, WEBP</p>
+                      <p className="text-xs text-muted-foreground mt-1">Supports JPG, PNG, WEBP (Max 10MB)</p>
                     </>
                   )}
                   <input 

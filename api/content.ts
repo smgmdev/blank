@@ -177,7 +177,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
       if (!articleId) return res.status(400).json({ error: "articleId required" });
 
-      const { siteId: sid, userId: uid, title, content, categories, tags, featuredImageBase64 } = req.body;
+      const { siteId: sid, userId: uid, title, content, categories, tags, featuredImageBase64, imageCaption } = req.body;
       if (!sid || !uid) return res.status(400).json({ error: "siteId and userId required" });
 
       const site = await getWordPressSiteById(sid);
@@ -220,7 +220,21 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             const mediaData = await mediaResponse.json();
             featuredMediaId = mediaData.id;
             featuredImageUrl = mediaData.source_url;
-            console.log("[Publish] ✓ Image uploaded:", { mediaId: featuredMediaId, url: featuredImageUrl });
+            
+            // Update media caption if provided
+            if (imageCaption) {
+              await fetch(`${site.apiUrl}/wp/v2/media/${featuredMediaId}`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Basic ${auth}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ caption: { raw: imageCaption } })
+              });
+              console.log("[Publish] ✓ Image uploaded with caption:", { mediaId: featuredMediaId, caption: imageCaption });
+            } else {
+              console.log("[Publish] ✓ Image uploaded:", { mediaId: featuredMediaId, url: featuredImageUrl });
+            }
           } else {
             const errorText = await mediaResponse.text();
             console.error("[Publish] ✗ Image upload failed:", mediaResponse.status, errorText);
