@@ -5,14 +5,17 @@ import { eq } from "drizzle-orm";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
+    console.log("[Vercel Sync] Endpoint called, method:", req.method);
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
     
     const db = getDatabase();
+    console.log("[Vercel Sync] Database initialized");
     
     // Get all data needed for sync
     const allArticles = await db.select().from(articles);
     const publishingRecords = await db.select().from(articlePublishing);
     const allSites = await db.select().from(wordPressSites);
+    console.log("[Vercel Sync] Data loaded:", { articleCount: allArticles.length, pubCount: publishingRecords.length, siteCount: allSites.length });
     
     // Filter to published articles
     const publishedArticles = allArticles.filter((a: any) => a.status === 'published');
