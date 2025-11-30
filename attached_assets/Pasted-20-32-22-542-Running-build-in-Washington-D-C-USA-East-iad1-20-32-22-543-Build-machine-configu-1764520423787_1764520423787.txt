@@ -1,0 +1,75 @@
+20:32:22.542 Running build in Washington, D.C., USA (East) – iad1
+20:32:22.543 Build machine configuration: 2 cores, 8 GB
+20:32:22.552 Cloning github.com/smgmdev/blank (Branch: main, Commit: 8902a0d)
+20:32:22.553 Skipping build cache, deployment was triggered without cache.
+20:32:22.805 Cloning completed: 253.000ms
+20:32:23.190 Running "vercel build"
+20:32:23.574 Vercel CLI 48.12.0
+20:32:24.396 Installing dependencies...
+20:32:28.854 npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+20:32:28.985 npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+20:32:35.655 
+20:32:35.655 added 555 packages in 11s
+20:32:35.656 
+20:32:35.657 53 packages are looking for funding
+20:32:35.658   run `npm fund` for details
+20:32:35.824 
+20:32:35.825 > rest-express@1.0.0 build
+20:32:35.825 > tsx script/build.ts
+20:32:35.825 
+20:32:37.238 building client...
+20:32:37.463 [36mvite v7.1.12 [32mbuilding for production...[36m[39m
+20:32:37.708 transforming...
+20:32:41.186 [32m✓[39m 2177 modules transformed.
+20:32:41.730 rendering chunks...
+20:32:41.736 [meta-images] no Replit deployment domain found, skipping meta tag updates
+20:32:41.745 computing gzip size...
+20:32:41.765 [2m../dist/public/[22m[32mindex.html                 [39m[1m[2m  1.42 kB[22m[1m[22m[2m │ gzip:   0.57 kB[22m
+20:32:41.766 [2m../dist/public/[22m[2massets/[22m[35mindex-CdM6wlI_.css  [39m[1m[2m104.79 kB[22m[1m[22m[2m │ gzip:  17.79 kB[22m
+20:32:41.766 [2m../dist/public/[22m[2massets/[22m[36mindex-BceM0gqs.js   [39m[1m[33m539.60 kB[39m[22m[2m │ gzip: 161.29 kB[22m
+20:32:41.767 [33m
+20:32:41.767 (!) Some chunks are larger than 500 kB after minification. Consider:
+20:32:41.767 - Using dynamic import() to code-split the application
+20:32:41.767 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+20:32:41.767 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+20:32:41.767 [32m✓ built in 4.09s[39m
+20:32:41.767 building server...
+20:32:41.923 
+20:32:41.923   dist/index.cjs  1019.1kb
+20:32:41.924 
+20:32:41.924 ⚡ Done in 154ms
+20:32:42.241 Using TypeScript 5.6.3 (local user-provided)
+20:32:48.594 shared/db-client.ts(28,9): error TS2353: Object literal may only specify known properties, and 'application_name' does not exist in type 'Options<{}>'.
+20:32:48.600 
+20:32:49.836 Using TypeScript 5.6.3 (local user-provided)
+20:32:50.853 Using TypeScript 5.6.3 (local user-provided)
+20:32:51.878 Using TypeScript 5.6.3 (local user-provided)
+20:32:53.251 Using TypeScript 5.6.3 (local user-provided)
+20:32:54.559 Using TypeScript 5.6.3 (local user-provided)
+20:32:55.061 Using TypeScript 5.6.3 (local user-provided)
+20:32:55.927 Using TypeScript 5.6.3 (local user-provided)
+20:32:56.779 Using TypeScript 5.6.3 (local user-provided)
+20:32:57.265 api/sync-articles.ts(19,43): error TS7006: Parameter 's' implicitly has an 'any' type.
+20:32:57.265 api/sync-articles.ts(29,54): error TS7006: Parameter 'article' implicitly has an 'any' type.
+20:32:57.265 api/sync-articles.ts(30,42): error TS7006: Parameter 'p' implicitly has an 'any' type.
+20:32:57.265 api/sync-articles.ts(48,26): error TS2339: Property 'adminUsername' does not exist on type '{}'.
+20:32:57.265 api/sync-articles.ts(48,48): error TS2339: Property 'apiToken' does not exist on type '{}'.
+20:32:57.266 api/sync-articles.ts(49,52): error TS2339: Property 'adminUsername' does not exist on type '{}'.
+20:32:57.266 api/sync-articles.ts(49,74): error TS2339: Property 'apiToken' does not exist on type '{}'.
+20:32:57.266 api/sync-articles.ts(53,54): error TS2339: Property 'apiUrl' does not exist on type '{}'.
+20:32:57.266 api/sync-articles.ts(113,101): error TS2339: Property 'name' does not exist on type '{}'.
+20:32:57.266 api/sync-articles.ts(114,60): error TS2339: Property 'adminUsername' does not exist on type '{}'.
+20:32:57.266 api/sync-articles.ts(114,95): error TS2339: Property 'apiToken' does not exist on type '{}'.
+20:32:57.266 api/sync-articles.ts(119,18): error TS2339: Property 'adminUsername' does not exist on type '{}'.
+20:32:57.267 api/sync-articles.ts(119,40): error TS2339: Property 'apiToken' does not exist on type '{}'.
+20:32:57.267 api/sync-articles.ts(120,44): error TS2339: Property 'adminUsername' does not exist on type '{}'.
+20:32:57.267 api/sync-articles.ts(120,66): error TS2339: Property 'apiToken' does not exist on type '{}'.
+20:32:57.267 api/sync-articles.ts(122,56): error TS2339: Property 'adminUsername' does not exist on type '{}'.
+20:32:57.267 api/sync-articles.ts(124,66): error TS2339: Property 'adminUsername' does not exist on type '{}'.
+20:32:57.267 api/sync-articles.ts(124,98): error TS2339: Property 'apiToken' does not exist on type '{}'.
+20:32:57.267 api/sync-articles.ts(128,25): error TS2339: Property 'apiUrl' does not exist on type '{}'.
+20:32:57.268 
+20:32:57.768 Build Completed in /vercel/output [33s]
+20:32:58.124 Deploying outputs...
+20:33:05.492 Deployment completed
+20:33:06.111 Creating build cache...

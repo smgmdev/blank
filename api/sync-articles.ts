@@ -16,7 +16,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     // Filter to published articles that have publishing records
     const articlesToCheck = allArticles.filter((a: any) => a.status === 'published');
-    const sitesMap = new Map(allSites.map(s => [s.id, s]));
+    const sitesMap = new Map(allSites.map((s: any) => [s.id, s]));
     
     const deletedIds: string[] = [];
     
@@ -26,8 +26,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     console.log(`[Sync] Publishing record article IDs: ${publishingRecords.map((p: any) => p.articleId).join(', ')}`);
     
     // Check each published article
-    const checkPromises = articlesToCheck.map(async (article) => {
-      const pub = publishingRecords.find(p => p.articleId === article.id);
+    const checkPromises = articlesToCheck.map(async (article: any) => {
+      const pub = publishingRecords.find((p: any) => p.articleId === article.id);
       
       // Handle articles WITHOUT publishing records but WITH wpLink
       if (!pub) {
