@@ -986,12 +986,14 @@ export async function registerRoutes(
         try {
           // Setup auth headers once
           const headers: any = {};
-          if (site.adminUsername && site.adminPassword) {
-            const auth = Buffer.from(`${site.adminUsername}:${site.adminPassword}`).toString("base64");
-            headers.Authorization = `Basic ${auth}`;
-          } else if (site.adminUsername && site.apiToken) {
+          if (site.adminUsername && site.apiToken) {
             const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
             headers.Authorization = `Basic ${auth}`;
+            console.log(`[Sync] Using apiToken for Basic Auth with ${site.adminUsername}`);
+          } else if (site.adminUsername && site.adminPassword) {
+            const auth = Buffer.from(`${site.adminUsername}:${site.adminPassword}`).toString("base64");
+            headers.Authorization = `Basic ${auth}`;
+            console.log(`[Sync] Using adminPassword for Basic Auth with ${site.adminUsername}`);
           }
           
           // Check each article with admin API
