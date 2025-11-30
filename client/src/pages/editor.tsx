@@ -1363,7 +1363,8 @@ export default function Editor() {
             <Button 
               variant="outline" 
               onClick={() => setShowCancelConfirm(true)}
-              className="gap-2 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 flex-1 sm:flex-none sm:w-auto justify-center"
+              disabled={isPublishing}
+              className="gap-2 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="sm:hidden">Cancel</span>
               <span className="hidden sm:inline">Cancel Article</span>
@@ -1372,7 +1373,8 @@ export default function Editor() {
             <Button 
               variant="outline"
               onClick={handleSaveDraft}
-              className="gap-2 hover:bg-black hover:text-white transition-all duration-200 flex-1 sm:flex-none sm:w-auto justify-center"
+              disabled={isPublishing}
+              className="gap-2 hover:bg-black hover:text-white transition-all duration-200 flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" /> <span className="sm:inline">Save Draft</span>
             </Button>
