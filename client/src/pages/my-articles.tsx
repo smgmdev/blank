@@ -353,7 +353,7 @@ export default function MyArticles() {
                 <Globe className="w-3 h-3" />
                 <span>{site?.name || 'Unknown Site'}</span>
               </div>
-              <span>{format(new Date(article.publishedAt || new Date()), "MMM d, yyyy · h:mm a zzz")}</span>
+              <span>{format(new Date(article.status === 'draft' ? article.createdAt : article.publishedAt), "MMM d, yyyy · h:mm a zzz")}</span>
             </div>
           </div>
           </div>
