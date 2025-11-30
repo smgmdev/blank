@@ -9,7 +9,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     }
 
     // Initialize database
-    const { initializeDb, getDatabase, getAppUserById, updateAppUser } = await import("../db-utils.js");
+    const { initializeDb, getDatabase, getAppUserById, updateAppUser } = await import("../../db-utils.js");
     initializeDb();
 
     if (req.method === "GET") {
