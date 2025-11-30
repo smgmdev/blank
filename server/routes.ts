@@ -1006,6 +1006,8 @@ export async function registerRoutes(
               const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
               const checkRes = await fetch(checkUrl, { headers });
               
+              console.log(`[Sync] Article "${article.title}" (post ${postId}): Response status = ${checkRes.status}, ok = ${checkRes.ok}`);
+              
               if (checkRes.ok) {
                 console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
               } else if (checkRes.status === 404) {
