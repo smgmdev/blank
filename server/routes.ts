@@ -1011,14 +1011,14 @@ export async function registerRoutes(
               if (checkRes.ok) {
                 console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
               } else if (checkRes.status === 404) {
-                // Post not found - delete if manual sync OR published more than 5 minutes ago
+                // Post not found - only delete if old enough (auto: 5min, manual: 15sec minimum safety window)
                 const publishedTime = article.publishedAt ? new Date(article.publishedAt).getTime() : 0;
                 const now = Date.now();
                 const ageMs = now - publishedTime;
-                const fiveMinutesMs = 5 * 60 * 1000;
+                const graceMs = isManual ? 15 * 1000 : 5 * 60 * 1000; // 15 seconds for manual, 5 minutes for auto
                 
-                if (isManual || ageMs > fiveMinutesMs) {
-                  console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING (manual: ${isManual}, age: ${(ageMs/1000).toFixed(0)}s)`);
+                if (ageMs > graceMs) {
+                  console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING (manual: ${isManual}, age: ${(ageMs/1000).toFixed(0)}s, grace: ${(graceMs/1000).toFixed(0)}s)`);
                   try {
                     await storage.deleteArticle(article.id);
                     console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
@@ -1028,7 +1028,7 @@ export async function registerRoutes(
                     console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
                   }
                 } else {
-                  console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - SKIP (too recent, age: ${(ageMs/1000).toFixed(0)}s)`);
+                  console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - SKIP (manual: ${isManual}, age: ${(ageMs/1000).toFixed(0)}s, needs: ${(graceMs/1000).toFixed(0)}s)`);
                 }
               } else {
                 console.log(`[Sync] Article "${article.title}" (post ${postId}): Skipped (HTTP ${checkRes.status})`);

@@ -169,19 +169,19 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             data.message?.toLowerCase().includes('no post');
           
           if (isNotFound) {
-            // Grace period: only delete if manual sync OR published more than 5 minutes ago
+            // Grace period: only delete if old enough (auto: 5min, manual: 15sec minimum safety window)
             const publishedTime = article.publishedAt ? new Date(article.publishedAt).getTime() : 0;
             const now = Date.now();
             const ageMs = now - publishedTime;
-            const fiveMinutesMs = 5 * 60 * 1000;
+            const graceMs = isManual ? 15 * 1000 : 5 * 60 * 1000; // 15 seconds for manual, 5 minutes for auto
             
-            if (isManual || ageMs > fiveMinutesMs) {
+            if (ageMs > graceMs) {
               const reason = isMissing ? `post empty/missing (id: ${data.id}, title: ${data.title?.raw || 'missing'})` : (data.code || data.message || 'no post data');
-              console.log(`[Sync] Article ${article.id} marked for deletion - ${reason} (manual: ${isManual}, age: ${(ageMs/1000).toFixed(0)}s)`);
+              console.log(`[Sync] Article ${article.id} marked for deletion - ${reason} (manual: ${isManual}, age: ${(ageMs/1000).toFixed(0)}s, grace: ${(graceMs/1000).toFixed(0)}s)`);
               return article.id;
             } else {
               const reason = isMissing ? `post empty/missing (id: ${data.id}, title: ${data.title?.raw || 'missing'})` : (data.code || data.message || 'no post data');
-              console.log(`[Sync] Article ${article.id}: ${reason} but too recent (age: ${(ageMs/1000).toFixed(0)}s), skipping delete`);
+              console.log(`[Sync] Article ${article.id}: ${reason} but too recent (manual: ${isManual}, age: ${(ageMs/1000).toFixed(0)}s, needs: ${(graceMs/1000).toFixed(0)}s), skipping delete`);
             }
           }
           
