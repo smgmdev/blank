@@ -630,38 +630,18 @@ export default function Editor() {
     setIsPublishing(true);
     
     try {
-      // Create custom tags on WordPress first (tags that aren't already in availableTags)
-      const tagData = [];
-      for (const tag of formData.tags) {
+      // Prepare tag data - map tags to their names
+      const tagData = formData.tags.map((tag: string | number) => {
         if (typeof tag === 'string') {
-          // Custom tag - create on WordPress
-          try {
-            const createRes = await fetch(`/api/sites/${selectedSiteId}/tags`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId, tagName: tag })
-            });
-            if (createRes.ok) {
-              const newTag = await createRes.json();
-              tagData.push({ id: newTag.id, name: tag }); // Store both id and name
-              console.log("[Publish] ✓ Tag created:", { id: newTag.id, name: tag });
-            } else {
-              const error = await createRes.text();
-              console.error("[Publish] ✗ Tag creation failed:", createRes.status, error);
-              toast({ variant: "destructive", title: "Tag Error", description: `Failed to create tag "${tag}"` });
-              throw new Error(`Tag creation failed: ${error}`);
-            }
-          } catch (e) {
-            console.error("[Publish] Tag creation error:", e);
-            throw e;
-          }
+          // Custom tag - will be created on WordPress during publishing
+          return { id: tag, name: tag };
         } else {
-          // Existing tag - just have ID
-          const existingTagName = availableTags.find((t: any) => t.id === tag)?.name || `tag-${tag}`;
-          tagData.push({ id: tag, name: existingTagName });
+          // Existing tag - fetch its name
+          const existingTag = availableTags.find((t: any) => t.id === tag);
+          return { id: tag, name: existingTag?.name || `tag-${tag}` };
         }
-      }
-      console.log("[Publish] tagData before sending:", tagData, "formData.tags:", formData.tags);
+      });
+      console.log("[Publish] Sending tags:", tagData);
 
       // Create article locally first
       const article = await (async () => {
