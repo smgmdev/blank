@@ -21,6 +21,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -58,6 +68,8 @@ export default function AdminSites() {
   const [sites_db, setSites_db] = useState<any[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{siteId: string; siteName: string} | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [newSite, setNewSite] = useState({
     name: "",
     url: "",
@@ -179,15 +191,25 @@ export default function AdminSites() {
     handleVerifyConnection();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string, name: string) => {
+    setDeleteConfirmation({ siteId: id, siteName: name });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmation) return;
+    
+    setIsDeleting(true);
     try {
-      const response = await fetch(`/api/sites/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/sites/${deleteConfirmation.siteId}`, { method: 'DELETE' });
       if (response.ok) {
-        setSites_db(sites_db.filter(s => s.id !== id));
+        setSites_db(sites_db.filter(s => s.id !== deleteConfirmation.siteId));
         toast({
           title: "Deleted",
           description: "Site removed successfully"
         });
+        setDeleteConfirmation(null);
+      } else {
+        throw new Error('Failed to delete');
       }
     } catch (error) {
       toast({
@@ -195,6 +217,8 @@ export default function AdminSites() {
         title: "Error",
         description: "Failed to delete site"
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -372,7 +396,8 @@ export default function AdminSites() {
                       variant="ghost" 
                       size="icon" 
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
-                      onClick={() => handleDelete(site.id)}
+                      onClick={() => handleDeleteClick(site.id, site.name)}
+                      data-testid="button-delete-site"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -385,6 +410,27 @@ export default function AdminSites() {
         </Table>
       </div>
 
+      <AlertDialog open={!!deleteConfirmation} onOpenChange={(open) => !open && setDeleteConfirmation(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Site?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteConfirmation?.siteName}</strong>? This action cannot be undone. All articles linked to this site will also be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
