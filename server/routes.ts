@@ -1003,22 +1003,24 @@ export async function registerRoutes(
             
             try {
               const checkRes = await fetch(checkUrl, { headers });
+              const data = await checkRes.json();
               
-              if (checkRes.status === 404) {
-                // Article not found on WordPress - delete it
-                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Cannot detect on WP (404) - DELETING`);
+              if (data?.id) {
+                // Article found on WordPress - keep it
+                console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): Found on WP`);
+              } else {
+                // Cannot find article on WordPress - delete it
+                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Not found - DELETING`);
                 await storage.deleteArticle(article.id);
                 deletedCount++;
                 deletedIds.push(article.id);
-              } else if (checkRes.ok) {
-                // Article detected on WordPress - keep it
-                console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): Detected on WP`);
-              } else {
-                // Other error - cannot be sure, skip
-                console.log(`[Sync] ⚠ Article "${article.title}" (post ${postId}): Cannot verify (${checkRes.status}) - SKIPPING`);
               }
             } catch (checkError: any) {
-              console.error(`[Sync] Error checking article ${article.id}:`, checkError.message);
+              // Any error means article doesn't exist - delete it
+              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Error fetching - DELETING`);
+              await storage.deleteArticle(article.id);
+              deletedCount++;
+              deletedIds.push(article.id);
             }
           }
         } catch (siteError: any) {

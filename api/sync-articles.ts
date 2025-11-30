@@ -61,23 +61,26 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         
         try {
           const res = await fetch(checkUrl, { headers });
+          const data = await res.json();
           
-          if (res.status === 404) {
-            // Article not found on WordPress - delete it
-            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Cannot detect on WP (404) - DELETING`);
+          if (data?.id) {
+            // Article found on WordPress - keep it
+            console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): Found on WP`);
+          } else {
+            // Cannot find article on WordPress - delete it
+            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Not found - DELETING`);
             await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
             await db.delete(articles).where(eq(articles.id, article.id));
             deletedCount++;
             deletedIds.push(article.id);
-          } else if (res.ok) {
-            // Article detected on WordPress - keep it
-            console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): Detected on WP`);
-          } else {
-            // Other error - cannot be sure, skip
-            console.log(`[Sync] ⚠ Article "${article.title}" (post ${postId}): Cannot verify (${res.status}) - SKIPPING`);
           }
         } catch (e: any) {
-          console.error(`[Sync] Error checking article ${article.id}:`, e.message);
+          // Any error means article doesn't exist - delete it
+          console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Error fetching - DELETING`);
+          await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
+          await db.delete(articles).where(eq(articles.id, article.id));
+          deletedCount++;
+          deletedIds.push(article.id);
         }
       }
     }
