@@ -80,3 +80,33 @@ export async function createPublishingProfile(data: any): Promise<any> {
 export async function deleteUserSiteCredential(credentialId: string): Promise<void> {
   await db.delete(schema.userSiteCredentials).where(eq(schema.userSiteCredentials.id, credentialId));
 }
+
+export async function getArticle(id: string): Promise<any | undefined> {
+  const [article] = await db.select().from(schema.articles).where(eq(schema.articles.id, id));
+  return article;
+}
+
+export async function createArticle(data: any): Promise<any> {
+  const [article] = await db.insert(schema.articles).values(data).returning();
+  if (!article) throw new Error("Failed to create article");
+  return article;
+}
+
+export async function updateArticle(id: string, updates: any): Promise<any> {
+  await db.update(schema.articles).set({ ...updates, updatedAt: new Date() }).where(eq(schema.articles.id, id));
+  return await getArticle(id);
+}
+
+export async function createArticlePublishing(data: any): Promise<any> {
+  const [pub] = await db.insert(schema.articlePublishing).values(data).returning();
+  if (!pub) throw new Error("Failed to create article publishing");
+  return pub;
+}
+
+export async function getArticlePublishingBySiteAndArticle(siteId: string, articleId: string): Promise<any | undefined> {
+  const [pub] = await db
+    .select()
+    .from(schema.articlePublishing)
+    .where(and(eq(schema.articlePublishing.siteId, siteId), eq(schema.articlePublishing.articleId, articleId)));
+  return pub;
+}

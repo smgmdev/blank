@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getWordPressSiteById, getUserSiteCredential, getArticleById, createArticle, updateArticle, createArticlePublishing, getArticlePublishingBySiteAndArticle } from "./db-utils.js";
+import { getWordPressSiteById, getUserSiteCredential, getArticle, createArticle, updateArticle, createArticlePublishing, getArticlePublishingBySiteAndArticle, getArticlesByUserId } from "./db-utils.js";
 import { insertArticleSchema } from "../shared/schema.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
@@ -11,7 +11,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       if (req.method === "GET") {
         // GET single article by ID if articleId provided
         if (articleId) {
-          const article = await getArticleById(articleId as string);
+          const article = await getArticle(articleId as string);
           if (!article) return res.status(404).json({ error: "Article not found" });
           return res.json(article);
         }
@@ -20,7 +20,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         const userIdHeader = req.headers["x-user-id"] as string;
         if (!userIdHeader) return res.status(401).json({ error: "User ID required" });
         
-        const articles = await (await import("./db-utils.js")).getArticlesByUserId(userIdHeader);
+        const articles = await getArticlesByUserId(userIdHeader);
         res.json(articles);
       } else if (req.method === "POST") {
         const parsed = insertArticleSchema.safeParse(req.body);
@@ -28,7 +28,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         
         const article = await createArticle(parsed.data);
         res.json(article);
-      } else if (req.method === "PUT") {
+      } else if (req.method === "PATCH") {
         // UPDATE article
         if (!articleId) return res.status(400).json({ error: "articleId required" });
         const article = await updateArticle(articleId as string, req.body);
