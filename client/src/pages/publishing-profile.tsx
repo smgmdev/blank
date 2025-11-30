@@ -248,7 +248,7 @@ export default function PublishingProfile() {
 
       <Separator />
 
-      {/* Save Button */}
+      {/* Update Button */}
       <Button
         onClick={handleSave}
         disabled={isSaving}
@@ -256,7 +256,7 @@ export default function PublishingProfile() {
         className="gap-2"
       >
         <Save className="w-4 h-4" />
-        {isSaving ? "Saving..." : "Save Profile"}
+        {isSaving ? "Updating..." : "Update Profile"}
       </Button>
     </div>
   );
