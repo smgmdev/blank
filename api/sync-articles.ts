@@ -46,28 +46,24 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       console.log(`[Sync] Checking article ${article.id} (wpPostId: ${pub.wpPostId}) on site ${site.name}`);
       
       try {
-        let headers: any = {};
-        if (site.adminUsername && site.apiToken) {
-          const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
-          headers.Authorization = `Basic ${auth}`;
-        }
-        
+        // First try without authentication (public posts)
+        console.log(`[Sync] Attempting check without auth for post ${pub.wpPostId}`);
         const checkRes = await Promise.race([
-          fetch(`${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`, { headers }),
+          fetch(`${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`),
           new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
         ]) as Response;
         
         console.log(`[Sync] Article ${article.id}: WordPress returned status ${checkRes.status}`);
         
-        // Only delete if we get 404 (post not found). Skip on 401/403 (auth issues)
+        // Only delete if we get 404 (post not found)
         if (checkRes.status === 404) {
           console.log(`[Sync] Article ${article.id} marked for deletion - not found in WordPress`);
           return article.id;
         }
         
-        // For any other status (401, 403, 500 etc), don't delete
+        // For any other non-success status, log but don't delete
         if (!checkRes.ok) {
-          console.log(`[Sync] Article ${article.id}: Got status ${checkRes.status}, keeping article (might be auth issue)`);
+          console.log(`[Sync] Article ${article.id}: Got status ${checkRes.status}, will not delete (keep existing)`);
         }
       } catch (e: any) {
         console.error(`[Sync] Check failed for article ${article.id}:`, e.message);
@@ -77,29 +73,34 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     const deletedArticleIds = (await Promise.all(checkPromises)).filter((id): id is string => id !== null);
     
-    console.log(`[Sync] Ready to delete ${deletedArticleIds.length} articles:`, deletedArticleIds);
+    console.log(`[Sync] Checking deleted articles: count=${deletedArticleIds.length}, IDs:`, deletedArticleIds);
     
-    // Delete articles from system
+    // Delete articles from system only if we found them with 404
     if (deletedArticleIds.length > 0) {
       for (const id of deletedArticleIds) {
         try {
+          console.log(`[Sync] Deleting article ${id} from database`);
           // Delete publishing record first, then article
           await db.delete(articlePublishing).where(eq(articlePublishing.articleId, id));
           await db.delete(articles).where(eq(articles.id, id));
           deletedIds.push(id);
-          console.log(`[Sync] ✓ Deleted article ${id}`);
+          console.log(`[Sync] ✓ Successfully deleted article ${id}`);
         } catch (e: any) {
           console.error(`[Sync] Error deleting article ${id}:`, e.message);
         }
       }
     }
     
-    console.log(`[Sync] Complete: ${deletedIds.length} deleted, IDs:`, deletedIds);
+    console.log(`[Sync] ========== SYNC COMPLETE ==========`);
+    console.log(`[Sync] Articles checked: ${articlesToCheck.length}`);
+    console.log(`[Sync] Articles deleted: ${deletedIds.length}`);
+    console.log(`[Sync] Deleted IDs: ${deletedIds.join(', ') || 'none'}`);
+    console.log(`[Sync] ====================================`);
     
     const syncedArticles = await db.select().from(articles);
     res.json({ success: true, deletedCount: deletedIds.length, deletedIds, articles: syncedArticles });
   } catch (error: any) {
-    console.error("Sync error:", error);
+    console.error("[Sync] Fatal error:", error);
     res.status(500).json({ error: error.message || "Failed to sync articles" });
   }
 };
