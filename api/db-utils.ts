@@ -82,36 +82,13 @@ export async function getArticle(id: string): Promise<any | undefined> {
 }
 
 export async function createArticle(data: any): Promise<any> {
-  // Ensure JSONB fields are properly serialized - critical for Vercel Session Pooler compatibility
-  const serializedData = {
-    ...data,
-    tags: data.tags ? (typeof data.tags === 'string' ? data.tags : JSON.stringify(data.tags)) : null,
-    categories: data.categories ? (typeof data.categories === 'string' ? data.categories : JSON.stringify(data.categories)) : null
-  };
-  
-  console.log("[DB] createArticle - serialized data:", { tags: serializedData.tags, categories: serializedData.categories });
-  
-  const [article] = await db.insert(schema.articles).values(serializedData).returning();
+  const [article] = await db.insert(schema.articles).values(data).returning();
   if (!article) throw new Error("Failed to create article");
   return article;
 }
 
 export async function updateArticle(id: string, updates: any): Promise<any> {
-  // Ensure JSONB fields are properly serialized - critical for Vercel Session Pooler compatibility
-  const serializedUpdates = {
-    ...updates,
-    updatedAt: new Date(),
-    // Explicitly handle JSONB fields - serialize to proper JSON
-    tags: updates.tags ? (typeof updates.tags === 'string' ? updates.tags : JSON.stringify(updates.tags)) : undefined,
-    categories: updates.categories ? (typeof updates.categories === 'string' ? updates.categories : JSON.stringify(updates.categories)) : undefined
-  };
-  
-  // Remove undefined values
-  Object.keys(serializedUpdates).forEach(key => serializedUpdates[key] === undefined && delete serializedUpdates[key]);
-  
-  console.log("[DB] updateArticle - serialized updates:", { id, tags: serializedUpdates.tags, categories: serializedUpdates.categories });
-  
-  await db.update(schema.articles).set(serializedUpdates).where(eq(schema.articles.id, id));
+  await db.update(schema.articles).set({ ...updates, updatedAt: new Date() }).where(eq(schema.articles.id, id));
   return await getArticle(id);
 }
 

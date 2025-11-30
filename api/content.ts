@@ -26,13 +26,28 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             const article = await getArticle(articleId);
             if (!article) return res.status(404).json({ error: "Article not found" });
             
-            // Normalize tags and categories
-            const normalized = {
-              ...article,
-              tags: Array.isArray(article.tags) ? article.tags : (article.tags ? JSON.parse(typeof article.tags === 'string' ? article.tags : JSON.stringify(article.tags)) : []),
-              categories: Array.isArray(article.categories) ? article.categories : (article.categories ? JSON.parse(typeof article.categories === 'string' ? article.categories : JSON.stringify(article.categories)) : [])
+            // Normalize tags and categories - handle both array and string formats from JSONB
+            const normalize = (field: any) => {
+              if (Array.isArray(field)) return field;
+              if (typeof field === 'string') {
+                try {
+                  return JSON.parse(field);
+                } catch {
+                  return [];
+                }
+              }
+              if (field === null || field === undefined) return [];
+              if (typeof field === 'object') return field;
+              return [];
             };
             
+            const normalized = {
+              ...article,
+              tags: normalize(article.tags),
+              categories: normalize(article.categories)
+            };
+            
+            console.log("[API] Single article normalization:", { id: article.id, tags: normalized.tags, tagsType: typeof article.tags });
             return res.json(normalized);
           } catch (e: any) {
             console.error('Error fetching article:', articleId, e);
@@ -46,14 +61,28 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         
         const articles = await getArticlesByUserId(userIdHeader);
         
-        // Ensure tags are always arrays - fix JSONB serialization issues on Vercel
+        // Ensure tags are always arrays - handle both formats from JSONB on Replit and Vercel
+        const normalize = (field: any) => {
+          if (Array.isArray(field)) return field;
+          if (typeof field === 'string') {
+            try {
+              return JSON.parse(field);
+            } catch {
+              return [];
+            }
+          }
+          if (field === null || field === undefined) return [];
+          if (typeof field === 'object') return field;
+          return [];
+        };
+        
         const normalizedArticles = articles.map((article: any) => ({
           ...article,
-          tags: Array.isArray(article.tags) ? article.tags : (article.tags ? JSON.parse(typeof article.tags === 'string' ? article.tags : JSON.stringify(article.tags)) : []),
-          categories: Array.isArray(article.categories) ? article.categories : (article.categories ? JSON.parse(typeof article.categories === 'string' ? article.categories : JSON.stringify(article.categories)) : [])
+          tags: normalize(article.tags),
+          categories: normalize(article.categories)
         }));
         
-        console.log("[API] Fetched articles for user:", normalizedArticles.map(a => ({ id: a.id, title: a.title, featured: !!a.featuredImageUrl, tags: a.tags })));
+        console.log("[API] Fetched articles for user:", normalizedArticles.map(a => ({ id: a.id, title: a.title, tags: a.tags })));
         res.json(normalizedArticles);
       } else if (req.method === "POST") {
         const parsed = insertArticleSchema.safeParse(req.body);
