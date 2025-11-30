@@ -34,12 +34,9 @@ export default function MyArticles() {
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState(() => {
-    const params = new URLSearchParams(location.split('?')[1] || '');
-    return params.get('tab') || 'published';
-  });
+  const [activeTab, setActiveTab] = useState('published');
 
-  // Update tab when location changes
+  // Update tab when location changes - this handles both initial load and URL param changes
   useEffect(() => {
     const params = new URLSearchParams(location.split('?')[1] || '');
     const tab = params.get('tab') || 'published';
