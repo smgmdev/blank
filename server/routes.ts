@@ -995,37 +995,41 @@ export async function registerRoutes(
             headers.Authorization = `Basic ${auth}`;
           }
           
-          // OPTIMIZED: Check each article by post ID instead of fetching all posts
-          console.log(`[Sync] Checking ${siteArticles.length} article post IDs directly...`);
+          // Check each article with admin API
+          console.log(`[Sync] Checking ${siteArticles.length} articles with admin API`);
           
           for (const { article, publishing } of siteArticles) {
-            const postId = parseInt(publishing.wpPostId, 10);
+            const postId = publishing.wpPostId;
+            const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
             
             try {
-              // Check if post exists by making a direct request to the post endpoint
-              const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
-              console.log(`[Sync] Checking article "${article.title}" (wpPostId: ${publishing.wpPostId}) at ${checkUrl}`);
               const checkRes = await fetch(checkUrl, { headers });
               
-              console.log(`[Sync] WordPress response: status=${checkRes.status}, ok=${checkRes.ok}`);
-              
-              if (!checkRes.ok) {
-                // Post not found on WordPress - delete it
-                const resText = await checkRes.text();
-                console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress (response: ${resText.substring(0, 200)}) - DELETING`);
-                try {
+              // Try to parse response
+              try {
+                const data = await checkRes.json();
+                
+                // If we get post data with ID, it exists
+                if (data?.id) {
+                  console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS on WordPress`);
+                } else {
+                  // No post data - delete it
+                  console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No data - DELETING`);
                   await storage.deleteArticle(article.id);
                   console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
                   deletedCount++;
                   deletedIds.push(article.id);
-                } catch (delError: any) {
-                  console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
                 }
-              } else {
-                console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
+              } catch {
+                // Can't parse JSON - post doesn't exist - delete it
+                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No valid JSON - DELETING`);
+                await storage.deleteArticle(article.id);
+                console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                deletedCount++;
+                deletedIds.push(article.id);
               }
             } catch (checkError: any) {
-              console.log(`[Sync] Article "${article.title}" (post ${postId}): Error checking - ${checkError.message}`);
+              console.error(`[Sync] Error checking article ${article.id}:`, checkError.message);
             }
           }
         } catch (siteError: any) {

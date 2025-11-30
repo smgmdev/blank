@@ -116,18 +116,6 @@ export default function MyArticles() {
           };
           loadCategoriesForSites();
           
-          // BACKGROUND: Sync with WordPress to remove deleted articles
-          fetch(`/api/sync-articles`, { method: 'POST' })
-            .then(res => res.ok && res.json())
-            .then(syncData => {
-              if (syncData?.deletedIds?.length > 0) {
-                console.log('[MyArticles] Removed deleted articles:', syncData.deletedIds);
-                // Remove deleted articles from state
-                setArticles(prev => prev.filter(a => !syncData.deletedIds.includes(a.id)));
-              }
-            })
-            .catch(e => console.error('[MyArticles] Sync failed:', e));
-          
           // BACKGROUND: Fetch WordPress links for published articles ONLY if there are any
           const publishedArticles = articlesWithCachedLinks.filter((a: any) => a.status === 'published' && !a.wpLink);
           if (publishedArticles.length > 0) {

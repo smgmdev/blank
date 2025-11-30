@@ -5,25 +5,18 @@ import { eq } from "drizzle-orm";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
-    console.log("[Vercel Sync] Endpoint called, method:", req.method);
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
     
     const db = getDatabase();
-    console.log("[Vercel Sync] Database initialized");
-    
-    // Get all data needed for sync
     const allArticles = await db.select().from(articles);
     const publishingRecords = await db.select().from(articlePublishing);
     const allSites = await db.select().from(wordPressSites);
-    console.log("[Vercel Sync] Data loaded:", { articleCount: allArticles.length, pubCount: publishingRecords.length, siteCount: allSites.length });
     
-    // Filter to published articles
     const publishedArticles = allArticles.filter((a: any) => a.status === 'published');
-    
     let deletedCount = 0;
     const deletedIds: string[] = [];
     
-    console.log(`[Sync] Starting sync - found ${allArticles.length} total articles, checking ${publishedArticles.length} published`);
+    console.log(`[Sync] Starting - checking ${publishedArticles.length} published articles`);
     
     // Group articles by site
     const articlesBySite = new Map<string, any[]>();
@@ -34,79 +27,66 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         if (!articlesBySite.has(siteId)) {
           articlesBySite.set(siteId, []);
         }
-        articlesBySite.get(siteId)!.push({
-          article,
-          publishing: publishing[0]
-        });
+        articlesBySite.get(siteId)!.push({ article, publishing: publishing[0] });
       }
     }
     
-    // For each site, check articles
+    // Check each article with admin API
     for (const [siteId, siteArticles] of articlesBySite.entries()) {
       const site = allSites.find((s: any) => s.id === siteId) as any;
-      if (!site) {
-        console.log(`[Sync] Site ${siteId} not found - skipping`);
-        continue;
-      }
+      if (!site) continue;
       
-      console.log(`[Sync] Site: ${site.name} - checking ${siteArticles.length} articles`);
-      console.log(`[Sync] Site credentials - username: ${site.adminUsername}, hasToken: ${!!site.apiToken}, hasPassword: ${!!site.adminPassword}`);
+      console.log(`[Sync] Site: ${site.name} - checking ${siteArticles.length} articles with admin API`);
       
-      // Setup auth headers using admin credentials
+      // Build admin auth header
       const headers: any = {};
       if (site.adminUsername && site.apiToken) {
         const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
         headers.Authorization = `Basic ${auth}`;
-        console.log(`[Sync] Using admin credentials with API Token`);
       } else if (site.adminUsername && site.adminPassword) {
         const auth = Buffer.from(`${site.adminUsername}:${site.adminPassword}`).toString("base64");
         headers.Authorization = `Basic ${auth}`;
-        console.log(`[Sync] Using admin credentials with password`);
-      } else {
-        console.log(`[Sync] WARNING: No admin credentials found! This will likely fail`);
       }
       
-      console.log(`[Sync] Checking ${siteArticles.length} article post IDs directly...`);
-      
+      // Check each article
       for (const { article, publishing } of siteArticles) {
-        const postId = parseInt(publishing.wpPostId, 10);
+        const postId = publishing.wpPostId;
+        const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
         
         try {
-          // Check if post exists
-          const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
-          console.log(`[Sync] Checking article "${article.title}" (wpPostId: ${publishing.wpPostId}) at ${checkUrl}`);
-          const checkRes = await fetch(checkUrl, { headers });
+          const res = await fetch(checkUrl, { headers });
           
-          const resText = await checkRes.text();
-          console.log(`[Sync] WordPress response: status=${checkRes.status}, ok=${checkRes.ok}`);
-          
-          if (!checkRes.ok) {
-            // Any error = post not found - delete it
-            console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ Error ${checkRes.status} - NOT found on WordPress - DELETING`);
-            try {
-              // Delete publishing record first (foreign key constraint)
+          // Try to parse response to check if post exists
+          try {
+            const data = await res.json();
+            
+            // If we can parse JSON and get post data with ID, it exists
+            if (data?.id) {
+              console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): EXISTS on WordPress`);
+            } else {
+              // Got response but no post data - delete it
+              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No data - DELETING`);
               await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
-              console.log(`[Sync] ✓ Deleted publishing record for article ${article.id}`);
-              
-              // Then delete the article
               await db.delete(articles).where(eq(articles.id, article.id));
-              console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
               deletedCount++;
               deletedIds.push(article.id);
-            } catch (delError: any) {
-              console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
             }
-          } else {
-            console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ Status ${checkRes.status} - exists on WordPress`);
+          } catch {
+            // Can't parse as JSON - post doesn't exist - delete it
+            console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No valid JSON - DELETING`);
+            await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
+            await db.delete(articles).where(eq(articles.id, article.id));
+            deletedCount++;
+            deletedIds.push(article.id);
           }
-        } catch (checkError: any) {
-          console.log(`[Sync] Article "${article.title}" (post ${postId}): Error checking - ${checkError.message}`);
+        } catch (e: any) {
+          console.error(`[Sync] Error checking article ${article.id}:`, e.message);
         }
       }
     }
     
     const syncedArticles = await db.select().from(articles);
-    console.log(`[Sync] Complete: ${deletedCount} deleted, ${deletedIds.length} IDs`);
+    console.log(`[Sync] Complete: ${deletedCount} deleted`);
     res.json({ success: true, deletedCount, deletedIds, articles: syncedArticles });
   } catch (error) {
     console.error("Sync error:", error);
