@@ -327,19 +327,26 @@ export default function MyArticles() {
       
       return article.tags.map((tag: any) => {
         // New format: tag is an object {id, name}
-        if (typeof tag === 'object' && tag.name) {
-          return tag.name;
-        }
-        // New format with object but no name
         if (typeof tag === 'object' && tag.id) {
-          return siteTags[tag.id] || `Tag ${tag.id}`;
+          return {
+            id: tag.id,
+            name: tag.name || siteTags[tag.id] || `Tag ${tag.id}`
+          };
         }
         // Old format: tag is just an ID number
         if (typeof tag === 'number') {
-          return siteTags[tag] || `Tag ${tag}`;
+          return {
+            id: tag,
+            name: siteTags[tag] || `Tag ${tag}`
+          };
         }
-        // String tag name
-        if (typeof tag === 'string') return tag;
+        // String tag name - use as ID and name
+        if (typeof tag === 'string') {
+          return {
+            id: tag,
+            name: tag
+          };
+        }
         return null;
       }).filter(Boolean);
     };
@@ -404,11 +411,11 @@ export default function MyArticles() {
                     <div key={i} className="h-5 w-16 bg-muted rounded-full animate-pulse" />
                   ))}
                 </div>
-              ) : getTagNames().slice(0, 3).map((tagName: string) => (
-                <Badge key={tagName} variant="secondary" className="text-xs text-muted-foreground">{tagName}</Badge>
+              ) : getTagNames().slice(0, 3).map((tag: any) => (
+                <Badge key={`tag-${tag.id}`} variant="secondary" className="text-xs text-muted-foreground" data-testid={`tag-badge-${tag.id}`}>{tag.name}</Badge>
               ))}
               {!isCategoriesLoading && getTagNames().length > 3 && (
-                <Badge variant="secondary" className="text-xs text-muted-foreground">+{getTagNames().length - 3}</Badge>
+                <Badge variant="secondary" className="text-xs text-muted-foreground" data-testid="tag-badge-more">+{getTagNames().length - 3}</Badge>
               )}
             </div>
             
