@@ -74,36 +74,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     const syncedArticles = await db.select().from(articles);
     
-    // Normalize tags and categories - same logic as content endpoint for consistency
-    const normalize = (field: any) => {
-      // Already an array
-      if (Array.isArray(field)) return field;
-      // String - parse it
-      if (typeof field === 'string') {
-        try {
-          const parsed = JSON.parse(field);
-          return Array.isArray(parsed) ? parsed : [parsed];
-        } catch (e) {
-          console.error("[Sync] Failed to parse field:", field, e);
-          return [];
-        }
-      }
-      // Object - wrap if needed
-      if (typeof field === 'object' && field !== null) {
-        return Array.isArray(field) ? field : [field];
-      }
-      // Null/undefined
-      return [];
-    };
-    
-    const normalizedArticles = syncedArticles.map((article: any) => ({
-      ...article,
-      tags: normalize(article.tags),
-      categories: normalize(article.categories)
-    }));
-    
-    console.log(`[Sync] Complete: ${deletedIds.length} deleted, returning ${normalizedArticles.length} articles`);
-    res.json({ success: true, deletedCount: deletedIds.length, deletedIds, articles: normalizedArticles });
+    console.log(`[Sync] Complete: ${deletedIds.length} deleted articles, returning ${syncedArticles.length} articles`);
+    res.json({ success: true, deletedCount: deletedIds.length, deletedIds, articles: syncedArticles });
   } catch (error: any) {
     console.error("Sync error:", error);
     res.status(500).json({ error: error.message || "Failed to sync articles" });

@@ -4,15 +4,38 @@ import * as schema from "../shared/schema.js";
 import type { AppUser, Article, WordPressSite } from "../shared/schema.js";
 
 // Initialize and get the shared database client
-initializeDb();
-export const db = getDb();
+let db: any = null;
+try {
+  initializeDb();
+  db = getDb();
+} catch (e) {
+  console.error("[DB Utils] Failed to initialize:", e);
+}
+
+export function getDatabase() {
+  if (!db) {
+    try {
+      db = getDb();
+    } catch (e) {
+      console.error("[DB Utils] Failed to get database on demand:", e);
+      throw e;
+    }
+  }
+  return db;
+}
 
 export async function getAppUserByUsername(username: string): Promise<AppUser | undefined> {
-  const [user] = await db
-    .select()
-    .from(schema.appUsers)
-    .where(eq(schema.appUsers.username, username));
-  return user;
+  const database = getDatabase();
+  try {
+    const [user] = await database
+      .select()
+      .from(schema.appUsers)
+      .where(eq(schema.appUsers.username, username));
+    return user;
+  } catch (e: any) {
+    console.error("[DB] getAppUserByUsername failed:", e.message || e);
+    throw e;
+  }
 }
 
 export async function getAllAppUsers(): Promise<AppUser[]> {
@@ -20,10 +43,18 @@ export async function getAllAppUsers(): Promise<AppUser[]> {
 }
 
 export async function getArticlesByUserId(userId: string): Promise<Article[]> {
-  return await db
-    .select()
-    .from(schema.articles)
-    .where(eq(schema.articles.userId, userId));
+  const database = getDatabase();
+  try {
+    const result = await database
+      .select()
+      .from(schema.articles)
+      .where(eq(schema.articles.userId, userId));
+    console.log(`[DB] getArticlesByUserId(${userId}): returned ${result?.length || 0} articles`);
+    return result || [];
+  } catch (e: any) {
+    console.error("[DB] getArticlesByUserId failed:", { userId, error: e.message || e, stack: e.stack });
+    throw e;
+  }
 }
 
 export async function getAllWordPressSites(): Promise<WordPressSite[]> {
