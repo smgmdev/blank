@@ -1156,14 +1156,16 @@ export async function registerRoutes(
           return res.status(401).json({ error: "WordPress authentication failed" });
         }
 
-        // Save credentials
-        await storage.createUserSiteCredential({
+        // Save credentials (upsert to handle re-authentication)
+        const credential = await storage.upsertUserSiteCredential({
           userId,
           siteId,
           wpUsername,
-          wpPassword,
-          isVerified: true
+          wpPassword
         });
+        
+        // Mark as verified
+        await storage.updateUserSiteCredentialVerification(credential.id, "1");
 
         res.json({ success: true, message: "Credentials saved" });
       } catch (error: any) {

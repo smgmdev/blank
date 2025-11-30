@@ -26,26 +26,35 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           return res.status(400).json({ error: "All fields required" });
         }
 
-        let credential = await getUserSiteCredential(userId, siteId);
-        
-        if (credential) {
-          // Update existing
-          credential.wpUsername = wpUsername;
-          credential.wpPassword = wpPassword;
-          credential.isVerified = false;
-          await createUserSiteCredential(credential);
-        } else {
-          // Create new
-          await createUserSiteCredential({
+        const { getDb, initializeDb } = await import("./db-utils.js");
+        initializeDb();
+        const db = getDb();
+        const { userSiteCredentials } = await import("../shared/schema.js");
+        const { eq, and } = await import("drizzle-orm");
+
+        try {
+          // Check if credential exists
+          const existing = await getUserSiteCredential(userId, siteId);
+          
+          if (existing) {
+            // Delete old and create new (upsert pattern)
+            await db.delete(userSiteCredentials).where(eq(userSiteCredentials.id, existing.id));
+          }
+          
+          // Create new credential
+          const [credential] = await db.insert(userSiteCredentials).values({
             userId,
             siteId,
             wpUsername,
             wpPassword,
-            isVerified: false
-          });
-        }
+            isVerified: true
+          }).returning();
 
-        res.json({ success: true, message: "Credentials saved" });
+          res.json({ success: true, message: "Credentials saved", credential });
+        } catch (error: any) {
+          console.error("[Auth] Authenticate error:", error.message);
+          res.status(500).json({ error: "Failed to save credentials", details: error.message });
+        }
       }
       else {
         res.status(400).json({ error: "Invalid action" });
