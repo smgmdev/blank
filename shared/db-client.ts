@@ -25,7 +25,6 @@ export function initializeDb() {
         max: 1, // Serverless: max 1 connection per function
         idle_timeout: 20, // Close idle connections after 20 seconds
         connect_timeout: 15, // Increased to 15 seconds for Vercel cold starts
-        statement_timeout: 30000, // 30 second statement timeout
         application_name: "wordpress-publisher",
       });
       db = drizzle(client, { schema });
