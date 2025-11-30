@@ -63,8 +63,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="h-screen bg-muted/30 flex flex-col lg:flex-row overflow-hidden">
       {/* Mobile Header */}
       <div className="lg:hidden h-16 bg-background border-b border-border flex items-center justify-between px-4 sticky top-0 z-30">
-        <Link href="/dashboard">
-          <div className={`flex items-center gap-2 ${isPublishing ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+        {isPublishing ? (
+          <div className={`flex items-center gap-2 cursor-not-allowed opacity-50`}>
             <img 
               src="https://www.worldimpactmedia.org/images/wimb.png" 
               alt="WIMB Logo" 
@@ -75,7 +75,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <span>Manager</span>
             </div>
           </div>
-        </Link>
+        ) : (
+          <Link href="/dashboard">
+            <div className="flex items-center gap-2 cursor-pointer">
+              <img 
+                src="https://www.worldimpactmedia.org/images/wimb.png" 
+                alt="WIMB Logo" 
+                className="w-8 h-8"
+              />
+              <div className="flex flex-col text-primary font-normal text-xs leading-tight">
+                <span>Media</span>
+                <span>Manager</span>
+              </div>
+            </div>
+          </Link>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -96,8 +110,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       `}>
         {/* Logo - Hidden on mobile, shown on desktop */}
         <div className="hidden lg:flex h-16 items-center px-6 border-b border-border">
-          <Link href="/dashboard">
-            <div className={`flex items-center gap-3 ${isPublishing ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+          {isPublishing ? (
+            <div className="flex items-center gap-3 cursor-not-allowed opacity-50">
               <img 
                 src="https://www.worldimpactmedia.org/images/wimb.png" 
                 alt="WIMB Logo" 
@@ -108,12 +122,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span>Manager</span>
               </div>
             </div>
-          </Link>
+          ) : (
+            <Link href="/dashboard">
+              <div className="flex items-center gap-3 cursor-pointer">
+                <img 
+                  src="https://www.worldimpactmedia.org/images/wimb.png" 
+                  alt="WIMB Logo" 
+                  className="w-10 h-10"
+                />
+                <div className="flex flex-col text-primary font-normal text-sm leading-tight">
+                  <span>Media</span>
+                  <span>Manager</span>
+                </div>
+              </div>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Header */}
         <div className="lg:hidden h-16 flex items-center justify-between px-6 border-b border-border">
-          <div className={`flex items-center gap-3 ${isPublishing ? 'cursor-not-allowed opacity-50 pointer-events-none' : ''}`}>
+          <div className={`flex items-center gap-3 ${isPublishing ? 'cursor-not-allowed opacity-50' : ''}`}>
             <img 
               src="https://www.worldimpactmedia.org/images/wimb.png" 
               alt="WIMB Logo" 
