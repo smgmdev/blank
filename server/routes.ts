@@ -1178,13 +1178,31 @@ export async function registerRoutes(
     } else if (action === "update-credentials") {
       try {
         const { siteId, adminUsername, adminPassword, apiToken } = req.body;
-        if (!siteId || !adminUsername || !adminPassword || !apiToken) {
-          return res.status(400).json({ error: "siteId, adminUsername, adminPassword, and apiToken required" });
+        
+        console.log(`[UpdateCreds] Received: siteId=${siteId}, username=${adminUsername}, password=${!!adminPassword}, token=${!!apiToken}`);
+        
+        if (!siteId || !adminUsername) {
+          return res.status(400).json({ error: "siteId and adminUsername required" });
         }
         
-        await storage.updateWordPressSiteAdminCredentials(siteId, adminUsername, adminPassword, apiToken);
+        if (!adminPassword && !apiToken) {
+          return res.status(400).json({ error: "Either adminPassword or apiToken required" });
+        }
+        
+        // Get current site to preserve apiToken if not provided
+        const site = await storage.getWordPressSite(siteId);
+        if (!site) {
+          return res.status(404).json({ error: "Site not found" });
+        }
+        
+        const finalApiToken = apiToken || site.apiToken;
+        
+        console.log(`[UpdateCreds] Updating with: username=${adminUsername}, password=${!!adminPassword}, token=${!!finalApiToken}`);
+        
+        await storage.updateWordPressSiteAdminCredentials(siteId, adminUsername, adminPassword || site.adminPassword, finalApiToken);
         res.json({ success: true, message: "Admin credentials updated" });
       } catch (error: any) {
+        console.error(`[UpdateCreds] Error:`, error.message);
         res.status(500).json({ error: error.message });
       }
     } else {
