@@ -48,6 +48,7 @@ export default function Editor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorImageInputRef = useRef<HTMLInputElement>(null);
   const userId = localStorage.getItem('userId');
+  const { isPublishing, setIsPublishing } = useStore();
   // Properly extract articleId from URL, handling query strings
   const articleId = (() => {
     const pathOnly = location.split('?')[0]; // Remove query params
@@ -58,7 +59,6 @@ export default function Editor() {
   const [sites_user, setSitesUser] = useState<any[]>([]);
   const [loadingSites, setLoadingSites] = useState(true);
   const [step, setStep] = useState(1);
-  const [isPublishing, setIsPublishing] = useState(false);
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
@@ -1551,7 +1551,7 @@ export default function Editor() {
               variant="outline" 
               onClick={() => setShowCancelConfirm(true)}
               disabled={isPublishing}
-              className="gap-2 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-200 flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              className="gap-2 hover:bg-red-500 hover:text-white hover:border-red-500 flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="sm:hidden">Cancel</span>
               <span className="hidden sm:inline">Cancel Article</span>
@@ -1561,7 +1561,7 @@ export default function Editor() {
               variant="outline"
               onClick={handleSaveDraft}
               disabled={isPublishing}
-              className="gap-2 hover:bg-black hover:text-white transition-all duration-200 flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              className="gap-2 hover:bg-black hover:text-white flex-1 sm:flex-none sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" /> <span className="sm:inline">Save Draft</span>
             </Button>
@@ -1572,7 +1572,7 @@ export default function Editor() {
               variant="outline" 
               onClick={handleBack} 
               disabled={step === 1 || isPublishing}
-              className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent flex-1 hover:bg-black hover:text-white transition-all duration-200"
+              className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent flex-1 hover:bg-black hover:text-white"
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </Button>
@@ -1580,10 +1580,10 @@ export default function Editor() {
               <Button 
                 onClick={handleNext} 
                 disabled={isPublishing}
-                className="gap-2 group flex-1 hover:bg-black hover:text-white transition-all duration-200"
+                className="gap-2 group flex-1 hover:bg-black hover:text-white"
                 variant="outline"
               >
-                Next <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
+                Next <ChevronRight className="w-4 h-4 group-hover:translate-x-1" />
               </Button>
             ) : (
               <Button 

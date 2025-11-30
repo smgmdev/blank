@@ -26,7 +26,7 @@ import {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
-  const { user, logout } = useStore();
+  const { user, logout, isPublishing } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <div 
                   onClick={handleNavClick}
                   className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer
+                    flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${isPublishing ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'cursor-pointer'}
                     ${isActive 
                       ? "bg-primary/10 text-primary" 
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"}
@@ -186,7 +186,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div 
                 onClick={handleNavClick}
                 className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer
+                  flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${isPublishing ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'cursor-pointer'}
                   ${location === "/publishing-profile"
                     ? "bg-primary/10 text-primary" 
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"}

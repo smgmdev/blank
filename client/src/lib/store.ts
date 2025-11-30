@@ -57,6 +57,7 @@ interface AppState {
   articles: Article[];
   users: User[];
   publishingProfile: PublishingProfile | null;
+  isPublishing: boolean;
   login: (type: 'admin' | 'user') => void;
   logout: () => void;
   initializeFromStorage: () => void;
@@ -68,10 +69,12 @@ interface AppState {
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
   deleteUser: (id: string) => void;
   updatePublishingProfile: (profile: PublishingProfile) => void;
+  setIsPublishing: (isPublishing: boolean) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
   user: null, // Start logged out
+  isPublishing: false,
   users: [
     {
       id: '1',
@@ -163,5 +166,6 @@ export const useStore = create<AppState>((set) => ({
   deleteUser: (id) => set((state) => ({
     users: state.users.filter(u => u.id !== id)
   })),
-  updatePublishingProfile: (profile) => set({ publishingProfile: profile })
+  updatePublishingProfile: (profile) => set({ publishingProfile: profile }),
+  setIsPublishing: (isPublishing) => set({ isPublishing })
 }));
