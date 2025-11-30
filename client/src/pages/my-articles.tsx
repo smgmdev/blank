@@ -294,24 +294,14 @@ export default function MyArticles() {
               <span>{format(new Date(article.publishedAt || new Date()), "MMM d, yyyy · h:mm a zzz")}</span>
             </div>
             
-            {/* WordPress Link - shown for published articles */}
-            {article.status === 'published' && article.wpLink && (
-              <div className="mt-2 flex items-center gap-2">
-                <ExternalLink className="w-3 h-3 text-blue-600" />
-                <a href={article.wpLink} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-800 underline truncate">
-                  View on WordPress
-                </a>
-              </div>
-            )}
           </div>
           
           {/* Actions */}
           <div className="flex flex-col gap-1 flex-shrink-0 p-4 sm:p-0 border-t sm:border-t-0 sm:border-t-0">
             {article.wpLink && (
-              <Button variant="outline" size="sm" asChild title="View on WordPress" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap">
+              <Button variant="outline" size="sm" asChild title="View Article" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap">
                 <a href={article.wpLink} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  View WP
+                  View Article
                 </a>
               </Button>
             )}

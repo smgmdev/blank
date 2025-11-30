@@ -140,12 +140,17 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       let featuredMediaId = null;
       if (featuredImageBase64) {
         try {
+          console.log("Image upload started, base64 length:", featuredImageBase64?.length || 0);
           const base64Data = featuredImageBase64.split(',')[1] || featuredImageBase64;
           const imageBuffer = Buffer.from(base64Data, 'base64');
+          console.log("Image buffer size:", imageBuffer.length);
+          
           let ext = "jpg", ct = "image/jpeg";
           if (featuredImageBase64.includes("png")) { ext = "png"; ct = "image/png"; }
           else if (featuredImageBase64.includes("webp")) { ext = "webp"; ct = "image/webp"; }
           else if (featuredImageBase64.includes("gif")) { ext = "gif"; ct = "image/gif"; }
+          
+          console.log("Uploading image:", { ext, ct, site: site.url });
           
           const mediaResponse = await fetch(`${site.apiUrl}/wp/v2/media`, {
             method: "POST",
@@ -157,9 +162,15 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             body: imageBuffer
           });
           
+          console.log("Media response status:", mediaResponse.status);
+          
           if (mediaResponse.ok) {
             const mediaData = await mediaResponse.json();
             featuredMediaId = mediaData.id;
+            console.log("Image uploaded successfully, mediaId:", featuredMediaId);
+          } else {
+            const errorText = await mediaResponse.text();
+            console.error("Image upload failed:", mediaResponse.status, errorText);
           }
         } catch (imgError) {
           console.error("Image upload error:", imgError);
