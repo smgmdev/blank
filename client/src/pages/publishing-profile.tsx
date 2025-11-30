@@ -33,7 +33,7 @@ export default function PublishingProfile() {
   
   const userId = localStorage.getItem('userId');
 
-  // Fetch WP profile data on mount
+  // Fetch WP profile data on mount and update local state
   useEffect(() => {
     const loadWPProfile = async () => {
       setIsLoading(true);
@@ -42,12 +42,12 @@ export default function PublishingProfile() {
           const wpData = await fetchWPProfile(userId);
           if (wpData && typeof wpData === 'object') {
             const { displayName: wpDisplayName, profilePicture: wpProfilePicture } = wpData as { displayName: string; profilePicture?: string };
-            // If no profile is saved yet, use WP data
-            if (!publishingProfile?.displayName) {
-              setDisplayName(wpDisplayName);
-              if (wpProfilePicture) {
-                setPreviewUrl(wpProfilePicture);
-              }
+            // Always use WP data if available - it's the source of truth
+            setDisplayName(wpDisplayName || publishingProfile?.displayName || "");
+            if (wpProfilePicture) {
+              setPreviewUrl(wpProfilePicture);
+            } else if (publishingProfile?.profilePicture) {
+              setPreviewUrl(publishingProfile.profilePicture);
             }
           }
         }
@@ -124,8 +124,18 @@ export default function PublishingProfile() {
         // Don't fail the save if WordPress sync fails
       }
 
-      // Refetch from API to ensure it was saved to database and synced
+      // Refetch from API and WordPress to ensure everything is synced
       await loadPublishingProfileFromAPI(userId);
+      
+      // Reload WP profile to show it was synced
+      await new Promise(r => setTimeout(r, 500));
+      const wpData = await fetchWPProfile(userId);
+      if (wpData) {
+        setDisplayName(wpData.displayName || displayName);
+        if (wpData.profilePicture) {
+          setPreviewUrl(wpData.profilePicture);
+        }
+      }
 
       toast({
         title: "Profile Updated",
