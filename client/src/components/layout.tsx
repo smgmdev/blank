@@ -281,7 +281,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {location === '/settings' ? 'Account Settings' : (navItems.find(i => i.href === location)?.headerLabel || 'Dashboard')}
             </h1>
             {location === '/settings' && (
-              <Badge className="bg-black text-white rounded-full px-3 py-1 text-xs font-semibold">
+              <Badge className="bg-black text-white rounded-full px-1.5 py-0.5 text-xs font-semibold">
                 Global
               </Badge>
             )}
