@@ -39,6 +39,13 @@ export default function MyArticles() {
     return params.get('tab') || 'published';
   });
 
+  // Update tab when location changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    const tab = params.get('tab') || 'published';
+    setActiveTab(tab);
+  }, [location]);
+
   // Fetch real articles and sites
   useEffect(() => {
     const fetchData = async () => {
@@ -58,25 +65,7 @@ export default function MyArticles() {
           // Filter to only this user's articles
           const userArticles = allArticles.filter((a: any) => a.userId === userId);
           
-          // Fetch category names for each site
-          const newCategoryMap: Record<string, Record<number, string>> = {};
-          for (const site of allSites) {
-            try {
-              const catRes = await fetch(`/api/content?type=categories&userId=${userId}&siteId=${site.id}`);
-              if (catRes.ok) {
-                const categories = await catRes.json();
-                newCategoryMap[site.id] = {};
-                categories.forEach((cat: any) => {
-                  newCategoryMap[site.id][cat.id] = cat.name;
-                });
-              }
-            } catch (e) {
-              console.error(`Failed to fetch categories for site ${site.id}:`, e);
-            }
-          }
-          setCategoryMap(newCategoryMap);
-          
-          // Fetch WordPress links for published articles
+          // Optimize: Only fetch WordPress links for published articles (skip categories for now)
           const articlesWithLinks = await Promise.all(userArticles.map(async (article: any) => {
             if (article.status === 'published') {
               try {

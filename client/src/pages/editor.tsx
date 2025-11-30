@@ -42,13 +42,17 @@ import {
 
 export default function Editor() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorImageInputRef = useRef<HTMLInputElement>(null);
   const userId = localStorage.getItem('userId');
-  const [params] = useLocation();
-  const articleId = params.split('/').pop() || '';
+  // Properly extract articleId from URL, handling query strings
+  const articleId = (() => {
+    const pathOnly = location.split('?')[0]; // Remove query params
+    const id = pathOnly.split('/').pop() || '';
+    return (id && id !== 'editor' && id !== 'undefined') ? id : '';
+  })();
   
   const [sites_user, setSitesUser] = useState<any[]>([]);
   const [loadingSites, setLoadingSites] = useState(true);
