@@ -302,6 +302,7 @@ export default function MyArticles() {
               <Button variant="outline" size="sm" asChild title="View Article" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap">
                 <a href={article.wpLink} target="_blank" rel="noopener noreferrer">
                   View Article
+                  <ExternalLink className="w-3 h-3 ml-1" />
                 </a>
               </Button>
             )}
