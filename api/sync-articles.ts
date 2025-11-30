@@ -12,6 +12,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     const deletedIds: string[] = [];
     
     console.log(`[Sync] Starting sync check for ${allArticles.length} articles`);
+    console.log(`[Sync] Article IDs to check:`, allArticles.map(a => ({ id: a.id, status: a.status, siteId: a.siteId })));
     
     for (const article of allArticles) {
       if (article.status === 'published' && article.siteId) {

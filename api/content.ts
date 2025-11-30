@@ -183,6 +183,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         }
       }
 
+      console.log("[Publish] Received tags:", tags, "categories:", categories);
+      
       const postData: any = {
         title,
         content,
@@ -190,6 +192,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         categories: Array.isArray(categories) ? categories : [],
         tags: Array.isArray(tags) ? tags : []
       };
+      
+      console.log("[Publish] postData being sent to WP:", postData);
       
       if (featuredMediaId) postData.featured_media = featuredMediaId;
 

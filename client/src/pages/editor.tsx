@@ -542,6 +542,7 @@ export default function Editor() {
           tagIds.push(tag);
         }
       }
+      console.log("[Publish] tagIds before sending:", tagIds, "formData.tags:", formData.tags);
 
       // Create article locally first
       const article = await (async () => {
@@ -1306,7 +1307,7 @@ export default function Editor() {
             <Button 
               variant="outline" 
               onClick={handleBack} 
-              disabled={step === 1}
+              disabled={step === 1 || isPublishing}
               className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent flex-1 hover:bg-black hover:text-white transition-all duration-200"
             >
               <ChevronLeft className="w-4 h-4" /> Back
