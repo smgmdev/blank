@@ -197,7 +197,7 @@ export default function Dashboard() {
           variant="outline" 
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="gap-2"
+          className="gap-2 hover:bg-gray-200 rounded-full"
         >
           <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           {isRefreshing ? 'Refreshing...' : 'Refresh'}
