@@ -1003,21 +1003,24 @@ export async function registerRoutes(
             
             try {
               const checkRes = await fetch(checkUrl, { headers });
+              console.log(`[Sync] Checking ${checkUrl} - Status: ${checkRes.status}`);
+              
               const data = await checkRes.json();
+              console.log(`[Sync] Response data for post ${postId}:`, JSON.stringify(data).substring(0, 200));
               
               if (data?.id) {
                 // Article found on WordPress - keep it
                 console.log(`[Sync] ✓ Article "${article.title}" (post ${postId}): Found on WP`);
               } else {
                 // Cannot find article on WordPress - delete it
-                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Not found - DELETING`);
+                console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): No ID in response - DELETING`);
                 await storage.deleteArticle(article.id);
                 deletedCount++;
                 deletedIds.push(article.id);
               }
             } catch (checkError: any) {
               // Any error means article doesn't exist - delete it
-              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Error fetching - DELETING`);
+              console.log(`[Sync] ✗ Article "${article.title}" (post ${postId}): Error fetching - ${checkError.message} - DELETING`);
               await storage.deleteArticle(article.id);
               deletedCount++;
               deletedIds.push(article.id);
