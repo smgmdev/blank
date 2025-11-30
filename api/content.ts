@@ -135,7 +135,6 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       if (!credential || !credential.isVerified) return res.status(403).json({ error: "Not authenticated" });
 
       const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
-      const adminAuth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
       
       let featuredMediaId = null;
       let featuredImageUrl = null;
@@ -151,12 +150,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           else if (featuredImageBase64.includes("webp")) { ext = "webp"; ct = "image/webp"; }
           else if (featuredImageBase64.includes("gif")) { ext = "gif"; ct = "image/gif"; }
           
-          console.log("[Publish] Uploading image:", { ext, ct, site: site.url });
+          console.log("[Publish] Uploading image with user auth:", { username: credential.wpUsername, ext, ct, site: site.url });
           
           const mediaResponse = await fetch(`${site.apiUrl}/wp/v2/media`, {
             method: "POST",
             headers: {
-              Authorization: `Basic ${adminAuth}`,
+              Authorization: `Basic ${auth}`,
               "Content-Type": ct,
               "Content-Disposition": `attachment; filename="featured-image.${ext}"`
             },
@@ -208,15 +207,19 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       // If we didn't already get the featured image URL, fetch it now
       if (featuredMediaId && !featuredImageUrl) {
         try {
+          console.log("[Publish] Fetching media data for ID:", featuredMediaId);
           const mediaRes = await fetch(`${site.apiUrl}/wp/v2/media/${featuredMediaId}`, {
             headers: { Authorization: `Basic ${auth}` }
           });
           if (mediaRes.ok) {
             const mediaData = await mediaRes.json();
             featuredImageUrl = mediaData.source_url;
+            console.log("[Publish] Fetched media URL:", featuredImageUrl);
+          } else {
+            console.error("[Publish] Failed to fetch media data:", mediaRes.status);
           }
         } catch (e) {
-          console.error("Failed to fetch media data:", e);
+          console.error("[Publish] Error fetching media data:", e);
         }
       }
 

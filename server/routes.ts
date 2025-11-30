@@ -966,16 +966,14 @@ export async function registerRoutes(
               const site = await storage.getWordPressSite(pub.siteId);
               console.log(`[Sync] Article ${article.id}: wpPostId=${pub.wpPostId}, site=${site?.name}`);
               
-              if (site && pub.wpPostId && site.adminUsername) {
+              if (site && pub.wpPostId) {
                 const postId = parseInt(pub.wpPostId, 10);
                 const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
                 console.log(`[Sync] Checking URL: ${checkUrl}`);
                 
                 try {
-                  const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
-                  const checkRes = await fetch(checkUrl, {
-                    headers: { Authorization: `Basic ${auth}` }
-                  });
+                  // Use public endpoint - no auth needed for checking post existence
+                  const checkRes = await fetch(checkUrl);
                   
                   console.log(`[Sync] Response status: ${checkRes.status}`);
                   
@@ -984,12 +982,14 @@ export async function registerRoutes(
                     await storage.deleteArticle(article.id);
                     deletedCount++;
                     deletedIds.push(article.id);
+                  } else if (!checkRes.ok) {
+                    console.log(`[Sync] Article ${article.id}: Got status ${checkRes.status}, not deleting`);
                   }
                 } catch (fetchError) {
                   console.error(`[Sync] Fetch error for post ${postId}:`, fetchError);
                 }
               } else {
-                console.log(`[Sync] Article ${article.id}: Missing wpPostId or site - skipping check`);
+                console.log(`[Sync] Article ${article.id}: Missing wpPostId - skipping check`);
               }
             }
           } catch (error) {
