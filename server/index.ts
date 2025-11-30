@@ -113,10 +113,9 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
-      // Run auto-sync every 5 minutes (300000ms)
-      setInterval(syncArticles, 300000);
-      // Also run on startup after a short delay
-      setTimeout(syncArticles, 5000);
+      // DISABLED: Auto-sync commented out for manual testing
+      // setInterval(syncArticles, 300000);
+      // setTimeout(syncArticles, 5000);
     },
   );
 })();
