@@ -8,6 +8,15 @@ This is a full-stack web application that enables content creators to write and 
 
 Preferred communication style: Simple, everyday language.
 
+## Database
+
+**Single Database: Supabase (PostgreSQL)**
+- Environment variable: `DATABASE_URL`
+- Uses Supabase connection pooler (port 6543) for serverless compatibility
+- Both Replit and Vercel use the SAME Supabase database
+- All Neon (PGHOST, PGPORT, etc.) environment variables have been removed
+- All application data is stored exclusively in Supabase
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -32,7 +41,7 @@ Preferred communication style: Simple, everyday language.
 
 **Deployment Strategy**: Dual deployment support - traditional Express server for development and Vercel serverless functions for production. The `/api` directory contains serverless endpoint handlers that share database utilities.
 
-**Database Layer**: Drizzle ORM with PostgreSQL (Neon serverless). Connection pooling optimized for serverless with single connection per function instance and 20-second idle timeout.
+**Database Layer**: Drizzle ORM with Supabase PostgreSQL. Connection pooling optimized for serverless with single connection per function instance and 20-second idle timeout. Both Replit and Vercel connect to the same Supabase instance via DATABASE_URL environment variable.
 
 **Key Design Patterns**:
 - Shared database client (`shared/db-client.ts`) prevents connection pool exhaustion
@@ -78,7 +87,7 @@ Preferred communication style: Simple, everyday language.
 
 **WordPress REST API Integration**: Authenticates using Basic Auth with WordPress Application Passwords. Supports creating posts, categories, tags, and uploading media. Handles different SEO plugins (Rank Math, AIO SEO PRO, Yoast).
 
-**Database**: Neon Postgres serverless database accessed via `@neondatabase/serverless` driver. Auto-switches from direct connection (port 5432) to session pooler (port 6543) when deployed on Vercel.
+**Database**: Supabase PostgreSQL accessed via `postgres` npm package. Uses connection pooler on both Replit and Vercel for consistency (port 6543).
 
 **File Upload**: Client-side image handling with base64 encoding for featured images. Uploads to WordPress media library via REST API.
 
