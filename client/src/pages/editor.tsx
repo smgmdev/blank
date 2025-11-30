@@ -571,7 +571,7 @@ export default function Editor() {
     if (!formData.imagePreview) errors.push("Featured image is required");
     if (!formData.imageCaption) errors.push("Image caption is required");
     if (!selectedSiteId) errors.push("Destination site is required");
-    if (plugin === 'aioseo' && !formData.seo.focusKeyword) errors.push("Focus keyword is required for AIOSEO");
+    if (plugin === 'aioseo' && !formData.seo.focusKeyword) errors.push("Focus keyword is required for AIO SEO PRO");
     if (plugin === 'rankmath' && !formData.seo.focusKeyword) errors.push("Focus keyword is required for Rank Math");
     return errors;
   };
@@ -1189,7 +1189,7 @@ export default function Editor() {
               {plugin === 'aioseo' && (
                 <>
                   <div className="space-y-2">
-                    <Label className="text-green-600 font-medium">AIOSEO Score</Label>
+                    <Label className="text-green-600 font-medium">AIO SEO PRO Score</Label>
                     <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full bg-green-500 w-[85%]" />
                     </div>
@@ -1197,7 +1197,7 @@ export default function Editor() {
                   <div className="space-y-2">
                     <Label className="text-green-600 font-medium">Focus Keyword *</Label>
                     <Input 
-                      placeholder="Enter focus keyword for AIOSEO..." 
+                      placeholder="Enter focus keyword for AIO SEO PRO..." 
                       value={formData.seo.focusKeyword}
                       onChange={(e) => setFormData({...formData, seo: {...formData.seo, focusKeyword: e.target.value}})}
                     />
