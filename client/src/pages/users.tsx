@@ -37,8 +37,11 @@ export default function Users() {
     companyName: ""
   });
   const [editUser, setEditUser] = useState({
+    username: "",
     fullName: "",
-    email: ""
+    email: "",
+    companyName: "",
+    password: ""
   });
 
   const handleAdd = () => {
@@ -70,7 +73,13 @@ export default function Users() {
 
   const handleEditOpen = (user: any) => {
     setEditingUser(user);
-    setEditUser({ fullName: user.fullName, email: user.email });
+    setEditUser({ 
+      username: user.username, 
+      fullName: user.fullName, 
+      email: user.email, 
+      companyName: user.companyName || "",
+      password: ""
+    });
     setIsEditOpen(true);
   };
 
@@ -85,13 +94,18 @@ export default function Users() {
     }
 
     try {
+      const updateData: any = {
+        fullName: editUser.fullName,
+        email: editUser.email
+      };
+      
+      if (editUser.companyName) updateData.companyName = editUser.companyName;
+      if (editUser.password) updateData.password = editUser.password;
+
       const response = await fetch(`/api/users/${editingUser.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName: editUser.fullName,
-          email: editUser.email
-        })
+        body: JSON.stringify(updateData)
       });
 
       if (!response.ok) throw new Error("Failed to update user");
@@ -103,7 +117,7 @@ export default function Users() {
 
       setIsEditOpen(false);
       setEditingUser(null);
-      setEditUser({ fullName: "", email: "" });
+      setEditUser({ username: "", fullName: "", email: "", companyName: "", password: "" });
       
       // Refresh users list by reloading page
       window.location.reload();
@@ -204,7 +218,7 @@ export default function Users() {
         </Dialog>
 
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="animate-fade-in w-full sm:max-w-md flex flex-col">
+          <DialogContent className="animate-fade-in w-full sm:max-w-md flex flex-col max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
               <DialogDescription>
@@ -212,6 +226,17 @@ export default function Users() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-username">Username</Label>
+                <Input 
+                  id="edit-username" 
+                  placeholder="e.g. john_smith" 
+                  value={editUser.username}
+                  disabled
+                  className="bg-muted cursor-not-allowed"
+                />
+                <p className="text-xs text-muted-foreground">Username cannot be changed</p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-fullName">Full Name *</Label>
                 <Input 
@@ -229,6 +254,25 @@ export default function Users() {
                   placeholder="user@example.com" 
                   value={editUser.email}
                   onChange={e => setEditUser({...editUser, email: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-companyName">Company Name</Label>
+                <Input 
+                  id="edit-companyName" 
+                  placeholder="e.g. Tech Media Inc" 
+                  value={editUser.companyName}
+                  onChange={e => setEditUser({...editUser, companyName: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-password">Password</Label>
+                <Input 
+                  id="edit-password" 
+                  type="password"
+                  placeholder="Leave blank to keep current password" 
+                  value={editUser.password}
+                  onChange={e => setEditUser({...editUser, password: e.target.value})}
                 />
               </div>
             </div>
