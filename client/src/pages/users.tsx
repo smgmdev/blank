@@ -84,23 +84,23 @@ export default function Users() {
   };
 
   const handleEditSave = async () => {
-    if (!editUser.fullName || !editUser.email) {
-      toast({
-        variant: "destructive",
-        title: "Missing Fields",
-        description: "Please fill in all required fields"
-      });
-      return;
-    }
-
     try {
-      const updateData: any = {
-        fullName: editUser.fullName,
-        email: editUser.email
-      };
+      const updateData: any = {};
       
+      if (editUser.username) updateData.username = editUser.username;
+      if (editUser.fullName) updateData.fullName = editUser.fullName;
+      if (editUser.email) updateData.email = editUser.email;
       if (editUser.companyName) updateData.companyName = editUser.companyName;
       if (editUser.password) updateData.password = editUser.password;
+      
+      if (Object.keys(updateData).length === 0) {
+        toast({
+          variant: "destructive",
+          title: "No Changes",
+          description: "Please enter at least one field to update"
+        });
+        return;
+      }
 
       const response = await fetch(`/api/users/${editingUser.id}`, {
         method: "PATCH",
@@ -232,13 +232,11 @@ export default function Users() {
                   id="edit-username" 
                   placeholder="e.g. john_smith" 
                   value={editUser.username}
-                  disabled
-                  className="bg-muted cursor-not-allowed"
+                  onChange={e => setEditUser({...editUser, username: e.target.value})}
                 />
-                <p className="text-xs text-muted-foreground">Username cannot be changed</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-fullName">Full Name *</Label>
+                <Label htmlFor="edit-fullName">Full Name</Label>
                 <Input 
                   id="edit-fullName" 
                   placeholder="e.g. John Smith" 
@@ -247,7 +245,7 @@ export default function Users() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-email">Email *</Label>
+                <Label htmlFor="edit-email">Email</Label>
                 <Input 
                   id="edit-email" 
                   type="email"
