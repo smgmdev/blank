@@ -258,24 +258,72 @@ export default function Editor() {
     }
   };
 
+  const compressImage = (file: File, maxWidth = 1200, maxHeight = 800, quality = 0.85): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          
+          // Calculate new dimensions
+          if (width > maxWidth || height > maxHeight) {
+            const aspectRatio = width / height;
+            if (width > height) {
+              width = maxWidth;
+              height = Math.round(width / aspectRatio);
+            } else {
+              height = maxHeight;
+              width = Math.round(height * aspectRatio);
+            }
+          }
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+              console.log(`[Image] Compressed: ${file.size} → ${compressedFile.size} bytes`);
+              resolve(compressedFile);
+            } else {
+              reject(new Error('Compression failed'));
+            }
+          }, 'image/jpeg', quality);
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+    });
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
     if (files && files.length > 0) {
       const file = files[0];
       console.log("File selected:", file.name, file.size);
-      fileToBase64(file).then((base64) => {
-        console.log("Setting image from file input, base64 length:", base64.length);
-        setFormData(prevData => ({
-          ...prevData,
-          image: file,
-          imagePreview: base64
-        }));
+      
+      compressImage(file).then((compressedFile) => {
+        fileToBase64(compressedFile).then((base64) => {
+          console.log("Setting image from file input, base64 length:", base64.length);
+          setFormData(prevData => ({
+            ...prevData,
+            image: compressedFile,
+            imagePreview: base64
+          }));
+        });
       }).catch(err => {
-        console.error("FileReader error:", err);
+        console.error("Image compression error:", err);
         toast({
           variant: "destructive",
           title: "Image Error",
-          description: "Failed to read image file"
+          description: "Failed to process image: " + err.message
         });
       });
     }
