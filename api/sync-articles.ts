@@ -79,6 +79,11 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             const resText = await checkRes.text();
             console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress (response: ${resText.substring(0, 200)}) - DELETING`);
             try {
+              // Delete publishing record first (foreign key constraint)
+              await db.delete(articlePublishing).where(eq(articlePublishing.articleId, article.id));
+              console.log(`[Sync] ✓ Deleted publishing record for article ${article.id}`);
+              
+              // Then delete the article
               await db.delete(articles).where(eq(articles.id, article.id));
               console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
               deletedCount++;
