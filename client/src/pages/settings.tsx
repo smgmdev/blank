@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Mail, Save, User as UserIcon, Shield } from "lucide-react";
+import { Lock, Mail, Save, User as UserIcon, Shield, Eye, EyeOff } from "lucide-react";
 
 export default function Settings() {
   const { users, user: currentUserRole } = useStore();
@@ -28,6 +28,13 @@ export default function Settings() {
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [isPinActive, setIsPinActive] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  const [showConfirmPin, setShowConfirmPin] = useState(false);
+  
+  // Password visibility
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [isSaving, setIsSaving] = useState(false);
 
@@ -174,8 +181,13 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl space-y-8 pb-20">
-      <div>
+      <div className="relative">
         <h2 className="text-2xl font-bold tracking-tight">Account Settings</h2>
+        {isAdmin && (
+          <Badge className="absolute top-0 right-0 bg-black text-white rounded-full px-2 py-1 text-xs font-semibold">
+            Global
+          </Badge>
+        )}
         <p className="text-muted-foreground mt-1">Manage your account information and security.</p>
       </div>
 
@@ -185,9 +197,6 @@ export default function Settings() {
           <CardTitle className="flex items-center gap-2">
             <UserIcon className="w-5 h-5" />
             Account Information
-            <Badge className="ml-auto bg-black text-white rounded-full px-3 py-1 text-xs font-semibold">
-              Global
-            </Badge>
           </CardTitle>
           <CardDescription>
             {isAdmin ? "Edit your account details." : "View your account details."}
@@ -242,35 +251,74 @@ export default function Settings() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="current-password">Current Password</Label>
-            <Input
-              id="current-password"
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Enter your current password"
-            />
+            <div className="relative">
+              <Input
+                id="current-password"
+                type={showCurrentPassword ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter your current password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showCurrentPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="new-password">New Password</Label>
-            <Input
-              id="new-password"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter new password"
-            />
+            <div className="relative">
+              <Input
+                id="new-password"
+                type={showNewPassword ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showNewPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="confirm-password">Confirm Password</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm new password"
-            />
+            <div className="relative">
+              <Input
+                id="confirm-password"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
 
           <Button onClick={handlePasswordChange} disabled={isSaving} className="gap-2">
@@ -310,26 +358,52 @@ export default function Settings() {
               <>
                 <div className="space-y-2">
                   <Label htmlFor="pin">4-Digit PIN</Label>
-                  <Input
-                    id="pin"
-                    type="password"
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.slice(0, 4))}
-                    placeholder="0000"
-                    maxLength={4}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="pin"
+                      type={showPin ? "text" : "password"}
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.slice(0, 4))}
+                      placeholder="0000"
+                      maxLength={4}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPin(!showPin)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPin ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="confirm-pin">Confirm PIN</Label>
-                  <Input
-                    id="confirm-pin"
-                    type="password"
-                    value={confirmPin}
-                    onChange={(e) => setConfirmPin(e.target.value.slice(0, 4))}
-                    placeholder="0000"
-                    maxLength={4}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="confirm-pin"
+                      type={showConfirmPin ? "text" : "password"}
+                      value={confirmPin}
+                      onChange={(e) => setConfirmPin(e.target.value.slice(0, 4))}
+                      placeholder="0000"
+                      maxLength={4}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPin(!showConfirmPin)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showConfirmPin ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <Button onClick={handlePinSetup} disabled={isSaving} className="gap-2">
