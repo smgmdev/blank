@@ -1239,6 +1239,29 @@ export async function registerRoutes(
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
+    } else if (type === "publish") {
+      // Proxy to Vercel publish handler
+      try {
+        const contentHandler = await import("../api/content.js");
+        const mockVercelReq = {
+          query: req.query,
+          method: req.method,
+          body: req.body,
+          headers: req.headers,
+          rawBody: req.rawBody
+        } as any;
+        const mockVercelRes = {
+          status: (code: number) => ({
+            json: (data: any) => res.status(code).json(data)
+          }),
+          json: (data: any) => res.json(data),
+          statusCode: 200,
+          setHeader: () => {}
+        } as any;
+        await contentHandler.default(mockVercelReq, mockVercelRes);
+      } catch (error: any) {
+        res.status(500).json({ error: "Publishing failed: " + error.message });
+      }
     } else {
       res.status(400).json({ error: "Invalid type" });
     }
