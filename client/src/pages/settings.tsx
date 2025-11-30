@@ -18,6 +18,7 @@ export default function Settings() {
   // Account fields
   const [email, setEmail] = useState(currentUser?.email || "user@example.com");
   const [username, setUsername] = useState(currentUser?.username || "");
+  const [fullName, setFullName] = useState(currentUser?.fullName || "");
   
   // Password fields
   const [newPassword, setNewPassword] = useState("");
@@ -42,6 +43,7 @@ export default function Settings() {
     const updateData: any = {};
     if (username) updateData.username = username;
     if (email) updateData.email = email;
+    if (fullName) updateData.fullName = fullName;
 
     if (Object.keys(updateData).length === 0) {
       toast({
@@ -218,6 +220,17 @@ export default function Settings() {
               className={!isAdmin ? "bg-muted" : ""}
               onChange={(e) => isAdmin && setEmail(e.target.value)}
               placeholder="your@email.com"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input
+              id="fullName"
+              value={fullName}
+              disabled={!isAdmin}
+              className={!isAdmin ? "bg-muted" : ""}
+              onChange={(e) => isAdmin && setFullName(e.target.value)}
+              placeholder="e.g. John Smith"
             />
           </div>
           {isAdmin && (
