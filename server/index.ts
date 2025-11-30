@@ -67,21 +67,6 @@ app.use((req, res, next) => {
   await ensureSchemaColumns();
   await registerRoutes(httpServer, app);
 
-  // Auto-sync articles every 5 minutes to detect deleted posts
-  const syncArticles = async () => {
-    try {
-      console.log("[AutoSync] Starting scheduled sync...");
-      const response = await fetch('http://localhost:5000/api/sync-articles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await response.json();
-      console.log(`[AutoSync] Sync completed: ${data.deletedCount} articles deleted`);
-    } catch (error: any) {
-      console.error('[AutoSync] Sync failed:', error.message);
-    }
-  };
-
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -113,9 +98,7 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
-      // DISABLED: Auto-sync commented out for manual testing
-      // setInterval(syncArticles, 300000);
-      // setTimeout(syncArticles, 5000);
+      // Manual sync only - no auto-sync
     },
   );
 })();
