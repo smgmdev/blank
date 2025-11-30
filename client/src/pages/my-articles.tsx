@@ -340,7 +340,7 @@ export default function MyArticles() {
               </div>
               <span>{format(new Date(article.publishedAt || new Date()), "MMM d, yyyy · h:mm a zzz")}</span>
             </div>
-            
+          </div>
           </div>
           
           {/* Actions */}
