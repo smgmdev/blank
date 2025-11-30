@@ -110,3 +110,7 @@ export async function getArticlePublishingBySiteAndArticle(siteId: string, artic
     .where(and(eq(schema.articlePublishing.siteId, siteId), eq(schema.articlePublishing.articleId, articleId)));
   return pub;
 }
+
+export async function deleteArticle(id: string): Promise<void> {
+  await db.delete(schema.articles).where(eq(schema.articles.id, id));
+}

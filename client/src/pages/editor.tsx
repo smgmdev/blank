@@ -92,7 +92,7 @@ export default function Editor() {
         }
 
         // Load draft article if editing
-        if (articleId && articleId !== '') {
+        if (articleId && articleId !== '' && articleId !== 'undefined') {
           try {
             const articleRes = await fetch(`/api/content?type=articles&articleId=${articleId}`);
             if (articleRes.ok) {

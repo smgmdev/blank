@@ -33,6 +33,11 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         if (!articleId) return res.status(400).json({ error: "articleId required" });
         const article = await updateArticle(articleId as string, req.body);
         res.json(article);
+      } else if (req.method === "DELETE") {
+        // DELETE article
+        if (!articleId) return res.status(400).json({ error: "articleId required" });
+        await (await import("./db-utils.js")).deleteArticle(articleId as string);
+        res.json({ success: true });
       } else {
         res.status(405).json({ error: "Method not allowed" });
       }
