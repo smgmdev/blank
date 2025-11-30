@@ -90,7 +90,31 @@ export default function MyArticles() {
           // SHOW ARTICLES IMMEDIATELY with cached wpLinks
           setArticles(articlesWithCachedLinks);
           setIsLoading(false);
-          setIsCategoriesLoading(false);
+          
+          // BACKGROUND: Fetch categories for sites with articles (more efficient than all sites)
+          const sitesWithArticles = new Set(userArticles.map(a => a.siteId));
+          const loadCategoriesForSites = async () => {
+            const newCategoryMap: Record<string, Record<number, string>> = {};
+            for (const siteId of sitesWithArticles) {
+              try {
+                const catRes = await fetch(`/api/content?type=categories&userId=${userId}&siteId=${siteId}`, { cache: 'no-store' });
+                if (catRes.ok) {
+                  const categories = await catRes.json();
+                  newCategoryMap[siteId] = {};
+                  categories.forEach((cat: any) => {
+                    newCategoryMap[siteId][cat.id] = cat.name;
+                  });
+                }
+              } catch (e) {
+                console.error(`Failed to fetch categories for site ${siteId}:`, e);
+              }
+            }
+            if (Object.keys(newCategoryMap).length > 0) {
+              setCategoryMap(newCategoryMap);
+            }
+            setIsCategoriesLoading(false);
+          };
+          loadCategoriesForSites();
           
           // BACKGROUND: Sync with WordPress to remove deleted articles
           fetch(`/api/sync-articles`, { method: 'POST' })
