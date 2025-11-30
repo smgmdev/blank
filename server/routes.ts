@@ -1042,9 +1042,14 @@ export async function registerRoutes(
                 // ANY non-OK response means post is deleted/not found
                 if (!checkRes.ok) {
                   console.log(`[Sync] Article ${article.id} marked for deletion - HTTP ${checkRes.status}`);
-                  await storage.deleteArticle(article.id);
-                  deletedCount++;
-                  deletedIds.push(article.id);
+                  try {
+                    await storage.deleteArticle(article.id);
+                    console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                    deletedCount++;
+                    deletedIds.push(article.id);
+                  } catch (delError: any) {
+                    console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                  }
                 } else {
                   // For 200 OK, verify we got actual post data (not empty/deleted)
                   try {
@@ -1058,18 +1063,28 @@ export async function registerRoutes(
                     
                     if (isMissing) {
                       console.log(`[Sync] Article ${article.id} marked for deletion - 200 response but post is empty/missing`);
-                      await storage.deleteArticle(article.id);
-                      deletedCount++;
-                      deletedIds.push(article.id);
+                      try {
+                        await storage.deleteArticle(article.id);
+                        console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                        deletedCount++;
+                        deletedIds.push(article.id);
+                      } catch (delError: any) {
+                        console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                      }
                     } else {
                       console.log(`[Sync] Article ${article.id}: Post exists on WordPress`);
                     }
                   } catch (readError) {
                     // Error parsing response - also treat as deleted
                     console.log(`[Sync] Article ${article.id} marked for deletion - Error parsing 200 response: ${(readError as any).message}`);
-                    await storage.deleteArticle(article.id);
-                    deletedCount++;
-                    deletedIds.push(article.id);
+                    try {
+                      await storage.deleteArticle(article.id);
+                      console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                      deletedCount++;
+                      deletedIds.push(article.id);
+                    } catch (delError: any) {
+                      console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                    }
                   }
                 }
               } catch (fetchError: any) {

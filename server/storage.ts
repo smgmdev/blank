@@ -305,6 +305,9 @@ export class Storage implements IStorage {
   }
 
   async deleteArticle(id: string): Promise<void> {
+    // Delete publishing records first (cascade delete)
+    await db.delete(articlePublishing).where(eq(articlePublishing.articleId, id));
+    // Then delete the article
     await db.delete(articles).where(eq(articles.id, id));
   }
 
