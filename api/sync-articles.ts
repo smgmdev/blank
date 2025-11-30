@@ -50,19 +50,23 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       }
       
       console.log(`[Sync] Site: ${site.name} - checking ${siteArticles.length} articles`);
+      console.log(`[Sync] Site credentials - username: ${site.adminUsername}, hasToken: ${!!site.apiToken}, hasPassword: ${!!site.adminPassword}`);
       
-      // Setup auth headers
+      // Setup auth headers using admin credentials
       const headers: any = {};
       if (site.adminUsername && site.apiToken) {
         const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
         headers.Authorization = `Basic ${auth}`;
+        console.log(`[Sync] Using admin credentials with API Token`);
       } else if (site.adminUsername && site.adminPassword) {
         const auth = Buffer.from(`${site.adminUsername}:${site.adminPassword}`).toString("base64");
         headers.Authorization = `Basic ${auth}`;
+        console.log(`[Sync] Using admin credentials with password`);
+      } else {
+        console.log(`[Sync] WARNING: No admin credentials found! This will likely fail`);
       }
       
       console.log(`[Sync] Checking ${siteArticles.length} article post IDs directly...`);
-      console.log(`[Sync] Auth headers set: ${!!headers.Authorization}, username: ${site.adminUsername}`);
       
       for (const { article, publishing } of siteArticles) {
         const postId = parseInt(publishing.wpPostId, 10);
