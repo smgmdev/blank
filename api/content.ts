@@ -25,7 +25,15 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           try {
             const article = await getArticle(articleId);
             if (!article) return res.status(404).json({ error: "Article not found" });
-            return res.json(article);
+            
+            // Normalize tags and categories
+            const normalized = {
+              ...article,
+              tags: Array.isArray(article.tags) ? article.tags : (article.tags ? JSON.parse(typeof article.tags === 'string' ? article.tags : JSON.stringify(article.tags)) : []),
+              categories: Array.isArray(article.categories) ? article.categories : (article.categories ? JSON.parse(typeof article.categories === 'string' ? article.categories : JSON.stringify(article.categories)) : [])
+            };
+            
+            return res.json(normalized);
           } catch (e: any) {
             console.error('Error fetching article:', articleId, e);
             return res.status(500).json({ error: e.message || "Failed to fetch article" });
@@ -37,8 +45,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         if (!userIdHeader) return res.status(401).json({ error: "User ID required" });
         
         const articles = await getArticlesByUserId(userIdHeader);
-        console.log("[API] Fetched articles for user:", articles.map(a => ({ id: a.id, title: a.title, featured: !!a.featuredImageUrl })));
-        res.json(articles);
+        
+        // Ensure tags are always arrays - fix JSONB serialization issues on Vercel
+        const normalizedArticles = articles.map((article: any) => ({
+          ...article,
+          tags: Array.isArray(article.tags) ? article.tags : (article.tags ? JSON.parse(typeof article.tags === 'string' ? article.tags : JSON.stringify(article.tags)) : []),
+          categories: Array.isArray(article.categories) ? article.categories : (article.categories ? JSON.parse(typeof article.categories === 'string' ? article.categories : JSON.stringify(article.categories)) : [])
+        }));
+        
+        console.log("[API] Fetched articles for user:", normalizedArticles.map(a => ({ id: a.id, title: a.title, featured: !!a.featuredImageUrl, tags: a.tags })));
+        res.json(normalizedArticles);
       } else if (req.method === "POST") {
         const parsed = insertArticleSchema.safeParse(req.body);
         if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
