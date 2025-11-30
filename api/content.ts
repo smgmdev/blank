@@ -4,16 +4,30 @@ import { insertArticleSchema } from "../shared/schema.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
-    const { type, userId, siteId, articleId } = req.query;
+    // Handle Vercel's query params which might be arrays or strings
+    const getQueryParam = (param: any): string | undefined => {
+      if (Array.isArray(param)) return param[0];
+      return param as string | undefined;
+    };
+    
+    const type = getQueryParam(req.query.type);
+    const userId = getQueryParam(req.query.userId);
+    const siteId = getQueryParam(req.query.siteId);
+    const articleId = getQueryParam(req.query.articleId);
 
     // /api/content?type=articles - GET all articles or POST new article
     if (!type || type === "articles") {
       if (req.method === "GET") {
         // GET single article by ID if articleId provided
         if (articleId) {
-          const article = await getArticle(articleId as string);
-          if (!article) return res.status(404).json({ error: "Article not found" });
-          return res.json(article);
+          try {
+            const article = await getArticle(articleId);
+            if (!article) return res.status(404).json({ error: "Article not found" });
+            return res.json(article);
+          } catch (e: any) {
+            console.error('Error fetching article:', articleId, e);
+            return res.status(500).json({ error: e.message || "Failed to fetch article" });
+          }
         }
         
         // GET all articles for user
@@ -32,21 +46,23 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         // UPDATE article
         if (!articleId) return res.status(400).json({ error: "articleId required" });
         try {
-          const article = await updateArticle(articleId as string, req.body);
+          console.log('Updating article:', { articleId, body: req.body });
+          const article = await updateArticle(articleId, req.body);
           if (!article) return res.status(404).json({ error: "Article not found or update failed" });
           res.json(article);
         } catch (e: any) {
-          console.error('Update article error:', e);
+          console.error('Update article error:', { articleId, error: e.message });
           return res.status(500).json({ error: e.message || "Failed to update article" });
         }
       } else if (req.method === "DELETE") {
         // DELETE article
         if (!articleId) return res.status(400).json({ error: "articleId required" });
         try {
-          await deleteArticle(articleId as string);
+          console.log('Deleting article:', articleId);
+          await deleteArticle(articleId);
           res.json({ success: true });
         } catch (e: any) {
-          console.error('Delete article error:', e);
+          console.error('Delete article error:', { articleId, error: e.message });
           return res.status(500).json({ error: e.message || "Failed to delete article" });
         }
       } else {
