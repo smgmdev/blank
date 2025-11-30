@@ -1,11 +1,9 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
+import { getAllAppUsers } from "./db-utils";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
-    // Dynamic import to avoid connection issues at build time
-    const { storage } = await import("../server/storage");
-    
-    const users = await storage.getAllAppUsers();
+    const users = await getAllAppUsers();
     res.json({
       status: "ok",
       database: "connected",
@@ -13,12 +11,11 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       users: users.map(u => ({ id: u.id, username: u.username }))
     });
   } catch (error: any) {
-    console.error("Health check error:", error);
+    console.error("Health check error:", error.message, error.stack);
     res.status(500).json({
       status: "error",
       database: "disconnected",
-      error: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+      error: error.message
     });
   }
 };

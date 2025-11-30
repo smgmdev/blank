@@ -1,0 +1,32 @@
+2025-11-30 00:58:48.197 [info] === LOGIN ENDPOINT CALLED ===
+2025-11-30 00:58:48.197 [info] DATABASE_URL exists: true
+2025-11-30 00:58:48.198 [info] DATABASE_URL length: 84
+2025-11-30 00:58:48.198 [info] Login attempt for username: demo@writer.com
+2025-11-30 00:58:48.198 [info] Importing storage...
+2025-11-30 00:58:48.201 [error] === LOGIN ERROR ===
+2025-11-30 00:58:48.201 [error] Error message: Cannot find module '/var/task/server/storage' imported from /var/task/api/login.js
+2025-11-30 00:58:48.201 [error] Error stack: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/server/storage' imported from /var/task/api/login.js
+    at finalizeResolution (node:internal/modules/esm/resolve:280:11)
+    at moduleResolve (node:internal/modules/esm/resolve:870:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:996:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1039:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:757:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:734:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:317:38)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:685:36)
+    at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+    at ModuleLoader.import (node:internal/modules/esm/loader:684:21)
+2025-11-30 00:58:48.202 [error] Full error: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/server/storage' imported from /var/task/api/login.js
+    at finalizeResolution (node:internal/modules/esm/resolve:280:11)
+    at moduleResolve (node:internal/modules/esm/resolve:870:10)
+    at moduleResolveWithNodePath (node:internal/modules/esm/resolve:996:14)
+    at defaultResolve (node:internal/modules/esm/resolve:1039:79)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:757:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:734:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:317:38)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:685:36)
+    at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+    at ModuleLoader.import (node:internal/modules/esm/loader:684:21) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///var/task/server/storage'
+}
