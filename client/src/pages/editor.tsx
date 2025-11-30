@@ -659,21 +659,22 @@ export default function Editor() {
         localStorage.setItem(`wpLink_${article.id}`, publishResult.wpLink);
       }
 
-      // Cache newly created tags in localStorage so My Articles can display them immediately
-      if (selectedSiteId && Array.isArray(formData.tags)) {
-        const tagMapKey = `tagMap_${selectedSiteId}`;
-        const existingTagMapStr = localStorage.getItem(tagMapKey);
-        const existingTagMap = existingTagMapStr ? JSON.parse(existingTagMapStr) : {};
-        
-        // Add any string tags (custom created) to the map with their IDs
-        formData.tags.forEach((tag: any, idx: number) => {
-          if (typeof tag === 'string') {
-            // Map custom tag name to an ID based on order
-            existingTagMap[`custom_${idx}`] = tag;
+      // Fetch fresh tags from WordPress to get actual tag names for newly created tags
+      if (selectedSiteId && userId) {
+        try {
+          const tagsRes = await fetch(`/api/content?type=tags&userId=${userId}&siteId=${selectedSiteId}`);
+          if (tagsRes.ok) {
+            const freshTags = await tagsRes.json();
+            const tagMapKey = `tagMap_${selectedSiteId}`;
+            const newTagMap: Record<number, string> = {};
+            freshTags.forEach((tag: any) => {
+              newTagMap[tag.id] = tag.name;
+            });
+            localStorage.setItem(tagMapKey, JSON.stringify(newTagMap));
           }
-        });
-        
-        localStorage.setItem(tagMapKey, JSON.stringify(existingTagMap));
+        } catch (e) {
+          console.warn("Failed to fetch fresh tags after publishing:", e);
+        }
       }
 
       setIsPublishing(false);

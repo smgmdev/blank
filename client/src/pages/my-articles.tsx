@@ -387,7 +387,13 @@ export default function MyArticles() {
                   ))}
                 </>
               )}
-              {!isCategoriesLoading && getTagNames().slice(0, 3).map((tagName: string) => (
+              {isCategoriesLoading ? (
+                <div className="flex gap-2">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-5 w-16 bg-muted rounded-full animate-pulse" />
+                  ))}
+                </div>
+              ) : getTagNames().slice(0, 3).map((tagName: string) => (
                 <Badge key={tagName} variant="secondary" className="text-xs text-muted-foreground">{tagName}</Badge>
               ))}
               {!isCategoriesLoading && getTagNames().length > 3 && (
