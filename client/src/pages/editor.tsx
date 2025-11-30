@@ -222,7 +222,10 @@ export default function Editor() {
   };
 
   // Common stop words to exclude from focus keyword
-  const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'be', 'been', 'is', 'this', 'that', 'it', 'which', 'who', 'what', 'when', 'where', 'why', 'how']);
+  const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'be', 'been', 'is', 'this', 'that', 'it', 'which', 'who', 'what', 'when', 'where', 'why', 'how', 'he', 'she', 'me', 'you', 'we', 'they', 'them', 'their']);
+
+  // Global trending SEO keywords - high-value words used when no good keyword found
+  const trendingWords = ['guide', 'tips', 'best', 'tutorial', 'how', 'learn', 'strategy', 'benefits', 'review', 'solution', 'method', 'process', 'tools', 'software', 'app', 'service', 'platform', 'system', 'analysis', 'comparison', 'complete', 'advanced', 'ultimate', 'essential', 'proven', 'effective', 'powerful', 'practical'];
 
   const extractFocusKeyword = (title: string, content: string): string => {
     if (!title || !content) return '';
@@ -247,8 +250,20 @@ export default function Editor() {
       }
     }
 
-    // Fallback: use first substantial word from title
-    return titleWords[0] || '';
+    // Fallback: if we have substantial words, use first one
+    if (titleWords.length > 0) {
+      return titleWords[0];
+    }
+
+    // Final fallback: use trending word from title (if title contains trending words)
+    const trendingInTitle = title.toLowerCase().split(/\s+/).find(word => 
+      trendingWords.includes(word.replace(/[^\w]/g, ''))
+    );
+    if (trendingInTitle) {
+      return trendingInTitle.replace(/[^\w]/g, '');
+    }
+
+    return '';
   };
 
   const generateMetaDescription = (content: string, focusKeyword: string): string => {
@@ -1276,7 +1291,9 @@ export default function Editor() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 SEO Configuration
-                <Badge variant="outline" className="capitalize">{plugin === 'none' ? 'Default WP' : plugin}</Badge>
+                <Badge variant="outline" className="capitalize">
+                  {plugin === 'none' ? 'Default WP' : plugin === 'aioseo' ? 'AIO SEO PRO' : plugin}
+                </Badge>
               </CardTitle>
               <CardDescription>
                 Optimize your content using the connected site's SEO plugin.
