@@ -44,7 +44,7 @@ Preferred communication style: Simple, everyday language.
 - `/api/auth` - User authentication (login, WordPress credential storage)
 - `/api/sites` - WordPress site management and user site connections
 - `/api/content` - Article CRUD operations
-- `/api/sync-articles` - Background sync to verify published articles still exist. **Fixed:** HTTP 400 now correctly identifies deleted posts by checking error code (invalid_id or not_found) before deleting from system
+- `/api/sync-articles` - **Improved Sync Logic:** Fetches all published posts directly from WordPress using admin API credentials, compares against articles in system, and deletes any articles whose post IDs no longer exist on WordPress. Uses pagination to handle sites with many posts.
 - `/api/health` - Database connectivity check
 
 ### Database Schema

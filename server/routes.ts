@@ -957,188 +957,86 @@ export async function registerRoutes(
       const publishedArticles = articles.filter(a => a.status === 'published');
       console.log(`[Sync] Checking ${publishedArticles.length} published articles`);
       
+      // Group articles by site
+      const articlesBySite = new Map<string, any[]>();
       for (const article of publishedArticles) {
+        const publishing = await storage.getArticlePublishingByArticleId(article.id);
+        if (publishing.length > 0) {
+          const siteId = publishing[0].siteId;
+          if (!articlesBySite.has(siteId)) {
+            articlesBySite.set(siteId, []);
+          }
+          articlesBySite.get(siteId)!.push({
+            article,
+            publishing: publishing[0]
+          });
+        }
+      }
+      
+      // For each site, fetch all published posts and compare
+      for (const [siteId, siteArticles] of articlesBySite.entries()) {
+        const site = await storage.getWordPressSite(siteId);
+        if (!site) {
+          console.log(`[Sync] Site ${siteId} not found - skipping`);
+          continue;
+        }
+        
+        console.log(`[Sync] Site: ${site.name} - checking ${siteArticles.length} articles`);
+        
         try {
-          const publishing = await storage.getArticlePublishingByArticleId(article.id);
-          console.log(`[Sync] Article "${article.title}" (${article.id}): found ${publishing.length} publishing records, siteId=${article.siteId}, wpLink=${article.wpLink}`);
-          
-          // If article has wpLink but no publishing record, try to use wpLink to get post ID
-          if (publishing.length === 0 && article.wpLink) {
-            console.log(`[Sync] Article "${article.title}" has wpLink but no publishing record - extracting post ID`);
-            // Try to extract post ID from wpLink like "https://example.com/?p=123" or "https://example.com/posts/123/"
-            const postIdMatch = article.wpLink.match(/[?&]p=(\d+)|\/(\d+)(?:\/$|$)/);
-            const postId = postIdMatch ? (postIdMatch[1] || postIdMatch[2]) : null;
-            
-            if (postId && article.siteId) {
-              const site = await storage.getWordPressSite(article.siteId);
-              if (site) {
-                console.log(`[Sync] Extracted postId=${postId} from wpLink, checking if deleted from WordPress...`);
-                const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
-                
-                try {
-                  const headers: any = {};
-                  if (site.adminUsername && site.apiToken) {
-                    const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
-                    headers.Authorization = `Basic ${auth}`;
-                  }
-                  
-                  const checkRes = await fetch(checkUrl, { headers });
-                  const responseText = await checkRes.text();
-                  
-                  try {
-                    const data = JSON.parse(responseText) as any;
-                    if (data.code === 'rest_post_invalid_id' || 
-                        data.code === 'rest_invalid_param' || 
-                        data.code === 'not_found' ||
-                        data.message?.toLowerCase().includes('not found') ||
-                        data.message?.toLowerCase().includes('invalid post') ||
-                        (checkRes.ok && !data.id)) {
-                      console.log(`[Sync] Article "${article.title}" marked for deletion (post not found on WordPress)`);
-                      await storage.deleteArticle(article.id);
-                      deletedCount++;
-                      deletedIds.push(article.id);
-                    }
-                  } catch {
-                    if (!checkRes.ok) {
-                      console.log(`[Sync] Article "${article.title}" marked for deletion (error response from WordPress)`);
-                      await storage.deleteArticle(article.id);
-                      deletedCount++;
-                      deletedIds.push(article.id);
-                    }
-                  }
-                } catch (fetchError: any) {
-                  console.error(`[Sync] Error checking wpLink for article "${article.title}":`, fetchError.message);
-                }
-              }
-            }
-            continue;
+          // Fetch all published posts from WordPress with admin credentials
+          const headers: any = {};
+          if (site.adminUsername && site.apiToken) {
+            const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+            headers.Authorization = `Basic ${auth}`;
           }
           
-          if (publishing.length > 0) {
-            const pub = publishing[0];
-            const site = await storage.getWordPressSite(pub.siteId);
-            console.log(`[Sync] Article ${article.id}: wpPostId=${pub.wpPostId}, site=${site?.name}`);
+          // Fetch posts (paginate to get all)
+          const allPostIds = new Set<number>();
+          let page = 1;
+          let hasMore = true;
+          
+          while (hasMore) {
+            const postsUrl = `${site.apiUrl}/wp/v2/posts?per_page=100&page=${page}&status=publish`;
+            console.log(`[Sync] Fetching posts page ${page} from ${site.name}`);
             
-            if (site && pub.wpPostId) {
-              const postId = parseInt(pub.wpPostId, 10);
-              const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
-              console.log(`[Sync] Checking URL: ${checkUrl}`);
-              
-              try {
-                // Try with admin credentials first if available, then public
-                const headers: any = {};
-                if (site.adminUsername && site.apiToken) {
-                  const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
-                  headers.Authorization = `Basic ${auth}`;
-                }
-                
-                const checkRes = await Promise.race([
-                  fetch(checkUrl, { headers }),
-                  new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
-                ]) as Response;
-                
-                console.log(`[Sync] Response status: ${checkRes.status}`);
-                
-                // Only treat 404 or 410 as definite deletion indicators
-                if (checkRes.status === 404 || checkRes.status === 410) {
-                  console.log(`[Sync] Article ${article.id} marked for deletion - HTTP ${checkRes.status} (post deleted from WordPress)`);
-                  try {
-                    await storage.deleteArticle(article.id);
-                    console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
-                    deletedCount++;
-                    deletedIds.push(article.id);
-                  } catch (delError: any) {
-                    console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
-                  }
-                } else if (checkRes.ok) {
-                  // For 200 OK, verify we got actual post data (not error/empty/deleted)
-                  try {
-                    const responseText = await checkRes.text();
-                    const data = JSON.parse(responseText) as any;
-                    
-                    console.log(`[Sync] Article ${article.id}: Response code=${data.code}, id=${data.id}, title=${typeof data.title === 'string' ? data.title : (data.title?.raw || '')}`);
-                    
-                    // Check if it's an error response disguised as 200
-                    if (data.code || data.message) {
-                      const errorCode = (data.code || '').toLowerCase();
-                      const errorMsg = (data.message || '').toLowerCase();
-                      if (errorCode.includes('invalid_id') || errorCode.includes('not_found') || errorMsg.includes('not found')) {
-                        console.log(`[Sync] Article ${article.id} marked for deletion - 200 response with error code (${errorCode})`);
-                        try {
-                          await storage.deleteArticle(article.id);
-                          console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
-                          deletedCount++;
-                          deletedIds.push(article.id);
-                        } catch (delError: any) {
-                          console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
-                        }
-                      } else {
-                        console.log(`[Sync] Article ${article.id}: 200 with error but not a deletion (${errorCode})`);
-                      }
-                    } else if (!data.id) {
-                      // No ID means post doesn't exist
-                      console.log(`[Sync] Article ${article.id} marked for deletion - 200 response but no post ID`);
-                      try {
-                        await storage.deleteArticle(article.id);
-                        console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
-                        deletedCount++;
-                        deletedIds.push(article.id);
-                      } catch (delError: any) {
-                        console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
-                      }
-                    } else {
-                      console.log(`[Sync] Article ${article.id}: Post exists on WordPress`);
-                    }
-                  } catch (readError) {
-                    // Error parsing response - assume post doesn't exist if we can't parse it
-                    console.log(`[Sync] Article ${article.id}: Could not parse 200 response, treating as deleted - ${(readError as any).message}`);
-                    try {
-                      await storage.deleteArticle(article.id);
-                      console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
-                      deletedCount++;
-                      deletedIds.push(article.id);
-                    } catch (delError: any) {
-                      console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
-                    }
-                  }
-                } else if (checkRes.status === 400) {
-                  // HTTP 400 - only delete if we confirm it's a "post not found" error
-                  console.log(`[Sync] Article ${article.id}: HTTP 400 response - checking error details`);
-                  try {
-                    const errorText = await checkRes.text();
-                    const errorData = JSON.parse(errorText) as any;
-                    const code = (errorData.code || '').toLowerCase();
-                    
-                    // Only delete if it's definitely a "post not found" error
-                    if (code.includes('invalid_id') || code.includes('not_found')) {
-                      console.log(`[Sync] Article ${article.id} marked for deletion - confirmed post not found (error: ${code})`);
-                      try {
-                        await storage.deleteArticle(article.id);
-                        console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
-                        deletedCount++;
-                        deletedIds.push(article.id);
-                      } catch (delError: any) {
-                        console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
-                      }
-                    } else {
-                      console.log(`[Sync] Article ${article.id}: HTTP 400 but not a deletion error (${code}) - skipping deletion`);
-                    }
-                  } catch (parseError) {
-                    console.log(`[Sync] Article ${article.id}: HTTP 400 but could not parse error - skipping deletion`);
-                  }
-                } else {
-                  // Other error codes (401, 403, 500, etc.) - skip deletion
-                  console.log(`[Sync] Article ${article.id}: HTTP ${checkRes.status} - skipping (not a definite deletion code)`);
-                }
-              } catch (fetchError: any) {
-                console.error(`[Sync] Fetch error for post ${postId}:`, fetchError.message);
-              }
+            const postsRes = await fetch(postsUrl, { headers });
+            if (!postsRes.ok) {
+              console.error(`[Sync] Failed to fetch posts from ${site.name}: HTTP ${postsRes.status}`);
+              break;
+            }
+            
+            const posts = await postsRes.json() as any[];
+            if (posts.length === 0) {
+              hasMore = false;
             } else {
-              console.log(`[Sync] Article ${article.id}: Missing wpPostId - skipping check`);
+              posts.forEach(post => allPostIds.add(post.id));
+              page++;
             }
           }
-        } catch (error) {
-          console.error(`[Sync] Sync check error for article ${article.id}:`, error);
+          
+          console.log(`[Sync] Found ${allPostIds.size} published posts on ${site.name}`);
+          
+          // Now check each article - if its post ID is NOT in WordPress, delete it
+          for (const { article, publishing } of siteArticles) {
+            const postId = parseInt(publishing.wpPostId, 10);
+            
+            if (allPostIds.has(postId)) {
+              console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
+            } else {
+              console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING`);
+              try {
+                await storage.deleteArticle(article.id);
+                console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                deletedCount++;
+                deletedIds.push(article.id);
+              } catch (delError: any) {
+                console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+              }
+            }
+          }
+        } catch (siteError: any) {
+          console.error(`[Sync] Error syncing site ${site.name}:`, siteError.message);
         }
       }
       
