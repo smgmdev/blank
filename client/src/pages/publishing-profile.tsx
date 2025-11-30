@@ -193,6 +193,54 @@ export default function PublishingProfile() {
         <p className="text-muted-foreground text-sm mt-1">Manage how your profile appear on your published article.</p>
       </div>
 
+      {/* Connected Sites */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="w-5 h-5" />
+            Connected Sites
+          </CardTitle>
+          <CardDescription>
+            WordPress sites where you can publish articles.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {connectedSites.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {connectedSites.map((site) => {
+                const favicon = getFavicon(site.url);
+                return (
+                  <div
+                    key={site.id}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors bg-gray-50"
+                    data-testid={`connected-site-${site.id}`}
+                  >
+                    {favicon ? (
+                      <img src={favicon} alt={site.name} className="w-6 h-6 rounded flex-shrink-0" />
+                    ) : (
+                      <div className="w-6 h-6 rounded bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                        <Globe className="w-3 h-3 text-primary" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{site.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{site.url}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              <p className="text-sm">No connected sites yet.</p>
+              <p className="text-xs">Authenticate to sites in the dashboard to start publishing.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
       {/* Profile Preview */}
       <Card>
         <CardHeader>
@@ -276,54 +324,6 @@ export default function PublishingProfile() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* Connected Sites */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="w-5 h-5" />
-            Connected Sites
-          </CardTitle>
-          <CardDescription>
-            WordPress sites where you can publish articles.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {connectedSites.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {connectedSites.map((site) => {
-                const favicon = getFavicon(site.url);
-                return (
-                  <div
-                    key={site.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors bg-gray-50"
-                    data-testid={`connected-site-${site.id}`}
-                  >
-                    {favicon ? (
-                      <img src={favicon} alt={site.name} className="w-6 h-6 rounded flex-shrink-0" />
-                    ) : (
-                      <div className="w-6 h-6 rounded bg-primary/10 flex-shrink-0 flex items-center justify-center">
-                        <Globe className="w-3 h-3 text-primary" />
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">{site.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{site.url}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <p className="text-sm">No connected sites yet.</p>
-              <p className="text-xs">Authenticate to sites in the dashboard to start publishing.</p>
-            </div>
-          )}
         </CardContent>
       </Card>
 
