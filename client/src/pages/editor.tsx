@@ -125,7 +125,7 @@ export default function Editor() {
                 indexed: article.seo?.indexed !== false
               }
             });
-            console.log("[Draft Load] Restored article:", { title: article.title, categories: article.categories, tags: article.tags, imageCaption: article.imageCaption, seo: article.seo });
+            console.log("[Draft Load] Restored article:", { title: article.title, content: article.content, categories: article.categories, tags: article.tags, imageCaption: article.imageCaption, seo: article.seo });
             // Mark editor as not empty
             if (article.content) {
               setIsEditorEmpty(false);
@@ -146,6 +146,13 @@ export default function Editor() {
   // Cache for categories/tags to avoid refetching
   const [categoriesCache, setCategoriesCache] = useState<Record<string, any[]>>({});
   const [tagsCache, setTagsCache] = useState<Record<string, any[]>>({});
+
+  // Update editor HTML whenever formData.content changes (handles both initial load and edits)
+  useEffect(() => {
+    if (editorRef.current && formData.content && step === 1) {
+      editorRef.current.innerHTML = formData.content;
+    }
+  }, [formData.content, step]);
 
   // Load categories and tags when site is selected or draft is loaded
   useEffect(() => {
