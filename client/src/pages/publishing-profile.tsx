@@ -101,9 +101,11 @@ export default function PublishingProfile() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('Image selected:', file.name, 'size:', file.size);
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
+        console.log('Image converted to base64, length:', result.length);
         setProfilePicture(result);
         setPreviewUrl(result);
       };
@@ -132,6 +134,7 @@ export default function PublishingProfile() {
 
     setIsSaving(true);
     try {
+      console.log('Saving profile with image length:', previewUrl?.length || 0);
       // 1. Save to database
       const response = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
@@ -142,10 +145,14 @@ export default function PublishingProfile() {
         })
       });
 
+      console.log('Profile save response:', response.status);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to update profile');
       }
+      
+      const savedUser = await response.json();
+      console.log('Profile saved, image length in response:', savedUser.profilePicture?.length || 0);
 
       // 2. Sync to connected WordPress sites
       try {
@@ -355,9 +362,12 @@ export default function PublishingProfile() {
                   className="gap-2"
                 >
                   <Upload className="w-4 h-4" />
-                  Upload Picture
+                  {previewUrl && previewUrl !== profilePicture ? "Change Picture" : "Upload Picture"}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2">JPG, PNG up to 5MB</p>
+                {previewUrl && previewUrl.startsWith('data:') && (
+                  <p className="text-xs text-green-600 mt-2">✓ Image selected - Click "Update Profile" to save</p>
+                )}
               </div>
             </div>
           </div>
