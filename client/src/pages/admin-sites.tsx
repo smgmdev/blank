@@ -100,7 +100,7 @@ export default function AdminSites() {
 
     setIsVerifying(true);
     try {
-      // First create the site as unverified
+      // First create the site with admin credentials
       const siteResponse = await fetch('/api/sites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -109,6 +109,8 @@ export default function AdminSites() {
           url: newSite.url,
           apiUrl: newSite.apiUrl,
           apiToken: newSite.apiToken,
+          adminUsername: adminCreds.username,
+          adminPassword: adminCreds.password,
           seoPlugin: newSite.seoPlugin
         })
       });
@@ -116,13 +118,13 @@ export default function AdminSites() {
       if (!siteResponse.ok) throw new Error('Failed to create site');
       const site = await siteResponse.json();
 
-      // Now verify the connection using username + apiToken
+      // Now verify the connection using username + password
       const verifyResponse = await fetch(`/api/sites/${site.id}/verify-connection`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           adminUsername: adminCreds.username,
-          adminPassword: newSite.apiToken
+          adminPassword: adminCreds.password
         })
       });
 
