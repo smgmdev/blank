@@ -74,8 +74,30 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     console.log(`[Sync] Complete: ${deletedIds.length} articles removed`);
     
     const syncedArticles = await db.select().from(articles);
-    console.log(`[Sync] Complete: ${deletedIds.length} deleted`);
-    res.json({ success: true, deletedCount: deletedIds.length, deletedIds, articles: syncedArticles });
+    
+    // Normalize tags and categories - same logic as content endpoint for consistency
+    const normalize = (field: any) => {
+      if (Array.isArray(field)) return field;
+      if (typeof field === 'string') {
+        try {
+          return JSON.parse(field);
+        } catch {
+          return [];
+        }
+      }
+      if (field === null || field === undefined) return [];
+      if (typeof field === 'object') return field;
+      return [];
+    };
+    
+    const normalizedArticles = syncedArticles.map((article: any) => ({
+      ...article,
+      tags: normalize(article.tags),
+      categories: normalize(article.categories)
+    }));
+    
+    console.log(`[Sync] Complete: ${deletedIds.length} deleted, returning ${normalizedArticles.length} articles`);
+    res.json({ success: true, deletedCount: deletedIds.length, deletedIds, articles: normalizedArticles });
   } catch (error: any) {
     console.error("Sync error:", error);
     res.status(500).json({ error: error.message || "Failed to sync articles" });
