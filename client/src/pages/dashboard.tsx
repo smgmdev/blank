@@ -191,7 +191,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <p className="text-muted-foreground">Authenticate to sites to publish articles.</p>
         <Button 
           variant="outline" 
           size="sm"
