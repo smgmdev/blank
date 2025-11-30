@@ -9,16 +9,17 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Upload, Loader2 } from "lucide-react";
 
-// Mock function to fetch WP profile data
-const fetchWPProfile = async () => {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve({
-        displayName: "John Smith - WordPress User",
-        profilePicture: "https://api.dicebear.com/7.x/avataaars/svg?seed=wordpress-user"
-      });
-    }, 500);
-  });
+// Fetch WordPress user profile data from the API
+const fetchWPProfile = async (userId: string) => {
+  try {
+    const response = await fetch(`/api/wp-user-profile?userId=${userId}`);
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (e) {
+    console.error('Failed to fetch WP profile from API', e);
+  }
+  return null;
 };
 
 export default function PublishingProfile() {
@@ -37,13 +38,17 @@ export default function PublishingProfile() {
     const loadWPProfile = async () => {
       setIsLoading(true);
       try {
-        const wpData = await fetchWPProfile();
-        if (wpData && typeof wpData === 'object') {
-          const { displayName: wpDisplayName, profilePicture: wpProfilePicture } = wpData as { displayName: string; profilePicture: string };
-          // If no profile is saved yet, use WP data
-          if (!publishingProfile?.displayName) {
-            setDisplayName(wpDisplayName);
-            setPreviewUrl(wpProfilePicture);
+        if (userId) {
+          const wpData = await fetchWPProfile(userId);
+          if (wpData && typeof wpData === 'object') {
+            const { displayName: wpDisplayName, profilePicture: wpProfilePicture } = wpData as { displayName: string; profilePicture?: string };
+            // If no profile is saved yet, use WP data
+            if (!publishingProfile?.displayName) {
+              setDisplayName(wpDisplayName);
+              if (wpProfilePicture) {
+                setPreviewUrl(wpProfilePicture);
+              }
+            }
           }
         }
       } catch (e) {
@@ -53,7 +58,7 @@ export default function PublishingProfile() {
       }
     };
     loadWPProfile();
-  }, [publishingProfile]);
+  }, [publishingProfile, userId]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
