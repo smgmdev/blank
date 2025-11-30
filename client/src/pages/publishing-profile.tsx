@@ -22,7 +22,7 @@ const fetchWPProfile = async () => {
 };
 
 export default function PublishingProfile() {
-  const { publishingProfile, updatePublishingProfile } = useStore();
+  const { publishingProfile, updatePublishingProfile, loadPublishingProfileFromAPI } = useStore();
   const { toast } = useToast();
   const [displayName, setDisplayName] = useState(publishingProfile?.displayName || "");
   const [profilePicture, setProfilePicture] = useState(publishingProfile?.profilePicture || "");
@@ -103,11 +103,8 @@ export default function PublishingProfile() {
         throw new Error(error.error || 'Failed to update profile');
       }
 
-      updatePublishingProfile({
-        userId,
-        displayName,
-        profilePicture: previewUrl || undefined
-      });
+      // Refetch from API to ensure it was saved to database and synced
+      await loadPublishingProfileFromAPI(userId);
 
       toast({
         title: "Profile Updated",
