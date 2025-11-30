@@ -179,3 +179,20 @@ export async function deleteArticle(id: string): Promise<void> {
   const database = getDatabase();
   await database.delete(schema.articles).where(eq(schema.articles.id, id));
 }
+
+export async function getAppUserById(userId: string): Promise<any | undefined> {
+  const database = getDatabase();
+  try {
+    const [user] = await database.select().from(schema.appUsers).where(eq(schema.appUsers.id, userId));
+    return user;
+  } catch (e: any) {
+    console.error("[DB] getAppUserById failed:", e.message || e);
+    throw e;
+  }
+}
+
+export async function updateAppUser(userId: string, updates: any): Promise<any> {
+  const database = getDatabase();
+  await database.update(schema.appUsers).set(updates).where(eq(schema.appUsers.id, userId));
+  return await getAppUserById(userId);
+}
