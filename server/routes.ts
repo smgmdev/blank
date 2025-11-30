@@ -1013,7 +1013,7 @@ export async function registerRoutes(
         res.json({
           id: user.id,
           email: user.email,
-          isAdmin: user.role === "admin"
+          role: user.role
         });
       } catch (error) {
         res.status(500).json({ error: "Failed to login" });

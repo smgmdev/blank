@@ -45,11 +45,15 @@ export default function Login() {
       }
 
       const user = await response.json();
+      if (!user.id || !user.role) {
+        throw new Error('Invalid login response');
+      }
       // Store user ID for authenticated requests
       localStorage.setItem('userId', user.id);
       localStorage.setItem('userRole', user.role);
       login(user.role);
       setLocation(user.role === 'admin' ? '/admin/sites' : '/dashboard');
+      setIsLoading(false);
     } catch (error) {
       toast({
         variant: "destructive",
