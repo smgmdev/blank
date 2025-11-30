@@ -418,7 +418,7 @@ export default function MyArticles() {
             )}
           </div>
           <Link href="/editor">
-            <Button className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">
               Write New Article
             </Button>
           </Link>
