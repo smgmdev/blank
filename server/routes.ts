@@ -953,48 +953,93 @@ export async function registerRoutes(
       let deletedCount = 0;
       const deletedIds: string[] = [];
       
-      console.log(`[Sync] Starting sync check for ${articles.length} articles`);
+      console.log(`[Sync] Starting sync - found ${articles.length} total articles`);
+      const publishedArticles = articles.filter(a => a.status === 'published');
+      console.log(`[Sync] Checking ${publishedArticles.length} published articles`);
       
-      for (const article of articles) {
-        if (article.status === 'published' && article.siteId) {
-          try {
-            const publishing = await storage.getArticlePublishingByArticleId(article.id);
-            console.log(`[Sync] Article ${article.id}: found ${publishing.length} publishing records`);
+      for (const article of publishedArticles) {
+        try {
+          const publishing = await storage.getArticlePublishingByArticleId(article.id);
+          console.log(`[Sync] Article ${article.id}: found ${publishing.length} publishing records`);
+          
+          if (publishing.length > 0) {
+            const pub = publishing[0];
+            const site = await storage.getWordPressSite(pub.siteId);
+            console.log(`[Sync] Article ${article.id}: wpPostId=${pub.wpPostId}, site=${site?.name}`);
             
-            if (publishing.length > 0) {
-              const pub = publishing[0];
-              const site = await storage.getWordPressSite(pub.siteId);
-              console.log(`[Sync] Article ${article.id}: wpPostId=${pub.wpPostId}, site=${site?.name}`);
+            if (site && pub.wpPostId) {
+              const postId = parseInt(pub.wpPostId, 10);
+              const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
+              console.log(`[Sync] Checking URL: ${checkUrl}`);
               
-              if (site && pub.wpPostId) {
-                const postId = parseInt(pub.wpPostId, 10);
-                const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
-                console.log(`[Sync] Checking URL: ${checkUrl}`);
+              try {
+                // Try with admin credentials first if available, then public
+                const headers: any = {};
+                if (site.adminUsername && site.apiToken) {
+                  const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+                  headers.Authorization = `Basic ${auth}`;
+                }
                 
+                const checkRes = await Promise.race([
+                  fetch(checkUrl, { headers }),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+                ]) as Response;
+                
+                console.log(`[Sync] Response status: ${checkRes.status}`);
+                
+                // Always read and check response body - different WordPress sites behave differently
                 try {
-                  // Use public endpoint - no auth needed for checking post existence
-                  const checkRes = await fetch(checkUrl);
+                  const responseText = await checkRes.text();
+                  let isDeleted = false;
+                  let reason = '';
                   
-                  console.log(`[Sync] Response status: ${checkRes.status}`);
+                  // Try to parse as JSON
+                  try {
+                    const data = JSON.parse(responseText) as any;
+                    
+                    // Check for error patterns
+                    if (data.code === 'rest_post_invalid_id' || 
+                        data.code === 'rest_invalid_param' || 
+                        data.code === 'not_found' ||
+                        data.message?.toLowerCase().includes('not found') ||
+                        data.message?.toLowerCase().includes('invalid post')) {
+                      isDeleted = true;
+                      reason = `error code: ${data.code || data.message}`;
+                    }
+                    
+                    // For 200 responses, verify we got actual post data
+                    if (checkRes.ok && !data.id) {
+                      isDeleted = true;
+                      reason = '200 response but no post data';
+                    }
+                  } catch {
+                    // Not JSON - for non-JSON error responses, treat as deleted
+                    if (!checkRes.ok) {
+                      isDeleted = true;
+                      reason = `non-JSON error (status ${checkRes.status})`;
+                    }
+                  }
                   
-                  if (checkRes.status === 404) {
-                    console.log(`[Sync] Article ${article.id} deleted from WordPress - removing from app`);
+                  if (isDeleted) {
+                    console.log(`[Sync] Article ${article.id} marked for deletion - ${reason}`);
                     await storage.deleteArticle(article.id);
                     deletedCount++;
                     deletedIds.push(article.id);
-                  } else if (!checkRes.ok) {
-                    console.log(`[Sync] Article ${article.id}: Got status ${checkRes.status}, not deleting`);
+                  } else if (checkRes.ok) {
+                    console.log(`[Sync] Article ${article.id}: Post exists on WordPress`);
                   }
-                } catch (fetchError) {
-                  console.error(`[Sync] Fetch error for post ${postId}:`, fetchError);
+                } catch (readError) {
+                  console.error(`[Sync] Error reading response for post ${postId}:`, readError);
                 }
-              } else {
-                console.log(`[Sync] Article ${article.id}: Missing wpPostId - skipping check`);
+              } catch (fetchError: any) {
+                console.error(`[Sync] Fetch error for post ${postId}:`, fetchError.message);
               }
+            } else {
+              console.log(`[Sync] Article ${article.id}: Missing wpPostId - skipping check`);
             }
-          } catch (error) {
-            console.error(`[Sync] Sync check error for article ${article.id}:`, error);
           }
+        } catch (error) {
+          console.error(`[Sync] Sync check error for article ${article.id}:`, error);
         }
       }
       

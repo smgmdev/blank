@@ -22,6 +22,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     console.log(`[Sync] Starting sync - found ${allArticles.length} total articles, ${articlesToCheck.length} published`);
     console.log(`[Sync] Found ${publishingRecords.length} publishing records`);
+    console.log(`[Sync] Article IDs to check: ${articlesToCheck.map((a: any) => a.id).join(', ')}`);
+    console.log(`[Sync] Publishing record article IDs: ${publishingRecords.map((p: any) => p.articleId).join(', ')}`);
     
     // Check each published article
     const checkPromises = articlesToCheck.map(async (article) => {
