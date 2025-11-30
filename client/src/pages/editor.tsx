@@ -1308,7 +1308,7 @@ export default function Editor() {
                 <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-wider">SEO Plugin</Label>
                   <div className="mt-1 font-medium capitalize flex items-center gap-2">
-                    {plugin === 'none' ? 'Default WordPress' : plugin}
+                    {plugin === 'none' ? 'Default WordPress' : plugin === 'aioseo' ? 'AIO SEO PRO' : plugin === 'rankmath' ? 'Rank Math' : plugin === 'yoast' ? 'Yoast SEO' : plugin}
                     {isSeoComplete() && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                   </div>
                   {plugin === 'aioseo' && (
