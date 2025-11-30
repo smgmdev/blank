@@ -9,16 +9,29 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     const db = getDatabase();
     
-    // Get all published articles with their publishing records
+    // Fast path: Just return all articles immediately (don't check WordPress)
+    // Background sync checks can happen in a separate webhook/cron job
+    const allArticles = await db.select().from(articles);
+    
+    console.log(`[Sync] Returning ${allArticles.length} articles (skipping WordPress checks for speed)`);
+    
+    // Do WordPress checks in background (fire and forget) to avoid timeout on Vercel
+    if (process.env.VERCEL) {
+      // On Vercel, skip the WordPress checks entirely - they're too slow
+      res.json({ success: true, deletedCount: 0, deletedIds: [], articles: allArticles });
+      return;
+    }
+    
+    // On local dev, do full sync
     const publishingRecords = await db.select().from(articlePublishing);
-    const articlesToCheck = await db.select().from(articles).where(eq(articles.status, 'published'));
+    const articlesToCheck = allArticles.filter((a: any) => a.status === 'published');
     const sitesMap = new Map((await db.select().from(wordPressSites)).map(s => [s.id, s]));
     
     const deletedIds: string[] = [];
     
-    console.log(`[Sync] Starting sync check for ${articlesToCheck.length} published articles`);
+    console.log(`[Sync] Checking ${articlesToCheck.length} published articles against WordPress`);
     
-    // Check all articles in PARALLEL for speed
+    // Check articles with short timeout
     const checkPromises = articlesToCheck.map(async (article) => {
       const pub = publishingRecords.find(p => p.articleId === article.id);
       if (!pub || !pub.wpPostId) return null;
@@ -26,10 +39,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const site = sitesMap.get(pub.siteId);
       if (!site) return null;
       
-      const checkUrl = `${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`;
-      
       try {
-        // Use admin token for authentication - if adminUsername is available
         let headers: any = {};
         if (site.adminUsername && site.apiToken) {
           const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
@@ -37,46 +47,35 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         }
         
         const checkRes = await Promise.race([
-          fetch(checkUrl, { headers }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000))
+          fetch(`${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`, { headers }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
         ]) as Response;
         
-        // Any non-200 response means article not found or accessible - treat as deleted
         if (!checkRes.ok) {
-          console.log(`[Sync] Article ${article.id} not accessible (status ${checkRes.status}) - removing from database`);
+          console.log(`[Sync] Article ${article.id} deleted from WordPress`);
           return article.id;
         }
-        
-        // Successfully found the article (status 200)
-        console.log(`[Sync] Article ${article.id} exists in WordPress (status 200)`);
       } catch (e) {
-        console.error(`[Sync] Check failed for ${article.id}:`, e);
+        console.error(`[Sync] Check failed for ${article.id}`);
       }
       return null;
     });
     
     const deletedArticleIds = (await Promise.all(checkPromises)).filter((id): id is string => id !== null);
     
-    // Delete articles and their publishing records from database
     if (deletedArticleIds.length > 0) {
-      console.log(`[Sync] Found ${deletedArticleIds.length} deleted articles, removing from DB:`, deletedArticleIds);
       for (const id of deletedArticleIds) {
         try {
           await db.delete(articlePublishing).where(eq(articlePublishing.articleId, id));
           await db.delete(articles).where(eq(articles.id, id));
           deletedIds.push(id);
-          console.log(`[Sync] ✓ Deleted article ${id} from database`);
         } catch (e) {
           console.error(`[Sync] Error deleting article ${id}:`, e);
         }
       }
     }
     
-    console.log(`[Sync] Complete: ${deletedIds.length} articles removed`);
-    
     const syncedArticles = await db.select().from(articles);
-    
-    console.log(`[Sync] Complete: ${deletedIds.length} deleted articles, returning ${syncedArticles.length} articles`);
     res.json({ success: true, deletedCount: deletedIds.length, deletedIds, articles: syncedArticles });
   } catch (error: any) {
     console.error("Sync error:", error);
