@@ -213,7 +213,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-start text-xs lg:text-sm min-w-0 gap-0.5">
-                    <span className="font-medium truncate">{userInfo?.fullName || 'User'}</span>
+                    <span className="font-medium truncate">{isAdmin ? 'Administrator' : (userInfo?.fullName || 'User')}</span>
                     <span className="text-muted-foreground text-xs">Account</span>
                   </div>
                 </div>
