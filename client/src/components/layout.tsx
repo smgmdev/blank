@@ -28,33 +28,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const { user, logout, isPublishing } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [publishingProfile, setPublishingProfile] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<any>(null);
 
-  // Fetch profile from Supabase (via API) - always fresh from database
-  const fetchProfile = () => {
-    const userId = localStorage.getItem('userId');
-    if (userId) {
-      fetch(`/api/users/${userId}`)
-        .then(res => res.ok ? res.json() : null)
-        .then(user => {
-          if (user) {
-            setPublishingProfile({
-              userId,
-              displayName: user.displayName || 'Content Creator',
-              profilePicture: user.profilePicture
-            });
-          }
-        })
-        .catch(e => console.debug('Profile fetch:', e));
-    }
-  };
-
+  // Fetch user info from Supabase
   useEffect(() => {
     if (user) {
-      fetchProfile();
-      // Listen for profile updates from other pages
-      window.addEventListener('profile-updated', fetchProfile);
-      return () => window.removeEventListener('profile-updated', fetchProfile);
+      const userId = localStorage.getItem('userId');
+      if (userId) {
+        fetch(`/api/users/${userId}`)
+          .then(res => res.ok ? res.json() : null)
+          .then(userData => {
+            if (userData) {
+              setUserInfo(userData);
+            }
+          })
+          .catch(e => console.debug('User fetch:', e));
+      }
     }
   }, [user]);
 
@@ -81,7 +70,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { label: "Write New Article", headerLabel: "Editor", icon: PenTool, href: "/editor", show: true },
     { label: "Site Management", headerLabel: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
     { label: "User Management", headerLabel: "User Management", icon: Users, href: "/admin/users", show: isAdmin },
-    { label: "Publisher Profile", headerLabel: "Publisher Profile", icon: User, href: "/publishing-profile", show: !isAdmin },
   ];
 
   const handleNavClick = () => {
@@ -207,7 +195,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Button>
         </div>
 
-        {/* System Account - Top of sidebar */}
+        {/* User Account - Top of sidebar */}
         <div className="p-4 border-b border-border">
           <DropdownMenu open={isPublishing ? false : undefined} onOpenChange={isPublishing ? () => {} : undefined}>
             <DropdownMenuTrigger asChild>
@@ -218,14 +206,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               >
                 <div className={`flex items-center gap-3 min-w-0 ${isPublishing ? 'opacity-50' : ''}`}>
                   <Avatar className="w-8 h-8 border flex-shrink-0">
-                    {publishingProfile?.profilePicture && <AvatarImage src={publishingProfile.profilePicture} />}
                     <AvatarFallback>
-                      {isAdmin ? 'AD' : (publishingProfile?.displayName?.charAt(0).toUpperCase() || 'U')}
+                      {userInfo?.fullName 
+                        ? userInfo.fullName.split(' ').slice(0, 2).map((n: string) => n.charAt(0)).join('').toUpperCase()
+                        : (isAdmin ? 'AD' : 'U')}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-start text-xs min-w-0">
-                    <span className="font-medium">{isAdmin ? 'Administrator' : (publishingProfile?.displayName || 'Content Creator')}</span>
-                    <span className="text-muted-foreground">System Account</span>
+                    <span className="font-medium">{isAdmin ? 'Administrator' : (userInfo?.fullName || 'User')}</span>
+                    <span className="text-muted-foreground">Account</span>
                   </div>
                 </div>
               </Button>
@@ -248,7 +237,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.filter(item => item.show && item.href !== "/publishing-profile").map((item) => {
+          {navItems.filter(item => item.show).map((item) => {
             const isActive = location === item.href;
             return (
               <Link key={item.href} href={item.href}>
@@ -267,24 +256,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
-
-          {/* Publishing Profile - shown only for creators, right after nav items */}
-          {!isAdmin && (
-            <Link href="/publishing-profile">
-              <div 
-                onClick={handleNavClick}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${isPublishing ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'cursor-pointer'}
-                  ${location === "/publishing-profile"
-                    ? "bg-primary/10 text-primary" 
-                    : "text-muted-foreground hover:bg-blue-50 hover:text-blue-600"}
-                `}
-              >
-                <User className="w-4 h-4" />
-                Publisher Profile
-              </div>
-            </Link>
-          )}
         </nav>
       </aside>
 

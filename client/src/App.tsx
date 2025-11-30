@@ -13,12 +13,11 @@ import Dashboard from "@/pages/dashboard";
 import AdminSites from "@/pages/admin-sites";
 import Editor from "@/pages/editor";
 import Users from "@/pages/users";
-import PublishingProfile from "@/pages/publishing-profile";
 import MyArticles from "@/pages/my-articles";
 import Settings from "@/pages/settings";
 
 function Router() {
-  const { user, initializeFromStorage, loadPublishingProfileFromAPI } = useStore();
+  const { user, initializeFromStorage } = useStore();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -27,16 +26,6 @@ function Router() {
     const timer = setTimeout(() => setIsLoading(false), 1500);
     return () => clearTimeout(timer);
   }, [initializeFromStorage]);
-
-  // Load publishing profile from database when user is logged in
-  useEffect(() => {
-    if (user) {
-      const userId = localStorage.getItem('userId');
-      if (userId) {
-        loadPublishingProfileFromAPI(userId);
-      }
-    }
-  }, [user, loadPublishingProfileFromAPI]);
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -68,12 +57,6 @@ function Router() {
       <Route path="/admin/users">
         <Layout>
           <Users />
-        </Layout>
-      </Route>
-
-      <Route path="/publishing-profile">
-        <Layout>
-          <PublishingProfile />
         </Layout>
       </Route>
       

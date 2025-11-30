@@ -12,12 +12,6 @@ export interface User {
   createdAt: string;
 }
 
-export interface PublishingProfile {
-  userId: string;
-  displayName: string;
-  profilePicture?: string;
-}
-
 export interface Site {
   id: string;
   name: string;
@@ -56,12 +50,10 @@ interface AppState {
   sites: Site[];
   articles: Article[];
   users: User[];
-  publishingProfile: PublishingProfile | null;
   isPublishing: boolean;
   login: (type: 'admin' | 'user') => void;
   logout: () => void;
   initializeFromStorage: () => void;
-  loadPublishingProfileFromAPI: (userId: string) => Promise<void>;
   addSite: (site: Omit<Site, 'id' | 'isConnected' | 'authCode'>, authCode: string) => void;
   connectSite: (siteId: string) => void;
   disconnectSite: (siteId: string) => void;
@@ -69,7 +61,6 @@ interface AppState {
   deleteArticle: (id: string) => void;
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
   deleteUser: (id: string) => void;
-  updatePublishingProfile: (profile: PublishingProfile) => void;
   setIsPublishing: (isPublishing: boolean) => void;
 }
 
@@ -87,11 +78,6 @@ export const useStore = create<AppState>((set) => ({
       createdAt: new Date().toISOString()
     }
   ],
-  publishingProfile: {
-    userId: '1',
-    displayName: 'John Smith',
-    profilePicture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John'
-  },
   sites: [
     { id: '1', name: 'TechCrunch Clone', url: 'https://tech.blog', seoPlugin: 'rankmath', authCode: 'demo-auth-123', isConnected: false },
     { id: '2', name: 'Daily Recipes', url: 'https://yummy.food', seoPlugin: 'aioseo', authCode: 'demo-auth-456', isConnected: true },
@@ -167,26 +153,5 @@ export const useStore = create<AppState>((set) => ({
   deleteUser: (id) => set((state) => ({
     users: state.users.filter(u => u.id !== id)
   })),
-  updatePublishingProfile: (profile) => set({ publishingProfile: profile }),
   setIsPublishing: (isPublishing) => set({ isPublishing }),
-  loadPublishingProfileFromAPI: async (userId: string) => {
-    try {
-      const response = await fetch(`/api/users/${userId}`);
-      if (response.ok) {
-        const user = await response.json();
-        if (user.displayName || user.profilePicture) {
-          useStore.setState({
-            publishingProfile: {
-              userId,
-              displayName: user.displayName || 'Content Creator',
-              profilePicture: user.profilePicture
-            }
-          });
-        }
-      }
-    } catch (error) {
-      // Silently fail - profile loading is optional and shouldn't break login
-      console.debug('Profile loading skipped');
-    }
-  }
 }));
