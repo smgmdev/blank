@@ -659,6 +659,23 @@ export default function Editor() {
         localStorage.setItem(`wpLink_${article.id}`, publishResult.wpLink);
       }
 
+      // Cache newly created tags in localStorage so My Articles can display them immediately
+      if (selectedSiteId && Array.isArray(formData.tags)) {
+        const tagMapKey = `tagMap_${selectedSiteId}`;
+        const existingTagMapStr = localStorage.getItem(tagMapKey);
+        const existingTagMap = existingTagMapStr ? JSON.parse(existingTagMapStr) : {};
+        
+        // Add any string tags (custom created) to the map with their IDs
+        formData.tags.forEach((tag: any, idx: number) => {
+          if (typeof tag === 'string') {
+            // Map custom tag name to an ID based on order
+            existingTagMap[`custom_${idx}`] = tag;
+          }
+        });
+        
+        localStorage.setItem(tagMapKey, JSON.stringify(existingTagMap));
+      }
+
       setIsPublishing(false);
       toast({
         title: "Published Successfully!",
