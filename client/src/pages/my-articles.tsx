@@ -34,6 +34,7 @@ export default function MyArticles() {
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('published');
@@ -221,6 +222,7 @@ export default function MyArticles() {
           }
         }
         setCategoryMap(newCategoryMap);
+        setIsCategoriesLoading(false);
         
         // Fetch WordPress links with per-article loading state
         const articlesWithLinks = userArticles.map((article: any) => {
@@ -282,13 +284,22 @@ export default function MyArticles() {
       return article.categories.map((catId: any) => {
         // If it's a number ID, look it up in the map
         if (typeof catId === 'number') {
-          return siteCategories[catId] || `Category ${catId}`;
+          return siteCategories[catId] || null;  // Return null if loading, don't show raw ID
         }
         // If it's already an object with name, use it
         if (typeof catId === 'object' && catId.name) return catId.name;
         // Otherwise convert to string
         return String(catId);
-      });
+      }).filter(Boolean);  // Filter out null values
+    };
+    
+    // Check if ANY categories are still loading for this article
+    const hasMissingCategories = () => {
+      if (isCategoriesLoading || !Array.isArray(article.categories) || !site) return true;
+      const siteCategories = categoryMap[site.id] || {};
+      return article.categories.some((catId: any) => 
+        typeof catId === 'number' && !siteCategories[catId]
+      );
     };
     
     return (
@@ -324,13 +335,22 @@ export default function MyArticles() {
             
             {/* Category & Tags */}
             <div className="flex flex-wrap gap-2 mt-2">
-              {getCategoryNames().map((catName: string) => (
-                <Badge key={catName} variant="outline" className="text-xs">{catName}</Badge>
-              ))}
-              {Array.isArray(article.tags) && article.tags.slice(0, 3).map((tag: any) => (
+              {isCategoriesLoading || hasMissingCategories() ? (
+                <>
+                  <div className="h-5 w-24 bg-muted rounded animate-pulse" />
+                  <div className="h-5 w-20 bg-muted rounded animate-pulse" />
+                </>
+              ) : (
+                <>
+                  {getCategoryNames().map((catName: string) => (
+                    <Badge key={catName} variant="outline" className="text-xs">{catName}</Badge>
+                  ))}
+                </>
+              )}
+              {!isCategoriesLoading && Array.isArray(article.tags) && article.tags.slice(0, 3).map((tag: any) => (
                 <Badge key={tag} variant="secondary" className="text-xs text-muted-foreground">{tag}</Badge>
               ))}
-              {Array.isArray(article.tags) && article.tags.length > 3 && (
+              {!isCategoriesLoading && Array.isArray(article.tags) && article.tags.length > 3 && (
                 <Badge variant="secondary" className="text-xs text-muted-foreground">+{article.tags.length - 3}</Badge>
               )}
             </div>
