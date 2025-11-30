@@ -1079,15 +1079,29 @@ export async function registerRoutes(
                     console.log(`[Sync] Article ${article.id}: Could not parse 200 response: ${(readError as any).message}`);
                   }
                 } else if (checkRes.status === 400) {
-                  // HTTP 400 means post was deleted or doesn't exist on WordPress - FIXED_DELETION_CHECK_V2
-                  console.log(`[Sync] Article ${article.id}: Handling HTTP 400 response - treating as post deletion`);
+                  // HTTP 400 - only delete if we confirm it's a "post not found" error
+                  console.log(`[Sync] Article ${article.id}: HTTP 400 response - checking error details`);
                   try {
-                    await storage.deleteArticle(article.id);
-                    console.log(`[Sync] ✓ Successfully deleted article ${article.id} (HTTP 400)`);
-                    deletedCount++;
-                    deletedIds.push(article.id);
-                  } catch (delError: any) {
-                    console.error(`[Sync] ERROR deleting article ${article.id} on HTTP 400:`, delError.message);
+                    const errorText = await checkRes.text();
+                    const errorData = JSON.parse(errorText) as any;
+                    const code = (errorData.code || '').toLowerCase();
+                    
+                    // Only delete if it's definitely a "post not found" error
+                    if (code.includes('invalid_id') || code.includes('not_found')) {
+                      console.log(`[Sync] Article ${article.id} marked for deletion - confirmed post not found (error: ${code})`);
+                      try {
+                        await storage.deleteArticle(article.id);
+                        console.log(`[Sync] ✓ Successfully deleted article ${article.id}`);
+                        deletedCount++;
+                        deletedIds.push(article.id);
+                      } catch (delError: any) {
+                        console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
+                      }
+                    } else {
+                      console.log(`[Sync] Article ${article.id}: HTTP 400 but not a deletion error (${code}) - skipping deletion`);
+                    }
+                  } catch (parseError) {
+                    console.log(`[Sync] Article ${article.id}: HTTP 400 but could not parse error - skipping deletion`);
                   }
                 } else {
                   // Other error codes (401, 403, 500, etc.) - skip deletion
