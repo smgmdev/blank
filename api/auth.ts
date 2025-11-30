@@ -49,7 +49,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         }
         
         // For now, return userId as sessionId (session table support will be added)
-        res.json({ id: user.id, email: user.email, role: user.role, sessionId: user.id });
+        res.json({ id: user.id, email: user.email, role: user.role, pin: user.pin, sessionId: user.id });
       } else if (action === "logout") {
         res.json({ success: true });
       } 

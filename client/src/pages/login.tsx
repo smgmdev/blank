@@ -15,6 +15,37 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("demo@writer.com");
   const [password, setPassword] = useState("password");
+  const [showPinPrompt, setShowPinPrompt] = useState(false);
+  const [pin, setPin] = useState("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const handlePinSubmit = () => {
+    if (!pin || pin.length !== 4) {
+      toast({
+        variant: "destructive",
+        title: "Invalid PIN",
+        description: "Please enter a 4-digit PIN"
+      });
+      return;
+    }
+
+    if (pin !== currentUser.pin) {
+      toast({
+        variant: "destructive",
+        title: "Invalid PIN",
+        description: "PIN is incorrect"
+      });
+      setPin("");
+      return;
+    }
+
+    // PIN is correct, complete login
+    localStorage.setItem('sessionId', currentUser.sessionId);
+    localStorage.setItem('userId', currentUser.id);
+    localStorage.setItem('userRole', currentUser.role);
+    login(currentUser.role);
+    setLocation(currentUser.role === 'admin' ? '/admin/sites' : '/dashboard');
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -48,7 +79,17 @@ export default function Login() {
       if (!user.id || !user.role || !user.sessionId) {
         throw new Error('Invalid login response');
       }
-      // Store ONLY session ID (unified across Replit & Vercel)
+      
+      // Check if user has PIN enabled
+      if (user.pin) {
+        setCurrentUser(user);
+        setShowPinPrompt(true);
+        setPin("");
+        setIsLoading(false);
+        return;
+      }
+      
+      // No PIN, proceed with login
       localStorage.setItem('sessionId', user.sessionId);
       localStorage.setItem('userId', user.id);
       localStorage.setItem('userRole', user.role);
@@ -104,14 +145,49 @@ export default function Login() {
                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
               />
             </div>
-            <Button 
-              className="w-full" 
-              onClick={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {isLoading ? "Signing In..." : "Sign In"}
-            </Button>
+            {showPinPrompt ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="pin">Enter 4-Digit PIN</Label>
+                  <Input 
+                    id="pin" 
+                    type="password" 
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.slice(0, 4))}
+                    onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
+                    placeholder="0000"
+                    maxLength={4}
+                    autoFocus
+                  />
+                </div>
+                <Button 
+                  className="w-full" 
+                  onClick={handlePinSubmit}
+                >
+                  Verify PIN
+                </Button>
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => {
+                    setShowPinPrompt(false);
+                    setPin("");
+                    setCurrentUser(null);
+                  }}
+                >
+                  Back
+                </Button>
+              </>
+            ) : (
+              <Button 
+                className="w-full" 
+                onClick={handleLogin}
+                disabled={isLoading}
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {isLoading ? "Signing In..." : "Sign In"}
+              </Button>
+            )}
 
             {/* Demo Credentials */}
             <div className="mt-6 pt-4 border-t border-border space-y-3">

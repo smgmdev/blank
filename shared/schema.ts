@@ -27,6 +27,7 @@ export const appUsers = pgTable("app_users", {
   companyName: text("company_name"),
   displayName: text("display_name"),
   profilePicture: text("profile_picture"),
+  pin: varchar("pin", { length: 4 }), // 4-digit PIN for additional security
   twoFactorSecret: text("two_factor_secret"), // For 2FA
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 });

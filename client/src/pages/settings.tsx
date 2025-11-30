@@ -7,28 +7,40 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Mail, Save, User as UserIcon } from "lucide-react";
+import { Lock, Mail, Save, User as UserIcon, Shield } from "lucide-react";
 
 export default function Settings() {
   const { users, user: currentUserRole } = useStore();
   const { toast } = useToast();
-  const currentUser = users[0]; // Demo: using first user
+  const currentUser = users[0];
   const isAdmin = currentUserRole === 'admin';
+  
+  // Account fields
   const [email, setEmail] = useState(currentUser?.email || "user@example.com");
   const [username, setUsername] = useState(currentUser?.username || "");
-  const [fullName, setFullName] = useState(currentUser?.fullName || "");
-  const [companyName, setCompanyName] = useState(currentUser?.companyName || "");
+  
+  // Password fields
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
+  
+  // PIN fields
+  const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [isPinActive, setIsPinActive] = useState(false);
+  
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleUsernameUpdate = async () => {
-    if (!username) {
+  const handleAccountUpdate = async () => {
+    const updateData: any = {};
+    if (username) updateData.username = username;
+    if (email) updateData.email = email;
+
+    if (Object.keys(updateData).length === 0) {
       toast({
         variant: "destructive",
-        title: "Missing Username",
-        description: "Please enter a valid username.",
+        title: "No Changes",
+        description: "Please enter at least one field to update.",
       });
       return;
     }
@@ -38,55 +50,20 @@ export default function Settings() {
       const response = await fetch(`/api/users/${currentUser.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
+        body: JSON.stringify(updateData)
       });
 
-      if (!response.ok) throw new Error('Failed to update username');
+      if (!response.ok) throw new Error('Failed to update account');
 
       toast({
-        title: "Username Updated",
-        description: "Your username has been changed successfully.",
+        title: "Account Updated",
+        description: "Your account details have been changed successfully.",
       });
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update username. Please try again.",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleEmailUpdate = async () => {
-    if (!email) {
-      toast({
-        variant: "destructive",
-        title: "Missing Email",
-        description: "Please enter a valid email address.",
-      });
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const response = await fetch(`/api/users/${currentUser.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-
-      if (!response.ok) throw new Error('Failed to update email');
-
-      toast({
-        title: "Email Updated",
-        description: "Your email has been changed successfully.",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update email. Please try again.",
+        description: "Failed to update account. Please try again.",
       });
     } finally {
       setIsSaving(false);
@@ -140,6 +117,61 @@ export default function Settings() {
     }
   };
 
+  const handlePinSetup = async () => {
+    if (!pin || !confirmPin) {
+      toast({
+        variant: "destructive",
+        title: "Missing PIN",
+        description: "Please enter a 4-digit PIN.",
+      });
+      return;
+    }
+
+    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid PIN",
+        description: "PIN must be exactly 4 digits.",
+      });
+      return;
+    }
+
+    if (pin !== confirmPin) {
+      toast({
+        variant: "destructive",
+        title: "PINs Don't Match",
+        description: "PINs do not match.",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/users/${currentUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: isPinActive ? pin : null })
+      });
+
+      if (!response.ok) throw new Error('Failed to update PIN');
+
+      setPin("");
+      setConfirmPin("");
+      toast({
+        title: "PIN Updated",
+        description: isPinActive ? "PIN has been activated." : "PIN has been deactivated.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update PIN. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl space-y-8 pb-20">
       <div>
@@ -162,89 +194,35 @@ export default function Settings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={username}
-                disabled={!isAdmin}
-                className={!isAdmin ? "bg-muted" : ""}
-                onChange={(e) => isAdmin && setUsername(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email2">Email</Label>
-              <Input
-                id="email2"
-                value={email}
-                disabled={!isAdmin}
-                className={!isAdmin ? "bg-muted" : ""}
-                onChange={(e) => isAdmin && setEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company">Company</Label>
-              <Input
-                id="company"
-                value={companyName || "-"}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-          </div>
-          {isAdmin && (
-            <div className="flex gap-2 pt-2">
-              <Button onClick={handleUsernameUpdate} disabled={isSaving} className="gap-2">
-                <Save className="w-4 h-4" />
-                {isSaving ? "Updating..." : "Update Username"}
-              </Button>
-              <Button onClick={handleEmailUpdate} disabled={isSaving} className="gap-2">
-                <Save className="w-4 h-4" />
-                {isSaving ? "Updating..." : "Update Email"}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* Email Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="w-5 h-5" />
-            Email Address
-          </CardTitle>
-          <CardDescription>
-            Update your email address associated with this account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Current Email</Label>
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              value={username}
+              disabled={!isAdmin}
+              className={!isAdmin ? "bg-muted" : ""}
+              onChange={(e) => isAdmin && setUsername(e.target.value)}
+              placeholder="e.g. john_smith"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              disabled={!isAdmin}
+              className={!isAdmin ? "bg-muted" : ""}
+              onChange={(e) => isAdmin && setEmail(e.target.value)}
               placeholder="your@email.com"
             />
           </div>
-          <Button onClick={handleEmailUpdate} disabled={isSaving} className="gap-2">
-            <Save className="w-4 h-4" />
-            {isSaving ? "Updating..." : "Update Email"}
-          </Button>
+          {isAdmin && (
+            <Button onClick={handleAccountUpdate} disabled={isSaving} className="gap-2">
+              <Save className="w-4 h-4" />
+              {isSaving ? "Updating..." : "Update"}
+            </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -301,6 +279,68 @@ export default function Settings() {
           </Button>
         </CardContent>
       </Card>
+
+      <Separator />
+
+      {/* Create PIN - Admin Only */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Create PIN
+            </CardTitle>
+            <CardDescription>
+              Set a 4-digit PIN for additional security. PIN will be required at login if activated.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <input 
+                type="checkbox" 
+                id="pin-toggle" 
+                checked={isPinActive}
+                onChange={(e) => setIsPinActive(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <Label htmlFor="pin-toggle" className="cursor-pointer">Activate PIN Protection</Label>
+            </div>
+
+            {isPinActive && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="pin">4-Digit PIN</Label>
+                  <Input
+                    id="pin"
+                    type="password"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.slice(0, 4))}
+                    placeholder="0000"
+                    maxLength={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-pin">Confirm PIN</Label>
+                  <Input
+                    id="confirm-pin"
+                    type="password"
+                    value={confirmPin}
+                    onChange={(e) => setConfirmPin(e.target.value.slice(0, 4))}
+                    placeholder="0000"
+                    maxLength={4}
+                  />
+                </div>
+
+                <Button onClick={handlePinSetup} disabled={isSaving} className="gap-2">
+                  <Shield className="w-4 h-4" />
+                  {isSaving ? "Saving..." : "Save PIN"}
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
