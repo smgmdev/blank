@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getWordPressSiteById, getUserSiteCredential, getArticle, createArticle, updateArticle, createArticlePublishing, getArticlePublishingBySiteAndArticle, getArticlesByUserId } from "./db-utils.js";
+import { getWordPressSiteById, getUserSiteCredential, getArticle, createArticle, updateArticle, createArticlePublishing, getArticlePublishingBySiteAndArticle, getArticlesByUserId, deleteArticle } from "./db-utils.js";
 import { insertArticleSchema } from "../shared/schema.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
@@ -31,13 +31,24 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       } else if (req.method === "PATCH") {
         // UPDATE article
         if (!articleId) return res.status(400).json({ error: "articleId required" });
-        const article = await updateArticle(articleId as string, req.body);
-        res.json(article);
+        try {
+          const article = await updateArticle(articleId as string, req.body);
+          if (!article) return res.status(404).json({ error: "Article not found or update failed" });
+          res.json(article);
+        } catch (e: any) {
+          console.error('Update article error:', e);
+          return res.status(500).json({ error: e.message || "Failed to update article" });
+        }
       } else if (req.method === "DELETE") {
         // DELETE article
         if (!articleId) return res.status(400).json({ error: "articleId required" });
-        await (await import("./db-utils.js")).deleteArticle(articleId as string);
-        res.json({ success: true });
+        try {
+          await deleteArticle(articleId as string);
+          res.json({ success: true });
+        } catch (e: any) {
+          console.error('Delete article error:', e);
+          return res.status(500).json({ error: e.message || "Failed to delete article" });
+        }
       } else {
         res.status(405).json({ error: "Method not allowed" });
       }

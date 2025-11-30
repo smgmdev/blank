@@ -1206,9 +1206,15 @@ export async function registerRoutes(
     if (type === "articles") {
       try {
         if (articleId) {
-          // Update existing article
-          const article = await storage.updateArticle(articleId as string, req.body);
-          res.json(article);
+          // Update existing article (PATCH via POST)
+          try {
+            const article = await storage.updateArticle(articleId as string, req.body);
+            if (!article) return res.status(404).json({ error: "Article not found or update failed" });
+            res.json(article);
+          } catch (e: any) {
+            console.error('Update article error:', e);
+            return res.status(500).json({ error: e.message || "Failed to update article" });
+          }
         } else {
           // Create new article
           const parsed = insertArticleSchema.safeParse(req.body);
