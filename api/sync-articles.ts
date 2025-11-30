@@ -46,10 +46,18 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       console.log(`[Sync] Checking article ${article.id} (wpPostId: ${pub.wpPostId}) on site ${site.name}`);
       
       try {
-        // First try without authentication (public posts)
-        console.log(`[Sync] Attempting check without auth for post ${pub.wpPostId}`);
+        // Use admin credentials if available, otherwise try public access
+        const headers: any = {};
+        if (site.adminUsername && site.apiToken) {
+          const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
+          headers.Authorization = `Basic ${auth}`;
+          console.log(`[Sync] Using admin auth for post ${pub.wpPostId}`);
+        } else {
+          console.log(`[Sync] No admin credentials, trying public access for post ${pub.wpPostId}`);
+        }
+        
         const checkRes = await Promise.race([
-          fetch(`${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`),
+          fetch(`${site.apiUrl}/wp/v2/posts/${pub.wpPostId}`, { headers }),
           new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
         ]) as Response;
         
