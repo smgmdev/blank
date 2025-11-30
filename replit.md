@@ -43,10 +43,15 @@ Preferred communication style: Simple, everyday language.
 **API Structure**:
 - `/api/auth` - User authentication (login, WordPress credential storage)
 - `/api/sites` - WordPress site management and user site connections
-- `/api/content` - Article CRUD operations
-- `/api/sync-articles` - **Improved Sync Logic:** Fetches all published posts directly from WordPress using admin API credentials, compares against articles in system, and deletes any articles whose post IDs no longer exist on WordPress. Uses pagination to handle sites with many posts.
+- `/api/content` - Article CRUD operations and publishing to WordPress
+- `/api/sync-articles` - **Sync with Grace Period:** Fetches published posts directly from WordPress using admin credentials, compares against system articles, and only deletes articles missing from WordPress for >5 minutes (prevents race conditions on newly published articles)
 - `/api/health` - Database connectivity check
-- `/api/sites/[siteId]/tags` - **Fixed:** Corrected import path for Vercel deployment (../../db-utils.js)
+- `/api/sites/[siteId]/tags` - Fetch available tags from WordPress site
+
+**Recent Fixes (Nov 30, 2025)**:
+- **Tag Creation**: Backend now creates custom tags directly during WordPress publishing (no pre-publishing endpoint calls)
+- **Sync Deletion Grace Period**: Added 5-minute grace period before sync deletes recently published articles, preventing immediate deletion after publishing to WordPress
+- **Frontend Simplification**: Removed pre-publishing tag creation, tags now sent raw to publish endpoint
 
 ### Database Schema
 
