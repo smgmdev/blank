@@ -16,6 +16,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     let deletedCount = 0;
     const deletedIds: string[] = [];
     
+    console.log(`[Sync] Database articles: ${allArticles.length}, Sites: ${allSites.length}, Publishing records: ${publishingRecords.length}`);
+    console.log(`[Sync] Sites in database: ${allSites.map((s: any) => `${s.name}(${s.id})`).join(', ')}`);
+    if (allSites.length > 0) {
+      const site = allSites[0];
+      console.log(`[Sync] First site credentials - username: ${site.adminUsername}, has password: ${!!site.adminPassword}, has apiToken: ${!!site.apiToken}`);
+    }
     console.log(`[Sync] Starting - checking ${publishedArticles.length} published articles`);
     
     // Group articles by site

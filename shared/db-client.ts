@@ -7,6 +7,11 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
+// Log which database is being used
+const dbHostMatch = databaseUrl.match(/\/\/([^:@]+)@([^/:]+)/);
+const dbHost = dbHostMatch ? dbHostMatch[2] : 'unknown';
+console.log(`[DB] Environment: ${process.env.VERCEL ? 'VERCEL' : 'REPLIT'}, Host: ${dbHost}`);
+
 // Auto-fix: If using direct connection (port 5432), switch to Session Pooler (port 6543) for serverless
 if (process.env.VERCEL && databaseUrl.includes(":5432")) {
   console.warn("[DB] Detected direct connection on Vercel. Switching to Session Pooler (port 6543)");
