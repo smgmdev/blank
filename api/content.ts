@@ -223,6 +223,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         }
       }
 
+      const wpLink = wpPost.link || wpPost.guid || `${site.url}?p=${wpPost.id}`;
+      
       await createArticlePublishing({
         articleId: articleId as string,
         siteId: sid,
@@ -239,8 +241,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         tags
       });
 
-      console.log("Final response - featured image URL:", featuredImageUrl);
-      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, wpLink: wpPost.link, featuredImageUrl });
+      console.log("Final response - featured image URL:", featuredImageUrl, "wpLink:", wpLink);
+      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, wpLink: wpLink, featuredImageUrl });
     }
     else {
       res.status(400).json({ error: "Invalid type" });

@@ -173,10 +173,14 @@ export default function MyArticles() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
+    setSyncStatus("Connecting to WordPress...");
+    setSyncError(null);
     try {
       const syncRes = await fetch(`/api/sync-articles`, {
         method: 'POST'
       });
+      
+      setSyncStatus("Fetching and comparing articles...");
       
       if (syncRes.ok) {
         const syncData = await syncRes.json();
@@ -226,6 +230,7 @@ export default function MyArticles() {
         }));
         
         setArticles(articlesWithLinks);
+        setSyncStatus(null);
         
         if (syncData.deletedCount > 0) {
           toast({
@@ -238,8 +243,11 @@ export default function MyArticles() {
             description: "Articles are up to date with WordPress."
           });
         }
+      } else {
+        setSyncError("Failed to sync: " + syncRes.statusText);
       }
-    } catch (error) {
+    } catch (error: any) {
+      setSyncError("Error: " + (error.message || "Failed to sync articles"));
       toast({ variant: "destructive", title: "Error", description: "Failed to sync articles" });
     }
     setIsRefreshing(false);
@@ -358,14 +366,22 @@ export default function MyArticles() {
           <p className="text-muted-foreground text-sm">Manage your published content across all connected sites.</p>
         </div>
         <div className="flex gap-2 flex-col sm:flex-row w-full sm:w-auto">
-          <Button 
-            variant="outline" 
-            onClick={handleRefresh} 
-            disabled={isRefreshing}
-            className="w-full sm:w-auto"
-          >
-            {isRefreshing ? "Syncing..." : "Refresh & Sync"}
-          </Button>
+          <div className="flex-1 sm:flex-auto">
+            <Button 
+              variant="outline" 
+              onClick={handleRefresh} 
+              disabled={isRefreshing}
+              className="w-full sm:w-auto"
+            >
+              {isRefreshing ? "Syncing..." : "Refresh & Sync"}
+            </Button>
+            {syncStatus && (
+              <p className="text-xs text-muted-foreground mt-2">{syncStatus}</p>
+            )}
+            {syncError && (
+              <p className="text-xs text-destructive mt-2">{syncError}</p>
+            )}
+          </div>
           <Link href="/editor">
             <Button className="w-full sm:w-auto">
               <PenTool className="w-4 h-4 mr-2" />
