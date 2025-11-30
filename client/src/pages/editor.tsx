@@ -314,6 +314,8 @@ export default function Editor() {
           title: "Draft Updated",
           description: "Your article draft has been updated successfully."
         });
+        // Navigate to drafts tab to see updated draft
+        setLocation("/my-articles?tab=drafts");
       } else {
         // Create new draft
         const res = await fetch('/api/content?type=articles', {
