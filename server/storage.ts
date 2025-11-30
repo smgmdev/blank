@@ -53,6 +53,7 @@ export interface IStorage {
     userId: string,
     siteId: string
   ): Promise<UserSiteCredential | undefined>;
+  getUserSiteCredentialsByUserId(userId: string): Promise<UserSiteCredential[]>;
   updateUserSiteCredentialVerification(
     id: string,
     wpUserId: string
@@ -205,6 +206,13 @@ export class Storage implements IStorage {
         eq(userSiteCredentials.siteId, siteId)
       ));
     return credential;
+  }
+
+  async getUserSiteCredentialsByUserId(userId: string): Promise<UserSiteCredential[]> {
+    return await db
+      .select()
+      .from(userSiteCredentials)
+      .where(eq(userSiteCredentials.userId, userId));
   }
 
   async updateUserSiteCredentialVerification(
