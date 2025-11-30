@@ -125,13 +125,10 @@ export const useStore = create<AppState>((set) => ({
     set({ user: null });
   },
   initializeFromStorage: () => {
-    const sessionId = localStorage.getItem('sessionId');
     const userRole = localStorage.getItem('userRole');
-    
-    // Keep user logged in from localStorage immediately
-    return (state) => {
-      return { user: userRole ? (userRole as 'admin' | 'user') : null };
-    };
+    if (userRole) {
+      useStore.setState({ user: userRole as 'admin' | 'user' });
+    }
   },
   addSite: (site, authCode) => set((state) => ({
     sites: [...state.sites, { ...site, authCode, id: Math.random().toString(36).substr(2, 9), isConnected: false }]
