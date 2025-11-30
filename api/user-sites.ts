@@ -20,7 +20,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       const credential = credentials.find(c => c.siteId === site.id);
       return {
         ...site,
-        isAuthenticated: credential?.isVerified || false,
+        userIsConnected: credential?.isVerified || false,
         hasCredentials: !!credential
       };
     });
