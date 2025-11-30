@@ -21,16 +21,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -410,27 +400,33 @@ export default function AdminSites() {
         </Table>
       </div>
 
-      <AlertDialog open={!!deleteConfirmation} onOpenChange={(open) => !open && setDeleteConfirmation(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Site?</AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog open={!!deleteConfirmation} onOpenChange={(open) => !open && setDeleteConfirmation(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Site?</DialogTitle>
+            <DialogDescription>
               Are you sure you want to delete <strong>{deleteConfirmation?.siteName}</strong>? This action cannot be undone. All articles linked to this site will also be removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteConfirmation(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button 
               onClick={handleConfirmDelete}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-testid="button-confirm-delete"
             >
               {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

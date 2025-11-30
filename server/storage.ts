@@ -124,6 +124,26 @@ export class Storage implements IStorage {
   }
 
   async deleteWordPressSite(id: string): Promise<void> {
+    // Delete cascade: articles and related records first
+    const siteArticles = await db
+      .select()
+      .from(articles)
+      .where(eq(articles.siteId, id));
+    
+    for (const article of siteArticles) {
+      await this.deleteArticle(article.id);
+    }
+    
+    // Delete user site credentials
+    await db.delete(userSiteCredentials).where(eq(userSiteCredentials.siteId, id));
+    
+    // Delete approved WP users
+    await db.delete(approvedWpUsers).where(eq(approvedWpUsers.siteId, id));
+    
+    // Delete publishing profiles
+    await db.delete(publishingProfiles).where(eq(publishingProfiles.siteId, id));
+    
+    // Finally delete the site
     await db.delete(wordPressSites).where(eq(wordPressSites.id, id));
   }
 
