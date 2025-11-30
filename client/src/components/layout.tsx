@@ -26,7 +26,7 @@ import {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
-  const { user, logout, isPublishing } = useStore();
+  const { user, logout, isPublishing, publishingProfile } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -173,10 +173,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               >
                 <div className={`flex items-center gap-3 min-w-0 ${isPublishing ? 'opacity-50' : ''}`}>
                   <Avatar className="w-8 h-8 border flex-shrink-0">
-                    <AvatarFallback>{isAdmin ? 'AD' : 'US'}</AvatarFallback>
+                    {publishingProfile?.profilePicture && <AvatarImage src={publishingProfile.profilePicture} />}
+                    <AvatarFallback>
+                      {isAdmin ? 'AD' : (publishingProfile?.displayName?.charAt(0).toUpperCase() || 'U')}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-start text-xs min-w-0">
-                    <span className="font-medium">{isAdmin ? 'Administrator' : 'Content Creator'}</span>
+                    <span className="font-medium">{isAdmin ? 'Administrator' : (publishingProfile?.displayName || 'Content Creator')}</span>
                     <span className="text-muted-foreground">System Account</span>
                   </div>
                 </div>
