@@ -26,7 +26,7 @@ export function initializeDb() {
         idle_timeout: 20, // Close idle connections after 20 seconds
         connect_timeout: 15, // Increased to 15 seconds for Vercel cold starts
         application_name: "wordpress-publisher",
-      });
+      } as any);
       db = drizzle(client, { schema });
       console.log("[DB] ✓ Connection pool initialized");
     } catch (error: any) {
