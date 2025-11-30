@@ -1,6 +1,8 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { getWordPressSiteById, getUserSiteCredential, getArticle, createArticle, updateArticle, createArticlePublishing, getArticlePublishingBySiteAndArticle, getArticlesByUserId, deleteArticle } from "./db-utils.js";
-import { insertArticleSchema } from "../shared/schema.js";
+import { insertArticleSchema, articles, articlePublishing, wordPressSites } from "../shared/schema.js";
+import { db } from "./db-utils.js";
+import { eq } from "drizzle-orm";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
@@ -55,10 +57,51 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           return res.status(500).json({ error: e.message || "Failed to update article" });
         }
       } else if (req.method === "DELETE") {
-        // DELETE article
+        // DELETE article (with WordPress sync)
         if (!articleId) return res.status(400).json({ error: "articleId required" });
         try {
-          console.log('Deleting article:', articleId);
+          console.log('[Delete] Starting article deletion:', articleId);
+          
+          // Get article and check if published
+          const article = await db.select().from(articles).where(eq(articles.id, articleId));
+          if (!article.length) return res.status(404).json({ error: "Article not found" });
+          
+          const pub = await db.select().from(articlePublishing).where(eq(articlePublishing.articleId, articleId));
+          
+          // If published to WordPress, delete from WP first
+          if (pub.length > 0 && pub[0].wpPostId) {
+            try {
+              const publishRec = pub[0];
+              const [site] = await db.select().from(wordPressSites).where(eq(wordPressSites.id, publishRec.siteId));
+              
+              if (site && publishRec.wpPostId) {
+                const credential = await getUserSiteCredential(userId as string, publishRec.siteId);
+                if (credential?.isVerified) {
+                  const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+                  const deleteUrl = `${site.apiUrl}/wp/v2/posts/${publishRec.wpPostId}?force=true`;
+                  console.log('[Delete] Deleting from WordPress:', deleteUrl);
+                  
+                  const wpDeleteRes = await fetch(deleteUrl, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Basic ${auth}` }
+                  });
+                  
+                  if (wpDeleteRes.ok) {
+                    console.log('[Delete] Successfully deleted from WordPress:', publishRec.wpPostId);
+                  } else {
+                    console.warn('[Delete] WordPress deletion returned status', wpDeleteRes.status);
+                    // Continue with local deletion anyway
+                  }
+                }
+              }
+            } catch (wpError) {
+              console.error('[Delete] WordPress deletion failed:', wpError);
+              // Continue with local deletion
+            }
+          }
+          
+          // Delete from local database
+          console.log('[Delete] Deleting from local database:', articleId);
           await deleteArticle(articleId);
           res.json({ success: true });
         } catch (e: any) {
