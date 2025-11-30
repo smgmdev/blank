@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Globe, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Globe, Trash2, ExternalLink, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Helper function to display SEO plugin names
@@ -71,6 +71,9 @@ export default function AdminSites() {
     username: "",
     password: ""
   });
+  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
+  const [updateCreds, setUpdateCreds] = useState({ username: "", password: "" });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Fetch sites from database on mount
   useEffect(() => {
@@ -209,6 +212,62 @@ export default function AdminSites() {
       });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleUpdateCredentials = async () => {
+    if (!editingSiteId || !updateCreds.username || !updateCreds.password) {
+      toast({
+        variant: "destructive",
+        title: "Missing Fields",
+        description: "Please enter both username and password"
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const site = sites_db.find(s => s.id === editingSiteId);
+      if (!site) throw new Error('Site not found');
+
+      const response = await fetch('/api/sites?action=update-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          siteId: editingSiteId,
+          adminUsername: updateCreds.username,
+          adminPassword: updateCreds.password,
+          apiToken: site.apiToken
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update credentials');
+      }
+
+      // Update the site in the list
+      setSites_db(sites_db.map(s => 
+        s.id === editingSiteId 
+          ? { ...s, adminUsername: updateCreds.username, adminPassword: updateCreds.password }
+          : s
+      ));
+
+      toast({
+        title: "Success",
+        description: "Admin credentials updated successfully"
+      });
+
+      setEditingSiteId(null);
+      setUpdateCreds({ username: "", password: "" });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -382,6 +441,15 @@ export default function AdminSites() {
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-blue-600 hover:text-blue-600 hover:bg-blue-50 h-8 w-8"
+                      onClick={() => setEditingSiteId(site.id)}
+                      data-testid="button-update-credentials"
+                    >
+                      <Key className="w-4 h-4" />
+                    </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -423,6 +491,61 @@ export default function AdminSites() {
               data-testid="button-confirm-delete"
             >
               {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingSiteId} onOpenChange={(open) => !open && setEditingSiteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Admin Credentials</DialogTitle>
+            <DialogDescription>
+              Update the WordPress admin credentials for this site. These are used to check if articles still exist on WordPress.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="update-admin-username">Admin Username</Label>
+              <Input 
+                id="update-admin-username"
+                placeholder="WordPress admin username" 
+                value={updateCreds.username}
+                onChange={e => setUpdateCreds({...updateCreds, username: e.target.value})}
+                disabled={isUpdating}
+                data-testid="input-update-admin-username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="update-admin-password">Admin Password</Label>
+              <Input 
+                id="update-admin-password"
+                type="password"
+                placeholder="WordPress admin password" 
+                value={updateCreds.password}
+                onChange={e => setUpdateCreds({...updateCreds, password: e.target.value})}
+                disabled={isUpdating}
+                data-testid="input-update-admin-password"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setEditingSiteId(null);
+                setUpdateCreds({ username: "", password: "" });
+              }}
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdateCredentials}
+              disabled={isUpdating}
+              data-testid="button-save-credentials"
+            >
+              {isUpdating ? "Updating..." : "Update"}
             </Button>
           </div>
         </DialogContent>
