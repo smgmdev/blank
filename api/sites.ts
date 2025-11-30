@@ -41,6 +41,46 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         return res.json({ success: true, message: "Disconnected from site" });
       }
       
+      // Handle tag creation - from editor.tsx calling /api/sites/{siteId}/tags
+      if (!action && siteId) {
+        const { userId, tagName } = req.body;
+        if (!tagName) return res.status(400).json({ error: "Tag name required" });
+        if (!userId) return res.status(400).json({ error: "userId required" });
+        
+        try {
+          const { getWordPressSiteById } = await import("./db-utils.js");
+          const site = await getWordPressSiteById(siteId as string);
+          if (!site) return res.status(404).json({ error: "Site not found" });
+
+          const credential = await getUserSiteCredential(userId as string, siteId as string);
+          if (!credential || !credential.isVerified) {
+            return res.status(403).json({ error: "Not authenticated to this site" });
+          }
+
+          const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+          const tagResponse = await fetch(`${site.apiUrl}/wp/v2/tags`, {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${auth}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name: tagName })
+          });
+
+          if (!tagResponse.ok) {
+            const error = await tagResponse.text();
+            console.error("WordPress tag creation error:", error);
+            return res.status(tagResponse.status).json({ error: "Failed to create tag" });
+          }
+
+          const newTag = await tagResponse.json();
+          return res.json({ id: newTag.id, name: newTag.name });
+        } catch (error: any) {
+          console.error("Tag creation error:", error);
+          return res.status(500).json({ error: "Failed to create tag" });
+        }
+      }
+      
       res.status(400).json({ error: "Invalid action" });
     } 
     else {
