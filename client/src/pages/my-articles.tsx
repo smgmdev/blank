@@ -78,8 +78,8 @@ export default function MyArticles() {
           // Filter to only this user's articles
           const userArticles = allArticles.filter((a: any) => a.userId === userId);
           
-          // SHOW ARTICLES IMMEDIATELY - don't wait for WordPress links
-          setArticles(userArticles);
+          // SHOW ARTICLES IMMEDIATELY with cached wpLinks
+          setArticles(articlesWithCachedLinks);
           setIsLoading(false);
           
           // BACKGROUND: Fetch categories for each site and populate categoryMap
@@ -102,11 +102,17 @@ export default function MyArticles() {
             setCategoryMap(newCategoryMap);
           }
           
+          // Check localStorage for cached wpLinks first
+          const articlesWithCachedLinks = userArticles.map((a: any) => {
+            const cachedLink = localStorage.getItem(`wpLink_${a.id}`);
+            return cachedLink ? { ...a, wpLink: cachedLink } : a;
+          });
+          
           // BACKGROUND: Fetch WordPress links for published articles ONLY if there are any
-          const publishedArticles = userArticles.filter((a: any) => a.status === 'published' && !a.wpLink);
+          const publishedArticles = articlesWithCachedLinks.filter((a: any) => a.status === 'published' && !a.wpLink);
           if (publishedArticles.length > 0) {
             const fetchLinksInBackground = async () => {
-              const updatedArticles = [...userArticles];
+              const updatedArticles = [...articlesWithCachedLinks];
               for (let i = 0; i < publishedArticles.length; i += 2) {
                 const batch = publishedArticles.slice(i, i + 2);
                 const results = await Promise.all(batch.map(async (article: any) => {

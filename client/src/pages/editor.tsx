@@ -570,8 +570,9 @@ export default function Editor() {
           title: formData.title,
           content: formData.content,
           categories: formData.categories,
-          tags: tagIds,
-          featuredImageBase64: formData.imagePreview
+          tags: tagIds && tagIds.length > 0 ? tagIds : [],
+          featuredImageBase64: formData.imagePreview,
+          imageCaption: formData.imageCaption
         })
       });
 
@@ -582,6 +583,11 @@ export default function Editor() {
 
       const publishResult = await publishRes.json();
       console.log("Publish result:", publishResult);
+
+      // Store wpLink in localStorage for immediate display
+      if (publishResult.wpLink) {
+        localStorage.setItem(`wpLink_${article.id}`, publishResult.wpLink);
+      }
 
       setIsPublishing(false);
       toast({
@@ -773,6 +779,18 @@ export default function Editor() {
                     className="hidden"
                   />
                 </div>
+
+                {formData.imagePreview && (
+                  <div className="space-y-2">
+                    <Label>Image Caption</Label>
+                    <Input 
+                      placeholder="Add caption for your image"
+                      value={formData.imageCaption}
+                      onChange={(e) => setFormData({...formData, imageCaption: e.target.value})}
+                      data-testid="input-image-caption"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
