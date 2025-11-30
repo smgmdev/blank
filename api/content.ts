@@ -26,18 +26,30 @@ export default async (req: VercelRequest, res: VercelResponse) => {
             const article = await getArticle(articleId);
             if (!article) return res.status(404).json({ error: "Article not found" });
             
-            // Normalize tags and categories - handle both array and string formats from JSONB
+            // Normalize tags and categories - handle JSONB from both Replit and Vercel Session Pooler
             const normalize = (field: any) => {
-              if (Array.isArray(field)) return field;
+              // Already an array - perfect
+              if (Array.isArray(field)) {
+                console.log("[API] Tags already array:", field);
+                return field;
+              }
+              // String - parse it
               if (typeof field === 'string') {
                 try {
-                  return JSON.parse(field);
-                } catch {
+                  const parsed = JSON.parse(field);
+                  console.log("[API] Parsed string to:", parsed);
+                  return Array.isArray(parsed) ? parsed : [parsed];
+                } catch (e) {
+                  console.error("[API] Failed to parse string field:", field, e);
                   return [];
                 }
               }
-              if (field === null || field === undefined) return [];
-              if (typeof field === 'object') return field;
+              // Object - wrap in array if needed
+              if (typeof field === 'object' && field !== null) {
+                if (Array.isArray(field)) return field;
+                return [field];
+              }
+              // Null/undefined
               return [];
             };
             
@@ -47,7 +59,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
               categories: normalize(article.categories)
             };
             
-            console.log("[API] Single article normalization:", { id: article.id, tags: normalized.tags, tagsType: typeof article.tags });
+            console.log("[API] Normalized article:", { id: article.id, originalTags: article.tags, normalizedTags: normalized.tags });
             return res.json(normalized);
           } catch (e: any) {
             console.error('Error fetching article:', articleId, e);
@@ -61,18 +73,25 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         
         const articles = await getArticlesByUserId(userIdHeader);
         
-        // Ensure tags are always arrays - handle both formats from JSONB on Replit and Vercel
+        // Ensure tags are always arrays - handle JSONB from both Replit and Vercel Session Pooler
         const normalize = (field: any) => {
+          // Already an array
           if (Array.isArray(field)) return field;
+          // String - parse it
           if (typeof field === 'string') {
             try {
-              return JSON.parse(field);
-            } catch {
+              const parsed = JSON.parse(field);
+              return Array.isArray(parsed) ? parsed : [parsed];
+            } catch (e) {
+              console.error("[API] Failed to parse field:", field, e);
               return [];
             }
           }
-          if (field === null || field === undefined) return [];
-          if (typeof field === 'object') return field;
+          // Object - wrap if needed
+          if (typeof field === 'object' && field !== null) {
+            return Array.isArray(field) ? field : [field];
+          }
+          // Null/undefined
           return [];
         };
         
@@ -82,7 +101,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           categories: normalize(article.categories)
         }));
         
-        console.log("[API] Fetched articles for user:", normalizedArticles.map(a => ({ id: a.id, title: a.title, tags: a.tags })));
+        console.log("[API] Fetched", normalizedArticles.length, "articles, sample tags:", normalizedArticles.slice(0, 2).map(a => ({ id: a.id, tags: a.tags })));
         res.json(normalizedArticles);
       } else if (req.method === "POST") {
         const parsed = insertArticleSchema.safeParse(req.body);

@@ -39,15 +39,14 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000))
         ]) as Response;
         
-        if (checkRes.status === 404) {
-          console.log(`[Sync] Article ${article.id} deleted from WordPress - removing`);
+        // Any non-200 response means article not found or accessible - treat as deleted
+        if (!checkRes.ok) {
+          console.log(`[Sync] Article ${article.id} not accessible (status ${checkRes.status}) - removing from database`);
           return article.id;
         }
         
-        if (checkRes.status === 401) {
-          console.log(`[Sync] Unauthorized checking post ${pub.wpPostId} - treating as deleted`);
-          return article.id;
-        }
+        // Successfully found the article (status 200)
+        console.log(`[Sync] Article ${article.id} exists in WordPress (status 200)`);
       } catch (e) {
         console.error(`[Sync] Check failed for ${article.id}:`, e);
       }
@@ -77,16 +76,23 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     // Normalize tags and categories - same logic as content endpoint for consistency
     const normalize = (field: any) => {
+      // Already an array
       if (Array.isArray(field)) return field;
+      // String - parse it
       if (typeof field === 'string') {
         try {
-          return JSON.parse(field);
-        } catch {
+          const parsed = JSON.parse(field);
+          return Array.isArray(parsed) ? parsed : [parsed];
+        } catch (e) {
+          console.error("[Sync] Failed to parse field:", field, e);
           return [];
         }
       }
-      if (field === null || field === undefined) return [];
-      if (typeof field === 'object') return field;
+      // Object - wrap if needed
+      if (typeof field === 'object' && field !== null) {
+        return Array.isArray(field) ? field : [field];
+      }
+      // Null/undefined
       return [];
     };
     
