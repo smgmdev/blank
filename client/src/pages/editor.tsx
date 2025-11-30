@@ -574,8 +574,12 @@ export default function Editor() {
       });
 
       if (!publishRes.ok) {
-        throw new Error('Publishing failed');
+        const errorText = await publishRes.text();
+        throw new Error(`Publishing failed: ${errorText}`);
       }
+
+      const publishResult = await publishRes.json();
+      console.log("Publish result:", publishResult);
 
       setIsPublishing(false);
       toast({

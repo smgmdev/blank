@@ -236,7 +236,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         tags
       });
 
-      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, featuredImageUrl });
+      console.log("Final response - featured image URL:", featuredImageUrl);
+      res.json({ success: true, wpPostId: wpPost.id, url: wpPost.link, wpLink: wpPost.link, featuredImageUrl });
     }
     else {
       res.status(400).json({ error: "Invalid type" });
