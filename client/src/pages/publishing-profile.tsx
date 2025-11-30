@@ -150,30 +150,20 @@ export default function PublishingProfile() {
       const savedUser = await response.json();
       console.log('Profile saved, image length in response:', savedUser.profilePicture?.length || 0);
 
-      // 2. Sync to connected WordPress sites
-      try {
-        const syncRes = await fetch(`/api/sync-profile-to-wp?userId=${userId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            displayName,
-            profilePictureUrl: previewUrl || undefined
-          })
-        });
-        const syncData = await syncRes.json();
-        console.log('WordPress sync response:', syncData);
-      } catch (syncError) {
-        console.error('Failed to sync to WordPress:', syncError);
-        // Don't fail the save if WordPress sync fails
-      }
+      // 2. Sync to connected WordPress sites (non-blocking)
+      fetch(`/api/sync-profile-to-wp?userId=${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          displayName,
+          profilePictureUrl: previewUrl || undefined
+        })
+      })
+        .then(res => res.json())
+        .then(data => console.log('WordPress sync response:', data))
+        .catch(e => console.error('Failed to sync to WordPress:', e));
 
-      // Refetch from API to get the saved profile
-      await loadPublishingProfileFromAPI(userId);
-      
-      // Trigger layout to refetch from Supabase
-      window.dispatchEvent(new Event('profile-updated'));
-      
-      // After refetch, update state with saved values from database
+      // Update local state with saved values
       if (savedUser && savedUser.displayName) {
         setDisplayName(savedUser.displayName);
       }
@@ -182,27 +172,8 @@ export default function PublishingProfile() {
         console.log('Profile picture updated from database:', savedUser.profilePicture.length, 'bytes');
       }
       
-      // Refetch connected sites user data to show updated profile image in cards
-      const sitesRes = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
-      if (sitesRes.ok) {
-        const sites = await sitesRes.json();
-        const connected = sites.filter((s: any) => s.userIsConnected);
-        setConnectedSites(connected);
-        
-        // Fetch updated WP user info for each site
-        const users: { [key: string]: any } = {};
-        for (const site of connected) {
-          try {
-            const userRes = await fetch(`/api/wp-site-user?userId=${userId}&siteId=${site.id}`);
-            if (userRes.ok) {
-              users[site.id] = await userRes.json();
-            }
-          } catch (e) {
-            console.error(`Failed to refetch WP user for site ${site.id}:`, e);
-          }
-        }
-        setSiteUsers(users);
-      }
+      // Trigger layout to refetch profile from Supabase
+      window.dispatchEvent(new Event('profile-updated'));
 
       toast({
         title: "Profile Updated",
