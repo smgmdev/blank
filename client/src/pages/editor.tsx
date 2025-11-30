@@ -215,12 +215,18 @@ export default function Editor() {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
+      reader.onload = () => {
+        console.log("Image converted to base64, length:", (reader.result as string).length);
+        resolve(reader.result as string);
+      };
+      reader.onerror = error => {
+        console.error("FileReader error:", error);
+        reject(error);
+      };
     });
   };
 
-  const handleImageDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -228,29 +234,48 @@ export default function Editor() {
     if (files && files.length > 0) {
       const file = files[0];
       if (file.type.startsWith('image/')) {
-        const base64 = await fileToBase64(file);
-        setFormData({
-          ...formData,
-          image: file,
-          imagePreview: base64
-        });
-        toast({
-          title: "Image Uploaded",
-          description: `"${file.name}" has been added as featured image.`
+        fileToBase64(file).then((base64) => {
+          console.log("Setting image preview, base64 length:", base64.length);
+          setFormData(prevData => ({
+            ...prevData,
+            image: file,
+            imagePreview: base64
+          }));
+          toast({
+            title: "Image Uploaded",
+            description: `"${file.name}" has been added as featured image.`
+          });
+        }).catch(err => {
+          console.error("Image upload error:", err);
+          toast({
+            variant: "destructive",
+            title: "Image Error",
+            description: "Failed to process image"
+          });
         });
       }
     }
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
     if (files && files.length > 0) {
       const file = files[0];
-      const base64 = await fileToBase64(file);
-      setFormData({
-        ...formData,
-        image: file,
-        imagePreview: base64
+      console.log("File selected:", file.name, file.size);
+      fileToBase64(file).then((base64) => {
+        console.log("Setting image from file input, base64 length:", base64.length);
+        setFormData(prevData => ({
+          ...prevData,
+          image: file,
+          imagePreview: base64
+        }));
+      }).catch(err => {
+        console.error("FileReader error:", err);
+        toast({
+          variant: "destructive",
+          title: "Image Error",
+          description: "Failed to read image file"
+        });
       });
     }
   };
@@ -493,6 +518,7 @@ export default function Editor() {
       return;
     }
 
+    console.log("Publishing with image base64 length:", formData.imagePreview?.length || 0);
     setIsPublishing(true);
     
     try {
