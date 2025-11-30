@@ -1,5 +1,8 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getAllWordPressSites, getUserSiteCredentialsByUserId, getUserSiteCredential, deleteUserSiteCredential } from "./db-utils.js";
+import { getAllWordPressSites, getUserSiteCredentialsByUserId, getUserSiteCredential, deleteUserSiteCredential, getWordPressSiteById } from "./db-utils.js";
+import { getDatabase } from "./db-utils.js";
+import { wordPressSites } from "../shared/schema.js";
+import { eq } from "drizzle-orm";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
@@ -39,6 +42,40 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         }
         
         return res.json({ success: true, message: "Disconnected from site" });
+      }
+      
+      if (action === "update-credentials") {
+        const { siteId: sid, adminUsername, adminPassword, apiToken } = req.body;
+        
+        if (!sid || !adminUsername) {
+          return res.status(400).json({ error: "siteId and adminUsername required" });
+        }
+        
+        if (!adminPassword && !apiToken) {
+          return res.status(400).json({ error: "Either adminPassword or apiToken required" });
+        }
+        
+        // Get current site to preserve apiToken if not provided
+        const site = await getWordPressSiteById(sid as string);
+        if (!site) {
+          return res.status(404).json({ error: "Site not found" });
+        }
+        
+        const finalApiToken = apiToken || site.apiToken;
+        
+        try {
+          const db = getDatabase();
+          await db.update(wordPressSites).set({ 
+            adminUsername, 
+            adminPassword: adminPassword || site.adminPassword, 
+            apiToken: finalApiToken 
+          }).where(eq(wordPressSites.id, sid as string));
+          
+          return res.json({ success: true, message: "Admin credentials updated" });
+        } catch (error: any) {
+          console.error("[UpdateCreds] Error:", error.message);
+          return res.status(500).json({ error: error.message });
+        }
       }
       
       // Handle tag creation - from editor.tsx calling /api/sites/{siteId}/tags
