@@ -138,39 +138,46 @@ export default function Editor() {
     fetchData();
   }, [userId, articleId]);
 
-  // Fetch categories and tags when site changes
-  useEffect(() => {
-    const fetchCategoriesAndTags = async () => {
-      if (!selectedSiteId || !userId) return;
-      setLoadingCategories(true);
-      setLoadingTags(true);
-      try {
-        const [catRes, tagRes] = await Promise.all([
-          fetch(`/api/content?type=categories&userId=${userId}&siteId=${selectedSiteId}`),
-          fetch(`/api/content?type=tags&userId=${userId}&siteId=${selectedSiteId}`)
-        ]);
-        
-        if (catRes.ok) {
-          const cats = await catRes.json();
-          setCategories(cats);
-        } else {
-          console.error('Categories response:', catRes.status, await catRes.text());
-        }
-        if (tagRes.ok) {
-          const tags = await tagRes.json();
-          setAvailableTags(tags);
-        } else {
-          console.error('Tags response:', tagRes.status, await tagRes.text());
-        }
-      } catch (error) {
-        console.error('Failed to fetch categories/tags:', error);
-        toast({ variant: "destructive", title: "Error", description: "Failed to load categories and tags" });
+  // Cache for categories/tags to avoid refetching
+  const [categoriesCache, setCategoriesCache] = useState<Record<string, any[]>>({});
+  const [tagsCache, setTagsCache] = useState<Record<string, any[]>>({});
+
+  // Lazy load categories and tags ONLY when needed (called manually, not on mount)
+  const loadCategoriesAndTags = async () => {
+    if (!selectedSiteId || !userId) return;
+    
+    // Check cache first
+    if (categoriesCache[selectedSiteId] && tagsCache[selectedSiteId]) {
+      setCategories(categoriesCache[selectedSiteId]);
+      setAvailableTags(tagsCache[selectedSiteId]);
+      return;
+    }
+    
+    setLoadingCategories(true);
+    setLoadingTags(true);
+    try {
+      const [catRes, tagRes] = await Promise.all([
+        fetch(`/api/content?type=categories&userId=${userId}&siteId=${selectedSiteId}`),
+        fetch(`/api/content?type=tags&userId=${userId}&siteId=${selectedSiteId}`)
+      ]);
+      
+      if (catRes.ok) {
+        const cats = await catRes.json();
+        setCategories(cats);
+        setCategoriesCache(prev => ({ ...prev, [selectedSiteId]: cats }));
       }
+      if (tagRes.ok) {
+        const tags = await tagRes.json();
+        setAvailableTags(tags);
+        setTagsCache(prev => ({ ...prev, [selectedSiteId]: tags }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories/tags:', error);
+    } finally {
       setLoadingCategories(false);
       setLoadingTags(false);
-    };
-    fetchCategoriesAndTags();
-  }, [selectedSiteId, userId]);
+    }
+  };
 
   const selectedSite = sites_user.find(s => s.id === selectedSiteId);
   const plugin = selectedSite?.seoPlugin || 'none';
@@ -257,6 +264,10 @@ export default function Editor() {
         description: "Please select a site, enter a title, and write some content." 
       });
       return;
+    }
+    // Lazy load categories/tags when moving to step 2
+    if (step === 1) {
+      loadCategoriesAndTags();
     }
     setStep(s => s + 1);
   };
