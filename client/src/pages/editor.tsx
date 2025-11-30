@@ -466,18 +466,32 @@ export default function Editor() {
       e.preventDefault();
       const tagName = formData.currentTag.trim();
       
-      if (formData.tags.includes(tagName)) {
+      // Look up tag in availableTags to get numeric ID
+      const existingTag = availableTags.find((t: any) => 
+        t.name.toLowerCase() === tagName.toLowerCase()
+      );
+
+      if (!existingTag) {
+        toast({ 
+          variant: "destructive", 
+          title: "Tag not found", 
+          description: `"${tagName}" doesn't exist. Please select from suggestions or contact admin.` 
+        });
+        return;
+      }
+
+      if (formData.tags.includes(existingTag.id)) {
         toast({ variant: "destructive", title: "Tag exists", description: "This tag is already added" });
         return;
       }
 
-      // Just add tag locally - will be created on WordPress during publishing
+      // Add numeric tag ID (required by WordPress API)
       setFormData({
         ...formData,
-        tags: [...formData.tags, tagName],
+        tags: [...formData.tags, existingTag.id],
         currentTag: ""
       });
-      toast({ title: "Tag added", description: `"${tagName}" will be saved when you publish` });
+      toast({ title: "Tag added", description: `"${tagName}" added successfully` });
     }
   };
 
@@ -1367,9 +1381,9 @@ export default function Editor() {
         </div>
       )}
 
-      {/* Overlay during publishing - disables all clicks */}
+      {/* Overlay during publishing - disables all clicks and covers entire viewport */}
       {isPublishing && (
-        <div className="fixed inset-0 bg-black/10 z-40 pointer-events-auto" />
+        <div className="fixed inset-0 bg-black/30 z-50 cursor-not-allowed pointer-events-auto" />
       )}
 
       {/* Footer Controls */}
