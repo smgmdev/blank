@@ -54,28 +54,19 @@ export default function MyArticles() {
       if (!userId) return;
       setIsLoading(true);
       try {
-        // FAST: Check cache for sites first
-        let allSites: any[] = [];
-        const cachedSites = localStorage.getItem(`sites_${userId}`);
-        if (cachedSites) {
-          allSites = JSON.parse(cachedSites);
-          setSites(allSites);
-        }
-        
-        // Fetch articles ONLY - don't fetch sites here
+        // Always fetch fresh articles
         const articlesRes = await fetch(`/api/content?type=articles`, { headers: { "x-user-id": userId } });
         
         if (articlesRes.ok) {
           const allArticles = await articlesRes.json();
           
-          // Fetch sites if not cached - include auth status with action=user-sites
-          if (allSites.length === 0) {
-            const sitesRes = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
-            if (sitesRes.ok) {
-              allSites = await sitesRes.json();
-              setSites(allSites);
-              localStorage.setItem(`sites_${userId}`, JSON.stringify(allSites));
-            }
+          // Always fetch fresh site auth status from database (not cache)
+          const sitesRes = await fetch(`/api/sites?action=user-sites&userId=${userId}`);
+          let allSites: any[] = [];
+          if (sitesRes.ok) {
+            allSites = await sitesRes.json();
+            setSites(allSites);
+            localStorage.setItem(`sites_${userId}`, JSON.stringify(allSites));
           }
           
           // Filter to only this user's articles
