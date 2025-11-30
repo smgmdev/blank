@@ -201,14 +201,12 @@ export default function MyArticles() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    setSyncStatus("Connecting to WordPress...");
+    setSyncStatus("Syncing with WordPress...");
     setSyncError(null);
     try {
       const syncRes = await fetch(`/api/sync-articles`, {
         method: 'POST'
       });
-      
-      setSyncStatus("Fetching and comparing articles...");
       
       if (syncRes.ok) {
         const syncData = await syncRes.json();
@@ -219,50 +217,11 @@ export default function MyArticles() {
         
         console.log("Sync deleted IDs:", syncData.deletedIds);
         
-        // Fetch category names for each site
-        const [sitesRes] = await Promise.all([fetch(`/api/sites`)]);
-        const allSites = sitesRes.ok ? await sitesRes.json() : [];
-        setSites(allSites);
-        
-        const newCategoryMap: Record<string, Record<number, string>> = {};
-        for (const site of allSites) {
-          try {
-            const catRes = await fetch(`/api/content?type=categories&userId=${userId}&siteId=${site.id}`);
-            if (catRes.ok) {
-              const categories = await catRes.json();
-              newCategoryMap[site.id] = {};
-              categories.forEach((cat: any) => {
-                newCategoryMap[site.id][cat.id] = cat.name;
-              });
-            }
-          } catch (e) {
-            console.error(`Failed to fetch categories for site ${site.id}:`, e);
-          }
-        }
-        setCategoryMap(newCategoryMap);
-        setIsCategoriesLoading(false);
-        
-        // Fetch WordPress links with per-article loading state
-        const articlesWithLinks = userArticles.map((article: any) => {
-          // Load wpLink in background for published articles
-          if (article.status === 'published' && !article.wpLink) {
-            setLoadingLinks(prev => ({ ...prev, [article.id]: true }));
-            fetch(`/api/content?type=publishing&articleId=${article.id}&siteId=${article.siteId}`)
-              .then(res => res.ok && res.json())
-              .then(pubData => {
-                if (pubData?.wpLink) {
-                  setArticles(prev => prev.map(a => a.id === article.id ? { ...a, wpLink: pubData.wpLink } : a));
-                }
-                setLoadingLinks(prev => ({ ...prev, [article.id]: false }));
-              })
-              .catch(() => setLoadingLinks(prev => ({ ...prev, [article.id]: false })));
-          }
-          return article;
-        });
-        
-        setArticles(articlesWithLinks);
+        // Update articles immediately (don't re-fetch categories)
+        setArticles(userArticles);
         setSyncStatus(null);
         
+        // Toast notification
         if (syncData.deletedCount > 0) {
           toast({
             title: "Synced",
