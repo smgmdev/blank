@@ -42,7 +42,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { label: "Media Network", icon: LayoutDashboard, href: "/dashboard", show: true },
     { label: "My Articles", icon: FileText, href: "/my-articles", show: true },
-    { label: "Write New Article", icon: PenTool, href: "/editor", show: true },
+    { label: "Editor", icon: PenTool, href: "/editor", show: true },
     { label: "Site Management", icon: Globe, href: "/admin/sites", show: isAdmin },
     { label: "User Management", icon: Users, href: "/admin/users", show: isAdmin },
     { label: "Publisher Profile", icon: User, href: "/publishing-profile", show: !isAdmin },
