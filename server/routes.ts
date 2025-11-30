@@ -984,7 +984,7 @@ export async function registerRoutes(
         console.log(`[Sync] Site: ${site.name} - checking ${siteArticles.length} articles`);
         
         try {
-          // Fetch all published posts from WordPress with admin credentials
+          // Setup auth headers once
           const headers: any = {};
           if (site.adminUsername && site.adminPassword) {
             const auth = Buffer.from(`${site.adminUsername}:${site.adminPassword}`).toString("base64");
@@ -994,46 +994,21 @@ export async function registerRoutes(
             headers.Authorization = `Basic ${auth}`;
           }
           
-          // Fetch posts (paginate to get all)
-          const allPostIds = new Set<number>();
-          let page = 1;
-          let hasMore = true;
-          let fetchSucceeded = false;
+          // OPTIMIZED: Check each article by post ID instead of fetching all posts
+          console.log(`[Sync] Checking ${siteArticles.length} article post IDs directly...`);
           
-          while (hasMore) {
-            const postsUrl = `${site.apiUrl}/wp/v2/posts?per_page=100&page=${page}&status=publish`;
-            console.log(`[Sync] Fetching posts page ${page} from ${site.name}`);
+          for (const { article, publishing } of siteArticles) {
+            const postId = parseInt(publishing.wpPostId, 10);
             
-            const postsRes = await fetch(postsUrl, { headers });
-            if (!postsRes.ok) {
-              const errorText = await postsRes.text();
-              console.error(`[Sync] Failed to fetch posts from ${site.name}: HTTP ${postsRes.status}`);
-              console.error(`[Sync] WordPress API response:`, errorText);
-              console.log(`[Sync] Skipping deletion check for ${site.name} due to fetch error`);
-              break;
-            }
-            
-            fetchSucceeded = true;
-            const posts = await postsRes.json() as any[];
-            if (posts.length === 0) {
-              hasMore = false;
-            } else {
-              posts.forEach(post => allPostIds.add(post.id));
-              page++;
-            }
-          }
-          
-          console.log(`[Sync] Found ${allPostIds.size} published posts on ${site.name}`);
-          
-          // Only check for deletions if we successfully fetched posts
-          if (fetchSucceeded) {
-            // Now check each article - if its post ID is NOT in WordPress, delete it
-            for (const { article, publishing } of siteArticles) {
-              const postId = parseInt(publishing.wpPostId, 10);
+            try {
+              // Check if post exists by making a direct request to the post endpoint
+              const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
+              const checkRes = await fetch(checkUrl, { headers });
               
-              if (allPostIds.has(postId)) {
+              if (checkRes.ok) {
                 console.log(`[Sync] Article "${article.title}" (post ${postId}): ✓ exists on WordPress`);
-              } else {
+              } else if (checkRes.status === 404) {
+                // Post not found - delete from local database
                 console.log(`[Sync] Article "${article.title}" (post ${postId}): ✗ NOT found on WordPress - DELETING`);
                 try {
                   await storage.deleteArticle(article.id);
@@ -1043,10 +1018,12 @@ export async function registerRoutes(
                 } catch (delError: any) {
                   console.error(`[Sync] ERROR deleting article ${article.id}:`, delError.message);
                 }
+              } else {
+                console.log(`[Sync] Article "${article.title}" (post ${postId}): Skipped (HTTP ${checkRes.status})`);
               }
+            } catch (checkError: any) {
+              console.log(`[Sync] Article "${article.title}" (post ${postId}): Error checking - ${checkError.message}`);
             }
-          } else {
-            console.log(`[Sync] Skipping article deletion checks for ${site.name} - fetch failed`);
           }
         } catch (siteError: any) {
           console.error(`[Sync] Error syncing site ${site.name}:`, siteError.message);
