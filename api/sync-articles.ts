@@ -64,31 +64,32 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         
         console.log(`[Sync] Article ${article.id}: WordPress returned status ${checkRes.status}`);
         
-        // Delete if: 404, 410 (Gone), or if it's an error response with "rest_post_invalid_id"
-        if (checkRes.status === 404 || checkRes.status === 410) {
+        // Delete if: 404 (Not Found), 410 (Gone), or 401 (Unauthorized - likely deleted post we can't access)
+        if (checkRes.status === 404 || checkRes.status === 410 || checkRes.status === 401) {
           console.log(`[Sync] Article ${article.id} marked for deletion - not found in WordPress (status ${checkRes.status})`);
           return article.id;
         }
         
-        // Also check response body for error messages indicating post doesn't exist
-        if (!checkRes.ok) {
+        // Also check response body for error indicators
+        try {
+          const responseText = await checkRes.text();
+          
           try {
-            const responseText = await checkRes.text();
-            console.log(`[Sync] Article ${article.id}: Got status ${checkRes.status}, response: ${responseText.substring(0, 200)}`);
+            const data = JSON.parse(responseText) as any;
             
-            try {
-              const errorData = JSON.parse(responseText) as any;
-              if (errorData.code === 'rest_post_invalid_id' || errorData.code === 'rest_invalid_param' || errorData.message?.includes('not found')) {
-                console.log(`[Sync] Article ${article.id} marked for deletion - error code: ${errorData.code}`);
-                return article.id;
-              }
-            } catch {
-              // Not JSON response
+            // Check for error codes indicating post doesn't exist
+            if (data.code === 'rest_post_invalid_id' || 
+                data.code === 'rest_invalid_param' || 
+                data.message?.includes('not found') ||
+                data.message?.includes('No post found')) {
+              console.log(`[Sync] Article ${article.id} marked for deletion - error: ${data.code || data.message}`);
+              return article.id;
             }
           } catch {
-            // Couldn't parse response, log and don't delete
-            console.log(`[Sync] Article ${article.id}: Could not parse error response`);
+            // Not JSON, skip body check
           }
+        } catch (e) {
+          // Couldn't read response
         }
       } catch (e: any) {
         console.error(`[Sync] Check failed for article ${article.id}:`, e.message);
