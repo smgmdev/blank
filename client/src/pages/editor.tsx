@@ -989,13 +989,24 @@ export default function Editor() {
                       
                       <select 
                         className="px-2 py-1 text-sm border border-border rounded hover:bg-background transition-colors"
-                        onChange={(e) => applyFormat('fontSize', e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value.startsWith('px')) {
+                            document.execCommand('styleWithCSS', false, true);
+                            document.execCommand('fontSize', false, value);
+                          } else {
+                            applyFormat('fontSize', value);
+                          }
+                        }}
                         title="Font size"
                       >
-                        <option value="1">Small</option>
-                        <option value="3" selected>Normal</option>
-                        <option value="5">Large</option>
-                        <option value="7">Extra Large</option>
+                        <option value="1">12px (Small)</option>
+                        <option value="2">14px</option>
+                        <option value="3" selected>16px (Normal)</option>
+                        <option value="4">18px</option>
+                        <option value="5">20px (Large)</option>
+                        <option value="6">24px</option>
+                        <option value="7">32px (Extra Large)</option>
                       </select>
                     </div>
 
@@ -1275,11 +1286,13 @@ export default function Editor() {
               {/* Common SEO Title Field (All plugins) */}
               <div className="space-y-2">
                 <Label>SEO Title (Auto-synced with Article Title)</Label>
-                <Input 
+                <textarea 
                   value={formData.title}
                   disabled
-                  className="bg-muted text-muted-foreground cursor-not-allowed"
+                  className="w-full p-3 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed resize-none overflow-hidden text-sm"
                   placeholder="Auto-synced from article title"
+                  rows={2}
+                  style={{ height: 'auto', minHeight: '3rem' }}
                 />
                 <p className="text-xs text-muted-foreground">This is automatically set to match your article title and cannot be edited separately.</p>
               </div>
@@ -1316,11 +1329,13 @@ export default function Editor() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-green-600 font-medium">AI Generated Meta Description</Label>
-                    <Input 
+                    <textarea 
                       disabled
                       placeholder="Auto-generated from content..." 
                       value={formData.seo.description}
-                      className="bg-muted text-muted-foreground cursor-not-allowed"
+                      className="w-full p-3 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed resize-none overflow-hidden text-sm"
+                      rows={3}
+                      style={{ height: 'auto', minHeight: '5rem' }}
                     />
                     <p className="text-xs text-muted-foreground">Automatically generated from your first paragraph (max 160 characters).</p>
                   </div>
