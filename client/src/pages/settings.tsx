@@ -234,8 +234,7 @@ export default function Settings() {
             />
           </div>
           {isAdmin && (
-            <Button onClick={handleAccountUpdate} disabled={isSaving} className="gap-2">
-              <Save className="w-4 h-4" />
+            <Button onClick={handleAccountUpdate} disabled={isSaving}>
               {isSaving ? "Updating..." : "Update"}
             </Button>
           )}
@@ -328,8 +327,7 @@ export default function Settings() {
             </div>
           </div>
 
-          <Button onClick={handlePasswordChange} disabled={isSaving} className="gap-2">
-            <Lock className="w-4 h-4" />
+          <Button onClick={handlePasswordChange} disabled={isSaving}>
             {isSaving ? "Updating..." : "Change Password"}
           </Button>
         </CardContent>
@@ -413,8 +411,7 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <Button onClick={handlePinSetup} disabled={isSaving} className="gap-2">
-                  <Shield className="w-4 h-4" />
+                <Button onClick={handlePinSetup} disabled={isSaving}>
                   {isSaving ? "Saving..." : "Save PIN"}
                 </Button>
               </>
