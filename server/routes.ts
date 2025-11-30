@@ -953,17 +953,23 @@ export async function registerRoutes(
       let deletedCount = 0;
       const deletedIds: string[] = [];
       
+      console.log(`[Sync] Starting sync check for ${articles.length} articles`);
+      
       for (const article of articles) {
         if (article.status === 'published' && article.siteId) {
           try {
             const publishing = await storage.getArticlePublishingByArticleId(article.id);
+            console.log(`[Sync] Article ${article.id}: found ${publishing.length} publishing records`);
+            
             if (publishing.length > 0) {
               const pub = publishing[0];
               const site = await storage.getWordPressSite(pub.siteId);
+              console.log(`[Sync] Article ${article.id}: wpPostId=${pub.wpPostId}, site=${site?.name}`);
               
               if (site && pub.wpPostId && site.adminUsername) {
                 const postId = parseInt(pub.wpPostId, 10);
                 const checkUrl = `${site.apiUrl}/wp/v2/posts/${postId}`;
+                console.log(`[Sync] Checking URL: ${checkUrl}`);
                 
                 try {
                   const auth = Buffer.from(`${site.adminUsername}:${site.apiToken}`).toString("base64");
@@ -971,24 +977,29 @@ export async function registerRoutes(
                     headers: { Authorization: `Basic ${auth}` }
                   });
                   
+                  console.log(`[Sync] Response status: ${checkRes.status}`);
+                  
                   if (checkRes.status === 404) {
-                    console.log(`Article ${article.id} deleted from WordPress - removing from app`);
+                    console.log(`[Sync] Article ${article.id} deleted from WordPress - removing from app`);
                     await storage.deleteArticle(article.id);
                     deletedCount++;
                     deletedIds.push(article.id);
                   }
                 } catch (fetchError) {
-                  console.error(`Fetch error for post ${postId}:`, fetchError);
+                  console.error(`[Sync] Fetch error for post ${postId}:`, fetchError);
                 }
+              } else {
+                console.log(`[Sync] Article ${article.id}: Missing wpPostId or site - skipping check`);
               }
             }
           } catch (error) {
-            console.error("Sync check error:", error);
+            console.error(`[Sync] Sync check error for article ${article.id}:`, error);
           }
         }
       }
       
       const syncedArticles = await storage.getAllArticles();
+      console.log(`[Sync] Complete: ${deletedCount} deleted, ${deletedIds.length} IDs`);
       res.json({ success: true, deletedCount, deletedIds, articles: syncedArticles });
     } catch (error) {
       console.error("Sync error:", error);

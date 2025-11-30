@@ -323,15 +323,15 @@ export default function MyArticles() {
           
           {/* Actions */}
           <div className="flex flex-col gap-1 flex-shrink-0 p-4 sm:p-0 border-t sm:border-t-0 sm:border-t-0">
-            {article.status === 'published' && (
-              <Button variant="outline" size="sm" asChild title="View Article" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap" disabled={!article.wpLink}>
-                <a href={article.wpLink || '#'} target={article.wpLink ? '_blank' : undefined} rel={article.wpLink ? 'noopener noreferrer' : undefined}>
-                  View Article
-                  <ExternalLink className="w-3 h-3 ml-1" />
-                </a>
-              </Button>
-            )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {article.status === 'published' && (
+                <Button variant="outline" size="sm" asChild title="View Article" className="h-8 text-xs hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 whitespace-nowrap" disabled={!article.wpLink}>
+                  <a href={article.wpLink || '#'} target={article.wpLink ? '_blank' : undefined} rel={article.wpLink ? 'noopener noreferrer' : undefined}>
+                    View Article
+                    <ExternalLink className="w-3 h-3 ml-1" />
+                  </a>
+                </Button>
+              )}
               <Button variant="ghost" size="icon" title="Edit Article" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={() => handleEdit(article.id)}>
                 <Edit className="w-4 h-4" />
               </Button>
