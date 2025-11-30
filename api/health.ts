@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { getAllAppUsers } from "./db-utils";
+import { getAllAppUsers } from "./db-utils.js";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
