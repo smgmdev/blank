@@ -17,6 +17,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [sliderModalOpen, setSliderModalOpen] = useState(false);
   const [selectedSlider, setSelectedSlider] = useState<HTMLElement | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [resizing, setResizing] = useState<{id: string; startX: number; startWidth: number} | null>(null);
 
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
@@ -26,6 +27,36 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       setIsInitialized(true);
     }
   }, [isInitialized, content]);
+
+  // Handle slider resize
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizing || !editorRef.current) return;
+      
+      const slider = editorRef.current.querySelector(`[data-slider-id="${resizing.id}"]`) as HTMLElement;
+      if (!slider) return;
+
+      const deltaX = e.clientX - resizing.startX;
+      const newWidth = Math.max(200, resizing.startWidth + deltaX);
+      slider.style.maxWidth = newWidth + 'px';
+    };
+
+    const handleMouseUp = () => {
+      if (resizing && editorRef.current) {
+        updateContent(editorRef.current.innerHTML);
+        setResizing(null);
+      }
+    };
+
+    if (resizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [resizing]);
 
   const updateContent = (newContent: string) => {
     onChange(newContent);
@@ -89,36 +120,23 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const handleSliderInsert = (sliderHtml: string) => {
     if (!editorRef.current) return;
 
-    // Ensure editor has focus
+    const sliderId = 'slider-' + Date.now();
+    const wrappedSlider = sliderHtml.replace('class="image-slider"', `class="image-slider" data-slider-id="${sliderId}"`);
+    
+    // Simply append to the editor's innerHTML
+    editorRef.current.innerHTML += wrappedSlider;
     editorRef.current.focus();
-
-    // Save current selection
-    const selection = window.getSelection();
-    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-
-    // Create a temporary container for the slider
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = sliderHtml;
-    const sliderElement = tempDiv.firstElementChild;
-
-    if (sliderElement && range) {
-      // Insert at the current cursor position
-      range.insertNode(sliderElement);
-      range.setEndAfter(sliderElement);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
-    } else if (sliderElement) {
-      // Fallback: append to editor
-      editorRef.current.appendChild(sliderElement);
-    }
-
-    // Update content after a small delay to ensure DOM is updated
-    setTimeout(() => {
-      if (editorRef.current) {
-        updateContent(editorRef.current.innerHTML);
-        setSliderModalOpen(false);
-      }
-    }, 50);
+    
+    // Move cursor to the end
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(editorRef.current);
+    range.collapse(false);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    
+    updateContent(editorRef.current.innerHTML);
+    setSliderModalOpen(false);
   };
 
   const moveSlider = (direction: 'up' | 'down') => {
@@ -144,7 +162,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
     slider.style.marginLeft = alignment === 'left' ? '0' : alignment === 'center' ? 'auto' : '0';
     slider.style.marginRight = alignment === 'right' ? '0' : alignment === 'center' ? 'auto' : '0';
-    slider.style.display = alignment === 'center' ? 'block' : 'block';
     
     updateContent(editorRef.current.innerHTML);
   };
@@ -267,6 +284,31 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       />
 
       <ImageSliderModal open={sliderModalOpen} onClose={() => setSliderModalOpen(false)} onInsert={handleSliderInsert} />
+
+      <style>{`
+        .image-slider {
+          position: relative;
+          max-width: 600px;
+        }
+        
+        .slider-resize-handle {
+          position: absolute;
+          right: -8px;
+          bottom: -8px;
+          width: 16px;
+          height: 16px;
+          background: #3b82f6;
+          border: 2px solid white;
+          border-radius: 2px;
+          cursor: se-resize;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        
+        .image-slider:hover .slider-resize-handle {
+          opacity: 1;
+        }
+      `}</style>
     </div>
   );
 }
