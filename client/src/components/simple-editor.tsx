@@ -315,66 +315,35 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       }
 
       if (embedCode && editorRef.current) {
-        const videoId = 'video-' + Date.now();
-        const videoContainer = document.createElement('div');
-        videoContainer.className = 'video-container';
-        videoContainer.setAttribute('contenteditable', 'false');
-        videoContainer.style.display = 'block';
-        videoContainer.style.margin = '20px 0';
-        videoContainer.style.textAlign = 'center';
+        const vidId = 'video-' + Date.now();
         
-        const videoDiv = document.createElement('div');
-        videoDiv.className = 'editor-video';
-        videoDiv.setAttribute('data-video-id', videoId);
-        videoDiv.setAttribute('contenteditable', 'false');
-        videoDiv.style.display = 'inline-block';
-        videoDiv.style.cursor = 'pointer';
-        videoDiv.style.position = 'relative';
-        videoDiv.style.border = '2px solid transparent';
-        videoDiv.style.borderRadius = '6px';
-        videoDiv.style.overflow = 'hidden';
-        videoDiv.style.width = '640px';
-        videoDiv.style.maxWidth = '100%';
-        videoDiv.innerHTML = embedCode;
+        // Use insertHTML just like images for consistent behavior
+        const videoContainer = `<div class="video-container" contenteditable="false" style="display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;">
+          <div class="editor-video" data-video-id="${vidId}" contenteditable="false" style="display: inline-block; cursor: pointer; position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden; width: 640px; max-width: 100%; margin: 0 auto;">
+            ${embedCode}
+          </div>
+        </div>`;
         
-        const overlay = document.createElement('div');
-        overlay.setAttribute('data-video-overlay', videoId);
-        overlay.style.position = 'absolute';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.pointerEvents = 'auto';
-        videoDiv.appendChild(overlay);
+        // Focus editor and move cursor to end
+        editorRef.current.focus();
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
         
-        videoContainer.appendChild(videoDiv);
-        
-        // Insert at saved cursor position
-        if (savedSelectionRef.current) {
-          const selection = window.getSelection();
-          const range = document.createRange();
-          
-          try {
-            range.setStart(savedSelectionRef.current.anchorNode || editorRef.current, savedSelectionRef.current.anchorOffset);
-            range.collapse(true);
-            selection?.removeAllRanges();
-            selection?.addRange(range);
-            
-            range.insertNode(videoContainer);
-            range.setStartAfter(videoContainer);
-            range.collapse(true);
-            selection?.removeAllRanges();
-            selection?.addRange(range);
-          } catch (err) {
-            // If saved selection is invalid, insert at end
-            editorRef.current.appendChild(videoContainer);
-          }
-        } else {
-          editorRef.current.appendChild(videoContainer);
+        try {
+          document.execCommand('insertHTML', false, videoContainer);
+        } catch (err) {
+          console.error('Insert video HTML failed:', err);
         }
-        
-        updateContent(editorRef.current.innerHTML);
-        attachMediaListeners();
+
+        if (editorRef.current) {
+          updateContent(editorRef.current.innerHTML);
+          attachMediaListeners();
+        }
+
         setVideoUrl('');
         setShowVideoDialog(false);
         savedSelectionRef.current = null;
