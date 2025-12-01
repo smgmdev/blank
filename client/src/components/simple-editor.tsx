@@ -80,17 +80,18 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   // Handle sticky toolbar on page scroll
   useEffect(() => {
     const handleScroll = () => {
-      if (!containerRef.current || !toolbarRef.current) return;
+      if (!toolbarRef.current) return;
       
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const toolbarHeight = toolbarRef.current.offsetHeight;
-      
-      // If container top is above viewport top, make toolbar fixed at top of editor
-      if (containerRect.top < 0) {
+      // If page has scrolled down at all, make toolbar fixed at top
+      if (window.scrollY > 0) {
         setToolbarStyle({
-          position: 'sticky',
+          position: 'fixed',
           top: 0,
-          zIndex: 50,
+          left: 0,
+          right: 0,
+          width: '100%',
+          zIndex: 999,
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         });
       } else {
         setToolbarStyle({});
