@@ -42,6 +42,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
+  const [toolbarStyle, setToolbarStyle] = useState<React.CSSProperties>({});
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -76,7 +77,29 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
+  // Handle sticky toolbar on page scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current || !toolbarRef.current) return;
+      
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const toolbarHeight = toolbarRef.current.offsetHeight;
+      
+      // If container top is above viewport top, make toolbar fixed at top of editor
+      if (containerRect.top < 0) {
+        setToolbarStyle({
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+        });
+      } else {
+        setToolbarStyle({});
+      }
+    };
 
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Track resize handle position for images and videos
   useEffect(() => {
@@ -1054,7 +1077,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       <div ref={containerRef}>
         <div 
           ref={toolbarRef}
-          className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 z-50 sticky top-0 shadow-sm"
+          className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 z-50 shadow-sm"
+          style={toolbarStyle}
         >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
