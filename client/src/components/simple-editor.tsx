@@ -26,6 +26,7 @@ interface ImageSettings {
 
 export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -40,6 +41,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
+  const [toolbarIsFixed, setToolbarIsFixed] = useState(false);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -73,6 +75,20 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       return () => observer.disconnect();
     }
   }, [isInitialized, content]);
+
+  // Handle sticky toolbar on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!toolbarRef.current) return;
+      const rect = toolbarRef.current.getBoundingClientRect();
+      // Check if toolbar has scrolled to top of viewport
+      const shouldBeFixed = rect.top <= 0;
+      setToolbarIsFixed(shouldBeFixed);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Track resize handle position for images and videos
   useEffect(() => {
@@ -1047,7 +1063,14 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           user-select: none;
         }
       `}</style>
-      <div className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 sticky top-0 z-40">
+      <div 
+        ref={toolbarRef}
+        className={`bg-muted p-2 border-b border-border flex flex-wrap gap-1 ${
+          toolbarIsFixed 
+            ? 'fixed top-0 left-0 right-0 z-50 max-w-4xl mx-auto w-full' 
+            : 'relative z-40'
+        }`}
+      >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
         </Button>
@@ -1139,7 +1162,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         }}
         onClick={handleEditorClick}
         onKeyDown={handleEditorKeyDown}
-        className="simple-editor min-h-[400px] p-4 focus:outline-none text-base leading-relaxed relative"
+        className={`simple-editor min-h-[400px] p-4 focus:outline-none text-base leading-relaxed relative ${toolbarIsFixed ? 'pt-[60px]' : ''}`}
         style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           outline: 'none',
