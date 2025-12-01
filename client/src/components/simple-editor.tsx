@@ -105,7 +105,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       const reader = new FileReader();
       reader.onload = (event) => {
         const imgId = 'img-' + Date.now();
-        const img = `<img class="editor-image" data-img-id="${imgId}" src="${event.target?.result}" style="max-width: 100%; height: auto; margin: 10px 5px; border-radius: 6px; cursor: pointer;" />`;
+        const img = `<img class="editor-image" data-img-id="${imgId}" src="${event.target?.result}" style="max-width: 100%; height: auto; margin: 10px 5px; border-radius: 6px; cursor: pointer; display: inline-block;" />`;
         document.execCommand('insertHTML', false, img);
         if (editorRef.current) {
           updateContent(editorRef.current.innerHTML);
@@ -222,25 +222,31 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
     if (!img) return;
     
-    // Wrap image if not already wrapped
+    // Always wrap in a div for consistent alignment
     let wrapper = img.parentElement;
-    const isWrapped = wrapper && wrapper !== editorRef.current && wrapper.style.textAlign !== '';
     
-    if (!isWrapped) {
-      const newWrapper = document.createElement('div');
-      newWrapper.style.display = 'block';
-      newWrapper.style.margin = '10px 0';
-      img.parentNode?.insertBefore(newWrapper, img);
-      newWrapper.appendChild(img);
-      wrapper = newWrapper;
+    // Check if already wrapped by looking for img-wrapper class
+    if (!wrapper || !wrapper.classList.contains('img-wrapper')) {
+      wrapper = document.createElement('div');
+      wrapper.classList.add('img-wrapper');
+      img.parentNode?.insertBefore(wrapper, img);
+      wrapper.appendChild(img);
     }
     
-    // Apply alignment
+    // Clear previous alignment classes
+    wrapper.classList.remove('img-left', 'img-center', 'img-right');
+    wrapper.style.margin = '10px 0';
+    wrapper.style.display = 'block';
+    
+    // Apply alignment using classes
     if (alignment === 'left') {
+      wrapper.classList.add('img-left');
       wrapper.style.textAlign = 'left';
     } else if (alignment === 'center') {
+      wrapper.classList.add('img-center');
       wrapper.style.textAlign = 'center';
     } else if (alignment === 'right') {
+      wrapper.classList.add('img-right');
       wrapper.style.textAlign = 'right';
     }
     
@@ -262,6 +268,21 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-white dark:bg-slate-950">
+      <style>{`
+        .img-wrapper {
+          display: block;
+          margin: 10px 0;
+        }
+        .img-left {
+          text-align: left;
+        }
+        .img-center {
+          text-align: center;
+        }
+        .img-right {
+          text-align: right;
+        }
+      `}</style>
       <div className="bg-muted p-2 border-b border-border flex flex-wrap gap-1">
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
