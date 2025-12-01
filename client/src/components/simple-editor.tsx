@@ -194,24 +194,58 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     if (!videoUrl.trim() || !editorRef.current) return;
 
     let embedCode = '';
+    const url = videoUrl.trim();
     
-    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-      const videoId = videoUrl.includes('youtu.be') 
-        ? videoUrl.split('youtu.be/')[1] 
-        : videoUrl.split('v=')[1];
-      embedCode = `<div style="margin: 20px 0;"><iframe width="100%" height="400" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
-    }
-    else if (videoUrl.includes('vimeo.com')) {
-      const videoId = videoUrl.split('vimeo.com/')[1];
-      embedCode = `<div style="margin: 20px 0;"><iframe src="https://player.vimeo.com/video/${videoId}" width="100%" height="400" frameborder="0" allowfullscreen></iframe></div>`;
-    }
+    try {
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        let videoId = '';
+        
+        if (url.includes('youtu.be/')) {
+          // Handle youtu.be short URLs: https://youtu.be/dQw4w9WgXcQ
+          videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+        } else if (url.includes('v=')) {
+          // Handle youtube.com URLs: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+          videoId = url.split('v=')[1]?.split('&')[0] || '';
+        }
+        
+        if (videoId) {
+          embedCode = `<div style="margin: 20px 0; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 6px;">
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+          </div>`;
+        }
+      }
+      else if (url.includes('vimeo.com')) {
+        // Handle vimeo URLs: https://vimeo.com/123456789
+        const videoId = url.split('vimeo.com/')[1]?.split('?')[0]?.split('/')[0] || '';
+        if (videoId) {
+          embedCode = `<div style="margin: 20px 0; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 6px;">
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen></iframe>
+          </div>`;
+        }
+      }
 
-    if (embedCode && editorRef.current) {
-      editorRef.current.focus();
-      document.execCommand('insertHTML', false, embedCode);
-      updateContent(editorRef.current.innerHTML);
-      setVideoUrl('');
-      setShowVideoDialog(false);
+      if (embedCode && editorRef.current) {
+        // Focus and set cursor to end
+        editorRef.current.focus();
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        
+        try {
+          document.execCommand('insertHTML', false, embedCode);
+        } catch (err) {
+          console.error('Insert HTML failed:', err);
+        }
+        
+        updateContent(editorRef.current.innerHTML);
+        setVideoUrl('');
+        setShowVideoDialog(false);
+      }
+    } catch (error) {
+      console.error('Video embedding error:', error);
     }
   };
 
