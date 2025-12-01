@@ -44,6 +44,8 @@ export interface IStorage {
   updateAppUserProfile(id: string, displayName: string, profilePicture?: string): Promise<void>;
   updateAppUserEmail(id: string, email: string): Promise<void>;
   updateAppUserPassword(id: string, password: string): Promise<void>;
+  updateAppUserUsername(id: string, username: string): Promise<void>;
+  updateAppUserPin(id: string, pin: string | null): Promise<void>;
   deleteAppUser(id: string): Promise<void>;
 
   // User Sessions (server-side, for unified login across Replit & Vercel)
@@ -226,6 +228,14 @@ export class Storage implements IStorage {
 
   async updateAppUserPassword(id: string, password: string): Promise<void> {
     await db.update(appUsers).set({ password }).where(eq(appUsers.id, id));
+  }
+
+  async updateAppUserUsername(id: string, username: string): Promise<void> {
+    await db.update(appUsers).set({ username }).where(eq(appUsers.id, id));
+  }
+
+  async updateAppUserPin(id: string, pin: string | null): Promise<void> {
+    await db.update(appUsers).set({ pin }).where(eq(appUsers.id, id));
   }
 
   async deleteAppUser(id: string): Promise<void> {

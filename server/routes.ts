@@ -123,7 +123,11 @@ export async function registerRoutes(
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      res.json(user);
+      // Transform displayName to fullName for frontend
+      res.json({
+        ...user,
+        fullName: user.displayName || user.fullName
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch user" });
     }
@@ -131,11 +135,18 @@ export async function registerRoutes(
 
   app.patch("/api/users/:id", async (req, res) => {
     try {
-      const { displayName, profilePicture, email, password } = req.body;
+      const { displayName, profilePicture, email, password, username, fullName, pin } = req.body;
       
       // Update profile (displayName and profilePicture)
-      if (displayName || profilePicture) {
-        await storage.updateAppUserProfile(req.params.id, displayName, profilePicture);
+      // Frontend sends fullName, we store as displayName
+      const nameToUpdate = fullName || displayName;
+      if (nameToUpdate || profilePicture) {
+        await storage.updateAppUserProfile(req.params.id, nameToUpdate, profilePicture);
+      }
+      
+      // Update username
+      if (username) {
+        await storage.updateAppUserUsername(req.params.id, username);
       }
       
       // Update email
@@ -148,8 +159,17 @@ export async function registerRoutes(
         await storage.updateAppUserPassword(req.params.id, password);
       }
       
+      // Update PIN
+      if (pin !== undefined) {
+        await storage.updateAppUserPin(req.params.id, pin);
+      }
+      
       const user = await storage.getAppUser(req.params.id);
-      res.json(user);
+      // Transform displayName to fullName for frontend
+      res.json({
+        ...user,
+        fullName: user.displayName || user.fullName
+      });
     } catch (error) {
       res.status(500).json({ error: "Failed to update user" });
     }
