@@ -169,7 +169,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const descriptionAttr = imageSettings.description ? `data-img-description="${imageSettings.description}"` : 'data-img-description=""';
     
     // Create image container with visible caption
-    const captionHtml = imageSettings.caption ? `<div class="img-caption-text" style="margin-top: 8px; font-size: 0.875rem; color: #666; text-align: center; font-style: italic;">${imageSettings.caption}</div>` : '';
+    const captionHtml = imageSettings.caption ? `<div class="img-caption-text" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center;">${imageSettings.caption}</div>` : '';
     const imgContainer = `<div class="img-container" style="display: block; margin: 10px 0; text-align: center;">
       <img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; margin: 0 auto; display: block;" />
       ${captionHtml}
@@ -303,6 +303,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       container.appendChild(img);
     }
     
+    // Get caption if it exists
+    const caption = container.querySelector('.img-caption-text') as HTMLElement;
+    
     container.classList.remove('img-left', 'img-center', 'img-right');
     container.style.margin = '10px 0';
     container.style.display = 'block';
@@ -310,12 +313,15 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     if (alignment === 'left') {
       container.classList.add('img-left');
       container.style.textAlign = 'left';
+      if (caption) caption.style.textAlign = 'left';
     } else if (alignment === 'center') {
       container.classList.add('img-center');
       container.style.textAlign = 'center';
+      if (caption) caption.style.textAlign = 'center';
     } else if (alignment === 'right') {
       container.classList.add('img-right');
       container.style.textAlign = 'right';
+      if (caption) caption.style.textAlign = 'right';
     }
     
     if (editorRef.current) {
