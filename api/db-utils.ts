@@ -15,9 +15,11 @@ try {
 export function getDatabase() {
   if (!db) {
     try {
+      console.log("[DB Utils] Initializing database connection");
       db = getDb();
-    } catch (e) {
-      console.error("[DB Utils] Failed to get database on demand:", e);
+      console.log("[DB Utils] Database connection initialized");
+    } catch (e: any) {
+      console.error("[DB Utils] Failed to get database on demand:", e.message || e);
       throw e;
     }
   }

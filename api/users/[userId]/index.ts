@@ -10,12 +10,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return res.status(400).json({ error: "userId required" });
     }
 
-    const { initializeDb, getAppUserById, updateAppUser } = await import("../../db-utils.js");
-    initializeDb();
+    const { getAppUserById, updateAppUser } = await import("../../db-utils.js");
 
     if (req.method === "GET") {
+      console.log(`[API] GET /api/users/${userId}`);
       const user = await getAppUserById(userId);
-      if (!user) return res.status(404).json({ error: "User not found" });
+      if (!user) {
+        console.log(`[API] User not found: ${userId}`);
+        return res.status(404).json({ error: "User not found" });
+      }
+      console.log(`[API] User found: ${user.username}`);
       // Transform displayName to fullName for frontend
       return res.json({
         ...user,
@@ -24,6 +28,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     }
     
     if (req.method === "PATCH") {
+      console.log(`[API] PATCH /api/users/${userId}`);
       const { displayName, email, password, username, fullName, pin } = req.body;
       const updateData: Record<string, any> = {};
       
@@ -39,6 +44,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       }
       
       const updated = await updateAppUser(userId, updateData);
+      console.log(`[API] Updated user: ${updated.username}`);
       // Transform displayName to fullName for frontend
       return res.json({
         ...updated,
@@ -48,7 +54,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     
     res.status(405).json({ error: "Method not allowed" });
   } catch (error: any) {
-    console.error("Error:", error);
+    console.error(`[API] Error in user handler for ${userId}:`, error.message || error);
     res.status(500).json({ error: error.message });
   }
 };
