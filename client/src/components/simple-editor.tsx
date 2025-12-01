@@ -285,20 +285,35 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const selectImage = (imgId: string) => {
     if (!editorRef.current) return;
 
-    // Deselect previous image
+    // Deselect previous image/container
     if (selectedImageId !== imgId) {
       const prevImg = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
       if (prevImg) {
-        prevImg.style.border = 'none';
-        prevImg.style.boxShadow = 'none';
+        const prevContainer = prevImg.closest('.img-container') as HTMLElement;
+        if (prevContainer) {
+          prevContainer.style.border = 'none';
+          prevContainer.style.boxShadow = 'none';
+        } else {
+          prevImg.style.border = 'none';
+          prevImg.style.boxShadow = 'none';
+        }
       }
     }
 
     const img = editorRef.current.querySelector(`[data-img-id="${imgId}"]`) as HTMLImageElement;
     if (img) {
-      img.style.border = '2px solid #3b82f6';
-      img.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
-      img.style.borderRadius = '6px';
+      // Select the entire container (image + caption)
+      const container = img.closest('.img-container') as HTMLElement;
+      if (container) {
+        container.style.border = '2px solid #3b82f6';
+        container.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
+        container.style.borderRadius = '6px';
+        container.style.outline = 'none';
+      } else {
+        img.style.border = '2px solid #3b82f6';
+        img.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
+        img.style.borderRadius = '6px';
+      }
       setSelectedImageId(imgId);
     }
   };
@@ -326,6 +341,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
   const handleEditorClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
+    
+    // Check if clicking on image
     if (target.classList.contains('editor-image')) {
       const imgId = target.getAttribute('data-img-id');
       if (imgId) {
@@ -333,12 +350,33 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         e.preventDefault();
         e.stopPropagation();
       }
-    } else {
+    } 
+    // Check if clicking on caption
+    else if (target.classList.contains('img-caption-text')) {
+      const container = target.closest('.img-container') as HTMLElement;
+      const img = container?.querySelector('.editor-image') as HTMLImageElement;
+      if (img) {
+        const imgId = img.getAttribute('data-img-id');
+        if (imgId) {
+          selectImage(imgId);
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    } 
+    // Deselect when clicking elsewhere
+    else {
       if (selectedImageId) {
         const img = editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
         if (img) {
-          img.style.border = 'none';
-          img.style.boxShadow = 'none';
+          const container = img.closest('.img-container') as HTMLElement;
+          if (container) {
+            container.style.border = 'none';
+            container.style.boxShadow = 'none';
+          } else {
+            img.style.border = 'none';
+            img.style.boxShadow = 'none';
+          }
         }
         setSelectedImageId(null);
       }
@@ -488,6 +526,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           margin: 10px 0 !important;
           position: relative;
           max-width: 100%;
+          padding: 4px;
+          border-radius: 6px;
+          cursor: pointer;
         }
         .img-left {
           text-align: left !important;
@@ -534,6 +575,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           width: 100%;
           box-sizing: border-box;
           display: block;
+          cursor: pointer;
+          user-select: none;
         }
         .resize-handle {
           position: absolute;
