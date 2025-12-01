@@ -1081,10 +1081,17 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       `}</style>
       <div 
         ref={toolbarRef}
+        style={toolbarIsFixed ? {
+          position: 'fixed',
+          top: '0',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: '56rem',
+          zIndex: 50,
+        } : {}}
         className={`bg-muted p-2 border-b border-border flex flex-wrap gap-1 ${
-          toolbarIsFixed 
-            ? 'fixed top-0 left-0 right-0 z-50 max-w-4xl mx-auto w-full' 
-            : 'relative z-40'
+          toolbarIsFixed ? '' : 'relative z-40'
         }`}
       >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
