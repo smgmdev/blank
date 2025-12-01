@@ -26,7 +26,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
@@ -83,7 +82,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       const reader = new FileReader();
       reader.onload = (event) => {
         const imgId = 'img-' + Date.now();
-        const img = `<div class="editor-image" data-img-id="${imgId}" style="display: inline-block; position: relative; margin: 10px 5px;"><img src="${event.target?.result}" style="max-width: 100%; height: auto; border-radius: 6px; display: block;" /><div class="img-resize-handle" style="position: absolute; width: 20px; height: 20px; background: #3b82f6; border: 2px solid white; border-radius: 2px; bottom: -10px; right: -10px; cursor: se-resize; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: none;"></div></div>`;
+        const img = `<img class="editor-image" data-img-id="${imgId}" src="${event.target?.result}" style="max-width: 100%; height: auto; margin: 10px 5px; border-radius: 6px; cursor: pointer;" />`;
         document.execCommand('insertHTML', false, img);
         if (editorRef.current) {
           updateContent(editorRef.current.innerHTML);
@@ -118,83 +117,101 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   };
 
-  const handleImageClick = (e: React.MouseEvent) => {
+  const selectImage = (imgId: string) => {
+    if (!editorRef.current) return;
+
+    // Deselect previous image
+    if (selectedImageId !== imgId) {
+      const prevImg = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
+      if (prevImg) {
+        prevImg.style.border = 'none';
+        prevImg.style.boxShadow = 'none';
+      }
+    }
+
+    // Select new image
+    const img = editorRef.current.querySelector(`[data-img-id="${imgId}"]`) as HTMLImageElement;
+    if (img) {
+      img.style.border = '2px solid #3b82f6';
+      img.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
+      img.style.borderRadius = '6px';
+      setSelectedImageId(imgId);
+    }
+  };
+
+  const handleEditorClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    const imgContainer = target.closest('.editor-image');
-    
-    if (!imgContainer) return;
-    
-    const imgId = imgContainer.getAttribute('data-img-id');
-    setSelectedImageId(imgId);
-    
-    // Show all resize handles
-    if (editorRef.current) {
-      editorRef.current.querySelectorAll('.img-resize-handle').forEach(h => {
-        (h as HTMLElement).style.display = 'none';
-      });
-      const handle = imgContainer.querySelector('.img-resize-handle') as HTMLElement;
-      if (handle) handle.style.display = 'block';
+    if (target.classList.contains('editor-image')) {
+      const imgId = target.getAttribute('data-img-id');
+      if (imgId) {
+        selectImage(imgId);
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    } else {
+      // Deselect if clicking elsewhere
+      if (selectedImageId) {
+        const img = editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
+        if (img) {
+          img.style.border = 'none';
+          img.style.boxShadow = 'none';
+        }
+        setSelectedImageId(null);
+      }
     }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.classList.contains('img-resize-handle')) {
-      e.preventDefault();
-      setIsResizing(true);
+    if (target.classList.contains('editor-image') && selectedImageId) {
+      const img = target as HTMLImageElement;
+      const startX = e.clientX;
+      const startWidth = img.offsetWidth;
+      let isDragging = false;
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        isDragging = true;
+        const deltaX = moveEvent.clientX - startX;
+        const newWidth = Math.max(100, startWidth + deltaX);
+        img.style.width = newWidth + 'px';
+        img.style.height = 'auto';
+      };
+
+      const handleMouseUp = () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        if (isDragging && editorRef.current) {
+          updateContent(editorRef.current.innerHTML);
+        }
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     }
   };
-
-  useEffect(() => {
-    if (!isResizing || !selectedImageId || !editorRef.current) return;
-
-    const imgContainer = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
-    if (!imgContainer) return;
-
-    const img = imgContainer.querySelector('img') as HTMLImageElement;
-    const startX = (event as MouseEvent).clientX;
-    const startWidth = img.offsetWidth;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - startX;
-      img.style.width = Math.max(100, startWidth + deltaX) + 'px';
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-      if (editorRef.current) {
-        updateContent(editorRef.current.innerHTML);
-      }
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizing, selectedImageId]);
 
   const alignImage = (alignment: 'left' | 'center' | 'right') => {
     if (!selectedImageId || !editorRef.current) return;
     
-    const imgContainer = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
-    if (!imgContainer) return;
+    const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
+    if (!img) return;
     
-    imgContainer.style.textAlign = '';
-    imgContainer.style.marginLeft = '';
-    imgContainer.style.marginRight = '';
-    imgContainer.style.display = 'inline-block';
+    // Create or get wrapper
+    let wrapper = img.parentElement;
+    if (!wrapper || wrapper === editorRef.current) {
+      wrapper = document.createElement('div');
+      img.parentNode?.insertBefore(wrapper, img);
+      wrapper.appendChild(img);
+    }
+    
+    wrapper.style.margin = '10px 0';
     
     if (alignment === 'left') {
-      imgContainer.style.marginRight = '0';
+      wrapper.style.textAlign = 'left';
     } else if (alignment === 'center') {
-      imgContainer.style.display = 'block';
-      imgContainer.style.marginLeft = 'auto';
-      imgContainer.style.marginRight = 'auto';
+      wrapper.style.textAlign = 'center';
     } else if (alignment === 'right') {
-      imgContainer.style.marginLeft = 'auto';
+      wrapper.style.textAlign = 'right';
     }
     
     updateContent(editorRef.current.innerHTML);
@@ -203,9 +220,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const deleteImage = () => {
     if (!selectedImageId || !editorRef.current) return;
     
-    const imgContainer = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
-    if (imgContainer) {
-      imgContainer.remove();
+    const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
+    if (img) {
+      img.remove();
       updateContent(editorRef.current.innerHTML);
       setSelectedImageId(null);
     }
@@ -244,13 +261,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           <Play className="w-4 h-4" />
         </Button>
         <div className="w-px h-6 bg-border" />
-        <Button size="sm" variant="outline" onClick={() => alignImage('left')} title="Align Left" className="h-8 px-2">
+        <Button size="sm" variant="outline" onClick={() => alignImage('left')} disabled={!selectedImageId} title="Align Left" className="h-8 px-2">
           <AlignLeft className="w-4 h-4" />
         </Button>
-        <Button size="sm" variant="outline" onClick={() => alignImage('center')} title="Center" className="h-8 px-2">
+        <Button size="sm" variant="outline" onClick={() => alignImage('center')} disabled={!selectedImageId} title="Center" className="h-8 px-2">
           <AlignCenter className="w-4 h-4" />
         </Button>
-        <Button size="sm" variant="outline" onClick={() => alignImage('right')} title="Align Right" className="h-8 px-2">
+        <Button size="sm" variant="outline" onClick={() => alignImage('right')} disabled={!selectedImageId} title="Align Right" className="h-8 px-2">
           <AlignRight className="w-4 h-4" />
         </Button>
         <div className="w-px h-6 bg-border" />
@@ -272,8 +289,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       </div>
 
       {selectedImageId && (
-        <div className="px-4 py-2 bg-muted text-xs text-muted-foreground border-b border-border">
-          💡 Drag the blue square in the corner to resize. Use alignment buttons to position.
+        <div className="px-4 py-2 bg-blue-50 dark:bg-blue-950 text-xs text-blue-700 dark:text-blue-200 border-b border-blue-200">
+          💡 Drag the image to resize. Use alignment buttons to position left, center, or right.
         </div>
       )}
 
@@ -285,7 +302,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           const html = (e.currentTarget as HTMLDivElement).innerHTML;
           updateContent(html);
         }}
-        onClick={handleImageClick}
+        onClick={handleEditorClick}
         onMouseDown={handleMouseDown}
         className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed"
         style={{
