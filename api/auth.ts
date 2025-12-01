@@ -63,29 +63,16 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           return res.status(400).json({ error: "All fields required" });
         }
 
-        const { getDb, initializeDb } = await import("./db-utils.js");
-        initializeDb();
-        const db = getDb();
-        const { userSiteCredentials } = await import("../shared/schema.js");
-        const { eq, and } = await import("drizzle-orm");
-
         try {
-          // Check if credential exists
-          const existing = await getUserSiteCredential(userId, siteId);
-          
-          if (existing) {
-            // Delete old and create new (upsert pattern)
-            await db.delete(userSiteCredentials).where(eq(userSiteCredentials.id, existing.id));
-          }
-          
-          // Create new credential
-          const [credential] = await db.insert(userSiteCredentials).values({
+          // Use upsert to handle credential storage
+          const { upsertUserSiteCredential } = await import("./db-utils.js");
+          const credential = await upsertUserSiteCredential({
             userId,
             siteId,
             wpUsername,
             wpPassword,
             isVerified: true
-          }).returning();
+          });
 
           res.json({ success: true, message: "Credentials saved", credential });
         } catch (error: any) {

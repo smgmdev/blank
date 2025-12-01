@@ -10,8 +10,9 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     return res.status(200).end();
   }
 
+  const userId = req.query.userId as string;
+
   try {
-    const userId = req.query.userId as string;
     
     if (!userId) {
       console.error('[API] Missing userId in request');
