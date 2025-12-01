@@ -40,6 +40,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     if (req.method === "PATCH") {
       console.log(`[API] PATCH /api/users/${userId}`);
       const { displayName, email, password, username, fullName, pin } = req.body;
+      console.log(`[API] Update data received:`, { displayName, email, password, username, fullName, pin });
       const updateData: Record<string, any> = {};
       
       if (displayName) updateData.displayName = displayName;
@@ -49,17 +50,25 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       if (username) updateData.username = username;
       if (pin !== undefined) updateData.pin = pin; // Allow null to disable PIN
       
+      console.log(`[API] Update data to apply:`, updateData);
+      
       if (Object.keys(updateData).length === 0) {
+        console.log(`[API] No fields to update`);
         return res.status(400).json({ error: "No fields to update" });
       }
       
-      const updated = await updateAppUser(userId, updateData);
-      console.log(`[API] Updated user: ${updated.username}`);
-      // Transform displayName to fullName for frontend
-      return res.json({
-        ...updated,
-        fullName: updated.displayName || updated.fullName
-      });
+      try {
+        const updated = await updateAppUser(userId, updateData);
+        console.log(`[API] Updated user: ${updated.username}`);
+        // Transform displayName to fullName for frontend
+        return res.json({
+          ...updated,
+          fullName: updated.displayName || updated.fullName
+        });
+      } catch (updateError: any) {
+        console.error(`[API] Update failed:`, updateError.message);
+        throw updateError;
+      }
     }
     
     res.status(405).json({ error: "Method not allowed" });
