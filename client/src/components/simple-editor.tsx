@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Button } from './ui/button';
-import { Bold, Italic, List, Heading2, ImageIcon, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Bold, Italic, List, Heading2, ImageIcon, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Rows } from 'lucide-react';
+import { ImageSliderModal } from './image-slider-modal';
 
 interface SimpleEditorProps {
   content: string;
@@ -13,6 +14,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<string[]>([content]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [sliderModalOpen, setSliderModalOpen] = useState(false);
 
   const updateContent = (newContent: string) => {
     onChange(newContent);
@@ -70,6 +72,14 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     e.currentTarget.value = '';
   };
 
+  const handleSliderInsert = (sliderHtml: string) => {
+    if (editorRef.current) {
+      document.execCommand('insertHTML', false, sliderHtml);
+      updateContent(editorRef.current.innerHTML);
+      setSliderModalOpen(false);
+    }
+  };
+
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-white dark:bg-slate-950">
       {/* Toolbar */}
@@ -96,6 +106,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         </Button>
         <Button size="sm" variant="outline" onClick={() => imageInputRef.current?.click()} title="Insert Image" className="h-8 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200">
           <ImageIcon className="w-4 h-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setSliderModalOpen(true)} title="Insert Image Slider" className="h-8 px-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200">
+          <Rows className="w-4 h-4" />
         </Button>
         <div className="w-px h-6 bg-border" />
         <Button size="sm" variant="outline" onClick={() => execCommand('justifyLeft')} title="Align Left" className="h-8 px-2">
@@ -142,6 +155,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         className="hidden"
         data-testid="image-input"
       />
+
+      <ImageSliderModal open={sliderModalOpen} onClose={() => setSliderModalOpen(false)} onInsert={handleSliderInsert} />
     </div>
   );
 }
