@@ -956,9 +956,18 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
               setTempImageSrc('');
               setEditingImageId(null);
             }}>Cancel</Button>
-            <Button onClick={insertImageWithSettings} data-testid="confirm-image-add">
-              {editingImageId ? 'Save' : 'Add Image'}
-            </Button>
+            <div className="flex items-center gap-2">
+              {!imageSettings.caption.trim() && (
+                <span className="text-xs text-red-500">Please add caption</span>
+              )}
+              <Button 
+                onClick={insertImageWithSettings} 
+                disabled={!imageSettings.caption.trim()}
+                data-testid="confirm-image-add"
+              >
+                {editingImageId ? 'Save' : 'Add Image'}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
