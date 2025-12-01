@@ -286,32 +286,23 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       }
     }
 
-    // New image insertion
-    editorRef.current.focus();
-    
+    // New image insertion - append directly to editor
     const imgId = 'img-' + Date.now();
     const titleAttr = imageSettings.title ? `data-img-title="${imageSettings.title}"` : 'data-img-title=""';
     const captionAttr = imageSettings.caption ? `data-img-caption="${imageSettings.caption}"` : 'data-img-caption=""';
     const descriptionAttr = imageSettings.description ? `data-img-description="${imageSettings.description}"` : 'data-img-description=""';
     
-    // Create image container with visible caption constrained to image width
+    // Create image container with visible caption
     const captionHtml = imageSettings.caption ? `<div class="img-caption-text" contenteditable="false" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-break: break-word; overflow-wrap: break-word; word-wrap: break-word; white-space: pre-wrap; width: 100%; box-sizing: border-box; user-select: none;">${imageSettings.caption}</div>` : '';
     const imgContainer = `<div class="img-container" style="display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;">
       <img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; margin: 0 auto; display: block;" />
       ${captionHtml}
     </div>`;
     
-    try {
-      document.execCommand('insertHTML', false, imgContainer);
-    } catch (err) {
-      console.error('Insert HTML failed:', err);
-      editorRef.current.insertAdjacentHTML('beforeend', imgContainer);
-    }
-
-    if (editorRef.current) {
-      updateContent(editorRef.current.innerHTML);
-      attachMediaListeners();
-    }
+    // Simply append to the editor
+    editorRef.current.insertAdjacentHTML('beforeend', imgContainer);
+    updateContent(editorRef.current.innerHTML);
+    attachMediaListeners();
 
     setTempImageSrc('');
     setShowImageSettings(false);
