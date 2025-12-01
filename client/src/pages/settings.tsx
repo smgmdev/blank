@@ -50,7 +50,7 @@ export default function Settings() {
         const userData = await res.json();
         setEmail(userData.email || "");
         setUsername(userData.username || "");
-        setFullName(userData.fullName || "");
+        setFullName(userData.fullName || userData.displayName || "");
         // Set PIN activation state based on whether PIN is currently set
         setIsPinActive(!!userData.pin);
       }

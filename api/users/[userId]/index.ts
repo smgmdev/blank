@@ -19,7 +19,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       // Transform displayName to fullName for frontend
       return res.json({
         ...user,
-        fullName: user.displayName || user.fullName
+        fullName: user.displayName || user.fullName || ""
       });
     }
     
