@@ -7,6 +7,16 @@ export const db = getDb();
 // Auto-migrate missing columns on startup
 export async function ensureSchemaColumns() {
   try {
+    // Create user_sessions table if missing
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id varchar NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+        expires_at timestamp NOT NULL,
+        created_at timestamp DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
     // Check and create imageCaption column if missing
     await db.execute(sql`
       ALTER TABLE articles 
