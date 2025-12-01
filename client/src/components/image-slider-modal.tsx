@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -17,13 +17,23 @@ interface SliderImage {
 interface ImageSliderModalProps {
   open: boolean;
   onClose: () => void;
-  onInsert: (sliderHtml: string) => void;
+  onInsert: (sliderHtml: string, images?: SliderImage[]) => void;
+  editingImages?: { images: SliderImage[]; sliderId: string } | null;
 }
 
-export function ImageSliderModal({ open, onClose, onInsert }: ImageSliderModalProps) {
+export function ImageSliderModal({ open, onClose, onInsert, editingImages }: ImageSliderModalProps) {
   const [images, setImages] = useState<SliderImage[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingImages) {
+      setImages(editingImages.images);
+      if (editingImages.images.length > 0) {
+        setEditingId(editingImages.images[0].id);
+      }
+    }
+  }, [editingImages]);
 
   const handleAddImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0];
@@ -83,7 +93,7 @@ export function ImageSliderModal({ open, onClose, onInsert }: ImageSliderModalPr
       ${images[0]?.caption ? `<p class="slider-caption" style="text-align: center; margin-top: 8px; font-size: 14px; color: #666; font-weight: 500;">${images[0].caption}</p>` : ''}
     </div>`;
 
-    onInsert(sliderHtml);
+    onInsert(sliderHtml, images);
     resetModal();
   };
 
@@ -99,7 +109,7 @@ export function ImageSliderModal({ open, onClose, onInsert }: ImageSliderModalPr
     <Dialog open={open} onOpenChange={(o) => !o && resetModal()}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Insert Image Slider</DialogTitle>
+          <DialogTitle>{editingImages ? 'Edit Image Slider' : 'Insert Image Slider'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -158,7 +168,7 @@ export function ImageSliderModal({ open, onClose, onInsert }: ImageSliderModalPr
 
         <DialogFooter>
           <Button variant="outline" onClick={resetModal}>Cancel</Button>
-          <Button onClick={handleInsert} disabled={images.length === 0}>Insert Slider</Button>
+          <Button onClick={handleInsert} disabled={images.length === 0}>{editingImages ? 'Update Slider' : 'Insert Slider'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

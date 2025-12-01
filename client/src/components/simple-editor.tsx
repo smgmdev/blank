@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Bold, Italic, List, Heading2, ImageIcon, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Rows, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
+import { Bold, Italic, List, Heading2, ImageIcon, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Rows, Trash2, Edit2 } from 'lucide-react';
 import { ImageSliderModal } from './image-slider-modal';
 
 interface SimpleEditorProps {
@@ -17,7 +17,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [sliderModalOpen, setSliderModalOpen] = useState(false);
   const [selectedSlider, setSelectedSlider] = useState<HTMLElement | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [resizingId, setResizingId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [editingSliderImages, setEditingSliderImages] = useState<any>(null);
 
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
@@ -28,29 +30,24 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
-  // Resize handler
+  // Handle dragging
   useEffect(() => {
-    if (!resizingId) return;
+    if (!isDragging || !selectedSlider || !editorRef.current) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!editorRef.current) return;
-      
-      const slider = editorRef.current.querySelector(`[data-slider-id="${resizingId}"]`) as HTMLElement;
-      if (!slider) return;
-
-      const handle = slider.querySelector('.slider-resize-handle') as HTMLElement;
-      if (!handle) return;
-
-      const rect = slider.getBoundingClientRect();
-      const newWidth = Math.max(300, e.clientX - rect.left + 20);
-      slider.style.maxWidth = newWidth + 'px';
+      const slider = selectedSlider as HTMLElement;
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+      slider.style.position = 'relative';
+      slider.style.left = newX + 'px';
+      slider.style.top = newY + 'px';
     };
 
     const handleMouseUp = () => {
+      setIsDragging(false);
       if (editorRef.current) {
         updateContent(editorRef.current.innerHTML);
       }
-      setResizingId(null);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -59,7 +56,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [resizingId]);
+  }, [isDragging, dragOffset, selectedSlider]);
 
   const updateContent = (newContent: string) => {
     onChange(newContent);
@@ -117,7 +114,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     e.currentTarget.value = '';
   };
 
-  const handleSliderInsert = (sliderHtml: string) => {
+  const handleSliderInsert = (sliderHtml: string, images?: any) => {
     if (!editorRef.current) return;
 
     const sliderId = 'slider-' + Date.now();
@@ -128,8 +125,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     
     updateContent(editorRef.current.innerHTML);
     setSliderModalOpen(false);
+    setEditingSliderImages(null);
 
-    // Add event listeners to slider buttons
+    // Setup slider buttons
     setTimeout(() => {
       setupSliderButtons(sliderId);
     }, 100);
@@ -144,7 +142,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const prevBtn = slider.querySelector('.slider-prev') as HTMLButtonElement;
     const nextBtn = slider.querySelector('.slider-next') as HTMLButtonElement;
     const dots = slider.querySelectorAll('.slider-dot') as NodeListOf<HTMLElement>;
-
     const slides = slider.querySelectorAll('.slider-slide') as NodeListOf<HTMLElement>;
     let currentIndex = 0;
 
@@ -183,41 +180,45 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         showSlide(currentIndex);
       };
     });
+  };
 
-    // Add resize handle
-    const resizeHandle = slider.querySelector('.slider-resize-handle') as HTMLElement;
-    if (resizeHandle) {
-      resizeHandle.onmousedown = () => {
-        setResizingId(sliderId);
-      };
+  const handleSliderMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('.slider-prev') || target.closest('.slider-next') || target.closest('.slider-dot') || target.closest('img')) {
+      return;
+    }
+    
+    if (selectedSlider) {
+      setIsDragging(true);
+      setDragOffset({
+        x: e.clientX,
+        y: e.clientY
+      });
     }
   };
 
-  const moveSlider = (direction: 'up' | 'down') => {
-    if (!selectedSlider || !editorRef.current) return;
+  const editSlider = () => {
+    if (!selectedSlider) return;
     
-    const slider = selectedSlider.closest('.image-slider') as HTMLElement;
-    if (!slider) return;
+    const slides = selectedSlider.querySelectorAll('.slider-slide');
+    const images: any = [];
+    
+    slides.forEach((slide, idx) => {
+      const img = slide.querySelector('img') as HTMLImageElement;
+      const caption = slide.querySelector('.slider-caption');
+      if (img) {
+        images.push({
+          id: idx.toString(),
+          src: img.src,
+          title: img.getAttribute('data-title') || '',
+          description: img.getAttribute('data-description') || '',
+          caption: caption?.textContent || ''
+        });
+      }
+    });
 
-    if (direction === 'up' && slider.previousElementSibling) {
-      slider.parentElement?.insertBefore(slider, slider.previousElementSibling);
-    } else if (direction === 'down' && slider.nextElementSibling) {
-      slider.parentElement?.insertBefore(slider.nextElementSibling, slider);
-    }
-    
-    updateContent(editorRef.current.innerHTML);
-  };
-
-  const alignSlider = (alignment: 'left' | 'center' | 'right') => {
-    if (!selectedSlider || !editorRef.current) return;
-    
-    const slider = selectedSlider.closest('.image-slider') as HTMLElement;
-    if (!slider) return;
-
-    slider.style.marginLeft = alignment === 'left' ? '0' : alignment === 'center' ? 'auto' : '0';
-    slider.style.marginRight = alignment === 'right' ? '0' : alignment === 'center' ? 'auto' : '0';
-    
-    updateContent(editorRef.current.innerHTML);
+    setEditingSliderImages({ images, sliderId: selectedSlider.getAttribute('data-slider-id') });
+    setSliderModalOpen(true);
   };
 
   const deleteSlider = () => {
@@ -257,7 +258,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         <Button size="sm" variant="outline" onClick={() => imageInputRef.current?.click()} title="Insert Image" className="h-8 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200">
           <ImageIcon className="w-4 h-4" />
         </Button>
-        <Button size="sm" variant="outline" onClick={() => setSliderModalOpen(true)} title="Insert Image Slider" className="h-8 px-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200">
+        <Button size="sm" variant="outline" onClick={() => {setEditingSliderImages(null); setSliderModalOpen(true);}} title="Insert Image Slider" className="h-8 px-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200">
           <Rows className="w-4 h-4" />
         </Button>
         <div className="w-px h-6 bg-border" />
@@ -281,21 +282,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         {selectedSlider && (
           <>
             <div className="w-px h-6 bg-border" />
-            <span className="text-xs text-muted-foreground flex items-center px-2">Slider selected</span>
-            <Button size="sm" variant="outline" onClick={() => moveSlider('up')} title="Move Slider Up" className="h-8 px-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200">
-              <ArrowUp className="w-4 h-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => moveSlider('down')} title="Move Slider Down" className="h-8 px-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200">
-              <ArrowDown className="w-4 h-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => alignSlider('left')} title="Align Left" className="h-8 px-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-200">
-              <AlignLeft className="w-4 h-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => alignSlider('center')} title="Center" className="h-8 px-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-200">
-              <AlignCenter className="w-4 h-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => alignSlider('right')} title="Align Right" className="h-8 px-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-200">
-              <AlignRight className="w-4 h-4" />
+            <span className="text-xs text-muted-foreground flex items-center px-2">Slider selected (drag to move)</span>
+            <Button size="sm" variant="outline" onClick={editSlider} title="Edit Slider Images" className="h-8 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200">
+              <Edit2 className="w-4 h-4" />
             </Button>
             <Button size="sm" variant="outline" onClick={deleteSlider} title="Delete Slider" className="h-8 px-2 bg-red-50 hover:bg-red-100 text-red-700 border-red-200">
               <Trash2 className="w-4 h-4" />
@@ -320,6 +309,11 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
             setSelectedSlider(null);
           }
         }}
+        onMouseDown={(e) => {
+          if ((e.target as HTMLElement).closest('.image-slider')) {
+            handleSliderMouseDown(e);
+          }
+        }}
         className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed"
         style={{
           fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -337,30 +331,20 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         data-testid="image-input"
       />
 
-      <ImageSliderModal open={sliderModalOpen} onClose={() => setSliderModalOpen(false)} onInsert={handleSliderInsert} />
+      <ImageSliderModal 
+        open={sliderModalOpen} 
+        onClose={() => {setSliderModalOpen(false); setEditingSliderImages(null);}} 
+        onInsert={handleSliderInsert}
+        editingImages={editingSliderImages}
+      />
 
       <style>{`
         .image-slider {
-          position: relative;
+          cursor: grab;
         }
         
-        .image-slider:hover .slider-resize-handle {
-          opacity: 1;
-        }
-        
-        .slider-resize-handle {
-          position: absolute;
-          right: -6px;
-          bottom: -6px;
-          width: 14px;
-          height: 14px;
-          background: #3b82f6;
-          border: 2px solid white;
-          border-radius: 2px;
-          cursor: se-resize;
-          opacity: 0;
-          transition: opacity 0.2s;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        .image-slider:active {
+          cursor: grabbing;
         }
       `}</style>
     </div>
