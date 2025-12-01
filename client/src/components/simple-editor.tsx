@@ -956,9 +956,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
               setTempImageSrc('');
               setEditingImageId(null);
             }}>Cancel</Button>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end gap-2">
               {!imageSettings.caption.trim() && (
-                <span className="text-xs text-red-500">Please add caption</span>
+                <span className="text-xs text-red-500">*Add caption</span>
               )}
               <Button 
                 onClick={insertImageWithSettings} 
