@@ -354,7 +354,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         // Use insertHTML just like images for consistent behavior
         // Container is editable so cursor can be positioned, with empty text nodes for cursor visibility
         const videoContainer = `<div class="video-container" style="display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;">
-          <div class="editor-video" data-video-id="${vidId}" contenteditable="false" style="display: inline-block; cursor: pointer; position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden; width: 640px; max-width: 100%; margin: 0 auto;">
+          <div class="editor-video" data-video-id="${vidId}" contenteditable="false" style="display: inline-block; cursor: pointer; position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden; max-width: 100%; margin: 0 auto; width: 640px; height: 360px;">
             ${embedCode}
           </div>
           <br>
@@ -538,9 +538,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
       const newWidth = Math.max(100, startWidth + deltaX);
-      const newHeight = Math.max(100, startHeight + deltaY);
-      element.style.width = newWidth + 'px';
-      element.style.height = newHeight + 'px';
+      const newHeight = Math.max(100, startHeight - deltaY);
+      element.style.setProperty('width', newWidth + 'px', 'important');
+      element.style.setProperty('height', newHeight + 'px', 'important');
     };
 
     const handleMouseUp = () => {
