@@ -81,11 +81,14 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const handleScroll = () => {
       if (!toolbarRef.current) return;
       const rect = toolbarRef.current.getBoundingClientRect();
-      // Check if toolbar has scrolled to top of viewport
-      const shouldBeFixed = rect.top <= 0;
+      // Check if toolbar has scrolled to top of viewport (with small threshold)
+      const shouldBeFixed = rect.top <= 5;
       setToolbarIsFixed(shouldBeFixed);
     };
 
+    // Trigger initial check
+    handleScroll();
+    
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
