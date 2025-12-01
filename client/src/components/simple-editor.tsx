@@ -318,7 +318,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         const vidId = 'video-' + Date.now();
         
         // Use insertHTML just like images for consistent behavior
-        const videoContainer = `<div class="video-container" contenteditable="false" style="display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;">
+        // Note: container is NOT contenteditable="false" so cursor can be positioned before/after it
+        const videoContainer = `<div class="video-container" style="display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;">
           <div class="editor-video" data-video-id="${vidId}" contenteditable="false" style="display: inline-block; cursor: pointer; position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden; width: 640px; max-width: 100%; margin: 0 auto;">
             ${embedCode}
           </div>
