@@ -429,16 +429,30 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     if (selectedVideoId !== vidId) {
       const prevVid = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`) as HTMLElement;
       if (prevVid) {
-        prevVid.style.border = 'none';
-        prevVid.style.boxShadow = 'none';
+        const prevContainer = prevVid.closest('.video-container') as HTMLElement;
+        if (prevContainer) {
+          prevContainer.style.border = 'none';
+          prevContainer.style.boxShadow = 'none';
+        } else {
+          prevVid.style.border = 'none';
+          prevVid.style.boxShadow = 'none';
+        }
       }
     }
 
     const video = editorRef.current.querySelector(`[data-video-id="${vidId}"]`) as HTMLElement;
     if (video) {
-      video.style.border = '2px solid #3b82f6';
-      video.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
-      video.style.borderRadius = '6px';
+      // Apply styling to container instead of video div to avoid gaps
+      const container = video.closest('.video-container') as HTMLElement;
+      if (container) {
+        container.style.border = '2px solid #3b82f6';
+        container.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
+        container.style.borderRadius = '6px';
+      } else {
+        video.style.border = '2px solid #3b82f6';
+        video.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
+        video.style.borderRadius = '6px';
+      }
       setSelectedVideoId(vidId);
     }
   };
@@ -623,6 +637,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   };
 
   const handleEditorKeyDown = (e: React.KeyboardEvent) => {
+    // Delete key support for selected media
+    if (e.key === 'Delete' && (selectedImageId || selectedVideoId)) {
+      e.preventDefault();
+      deleteMedia();
+      return;
+    }
+    
     // When Enter is pressed on selected image, move cursor after container
     if ((e.key === 'Enter' || e.key === 'ArrowDown') && selectedImageId && !editorRef.current) return;
     
@@ -640,33 +661,32 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       }
       
       if (container) {
-        // Create a paragraph before the container if it's at the very top
+        // Get the position of the container in the editor
         const containerIndex = Array.from(editorRef.current.children).indexOf(container);
-        let targetElement = container;
         
+        // If container is at the very top, create space above it
         if (containerIndex === 0) {
-          // If container is first, create a paragraph before it
           const p = document.createElement('p');
           p.innerHTML = '<br>';
           editorRef.current.insertBefore(p, container);
-          targetElement = p;
-        }
-        
-        // Position cursor in the element before the container
-        const range = document.createRange();
-        const selection = window.getSelection();
-        const elementBeforeContainer = (targetElement.previousElementSibling || editorRef.current.firstChild) as Node;
-        
-        if (elementBeforeContainer && elementBeforeContainer !== editorRef.current) {
-          range.selectNodeContents(elementBeforeContainer);
-          range.collapse(false);
-        } else {
-          range.setStart(editorRef.current, 0);
+          
+          // Position cursor in the new paragraph
+          const range = document.createRange();
+          const selection = window.getSelection();
+          range.selectNodeContents(p);
           range.collapse(true);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+        } else {
+          // Move cursor to the end of the element before the container
+          const elementBefore = editorRef.current.children[containerIndex - 1] as HTMLElement;
+          const range = document.createRange();
+          const selection = window.getSelection();
+          range.selectNodeContents(elementBefore);
+          range.collapse(false);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
         }
-        
-        selection?.removeAllRanges();
-        selection?.addRange(range);
         
         // Deselect media
         if (selectedImageId) {
@@ -925,7 +945,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           <Redo2 className="w-4 h-4" />
         </Button>
 
-        {selectedImageId && (
+        {(selectedImageId || selectedVideoId) && (
           <>
             <div className="w-px h-6 bg-border" />
             <Button size="sm" variant="outline" onClick={deleteMedia} className="h-8 px-2 bg-red-50 hover:bg-red-100">
