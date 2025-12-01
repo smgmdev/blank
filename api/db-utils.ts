@@ -193,6 +193,19 @@ export async function getAppUserById(userId: string): Promise<any | undefined> {
 
 export async function updateAppUser(userId: string, updates: any): Promise<any> {
   const database = getDatabase();
-  await database.update(schema.appUsers).set(updates).where(eq(schema.appUsers.id, userId));
+  const setData: any = {};
+  
+  // Map update fields to schema fields
+  if (updates.username !== undefined) setData.username = updates.username;
+  if (updates.email !== undefined) setData.email = updates.email;
+  if (updates.password !== undefined) setData.password = updates.password;
+  if (updates.displayName !== undefined) setData.displayName = updates.displayName;
+  if (updates.pin !== undefined) setData.pin = updates.pin;
+  if (updates.companyName !== undefined) setData.companyName = updates.companyName;
+  if (updates.role !== undefined) setData.role = updates.role;
+  
+  if (Object.keys(setData).length > 0) {
+    await database.update(schema.appUsers).set(setData).where(eq(schema.appUsers.id, userId));
+  }
   return await getAppUserById(userId);
 }
