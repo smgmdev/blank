@@ -573,6 +573,54 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     // When Enter is pressed on selected image, move cursor after container
     if ((e.key === 'Enter' || e.key === 'ArrowDown') && selectedImageId && !editorRef.current) return;
     
+    // Handle ArrowUp on selected image/video to allow space above
+    if (e.key === 'ArrowUp' && (selectedImageId || selectedVideoId) && editorRef.current) {
+      e.preventDefault();
+      
+      let container: HTMLElement | null = null;
+      if (selectedImageId) {
+        const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
+        container = img?.closest('.img-container') || null;
+      } else if (selectedVideoId) {
+        const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`);
+        container = video?.closest('.video-container') || null;
+      }
+      
+      if (container) {
+        // Position cursor just before the container to allow Enter to create space above
+        const range = document.createRange();
+        const selection = window.getSelection();
+        range.setStart(editorRef.current, Array.from(editorRef.current.children).indexOf(container));
+        range.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        
+        // Deselect media
+        if (selectedImageId) {
+          const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
+          if (img) {
+            const imgContainer = img.closest('.img-container') as HTMLElement;
+            if (imgContainer) {
+              imgContainer.style.border = 'none';
+              imgContainer.style.boxShadow = 'none';
+            }
+          }
+          setSelectedImageId(null);
+        } else if (selectedVideoId) {
+          const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`);
+          if (video) {
+            const vidContainer = video.closest('.video-container') as HTMLElement;
+            if (vidContainer) {
+              vidContainer.style.border = 'none';
+              vidContainer.style.boxShadow = 'none';
+            }
+          }
+          setSelectedVideoId(null);
+        }
+      }
+      return;
+    }
+    
     if (e.key === 'Enter' && (selectedImageId || selectedVideoId)) {
       if (!editorRef.current) return;
       
@@ -709,7 +757,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           user-select: none;
         }
       `}</style>
-      <div className="bg-muted p-2 border-b border-border flex flex-wrap gap-1">
+      <div className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 sticky top-0 z-50">
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
         </Button>
