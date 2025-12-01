@@ -298,14 +298,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       }
 
       if (embedCode && editorRef.current) {
-        // Focus and set cursor to end
+        // Focus on editor to respect current cursor position
         editorRef.current.focus();
-        const selection = window.getSelection();
-        const range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        selection?.removeAllRanges();
-        selection?.addRange(range);
         
         const videoId = 'video-' + Date.now();
         const videoContainer = `<div class="video-container" style="display: block; margin: 20px 0; text-align: center;">
