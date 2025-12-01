@@ -193,7 +193,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const descriptionAttr = imageSettings.description ? `data-img-description="${imageSettings.description}"` : 'data-img-description=""';
     
     // Create image container with visible caption constrained to image width
-    const captionHtml = imageSettings.caption ? `<div class="img-caption-text" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-break: break-word; overflow-wrap: break-word; word-wrap: break-word; white-space: pre-wrap; width: 100%; box-sizing: border-box;">${imageSettings.caption}</div>` : '';
+    const captionHtml = imageSettings.caption ? `<div class="img-caption-text" contenteditable="false" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-break: break-word; overflow-wrap: break-word; word-wrap: break-word; white-space: pre-wrap; width: 100%; box-sizing: border-box; user-select: none;">${imageSettings.caption}</div>` : '';
     const imgContainer = `<div class="img-container" style="display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;">
       <img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; margin: 0 auto; display: block;" />
       ${captionHtml}
