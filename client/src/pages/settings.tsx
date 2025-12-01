@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,18 +10,17 @@ import { useToast } from "@/hooks/use-toast";
 import { Lock, Mail, Save, User as UserIcon, Shield, Eye, EyeOff } from "lucide-react";
 
 export default function Settings() {
-  const { users, user: currentUserRole } = useStore();
+  const { user: currentUserRole } = useStore();
   const { toast } = useToast();
-  const currentUser = users[0];
   const isAdmin = currentUserRole === 'admin';
   
-  // Get real user ID from localStorage (database ID), not mock store ID
-  const userId = localStorage.getItem('userId') || currentUser?.id;
+  // Get real user ID from localStorage (database ID)
+  const userId = localStorage.getItem('userId');
   
-  // Account fields
-  const [email, setEmail] = useState(currentUser?.email || "user@example.com");
-  const [username, setUsername] = useState(currentUser?.username || "");
-  const [fullName, setFullName] = useState(currentUser?.fullName || "");
+  // Account fields - fetch from Supabase, not mock store
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
   
   // Password fields
   const [newPassword, setNewPassword] = useState("");
@@ -41,6 +40,26 @@ export default function Settings() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [isSaving, setIsSaving] = useState(false);
+
+  // Load user data from Supabase on mount and after updates
+  const fetchUserData = async () => {
+    if (!userId) return;
+    try {
+      const res = await fetch(`/api/users/${userId}`);
+      if (res.ok) {
+        const userData = await res.json();
+        setEmail(userData.email || "");
+        setUsername(userData.username || "");
+        setFullName(userData.fullName || "");
+      }
+    } catch (e) {
+      console.debug('Failed to fetch user:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+  }, [userId]);
 
   const handleAccountUpdate = async () => {
     const updateData: any = {};
@@ -66,6 +85,9 @@ export default function Settings() {
       });
 
       if (!response.ok) throw new Error('Failed to update account');
+
+      // Refetch fresh data from Supabase after successful update
+      await fetchUserData();
 
       toast({
         title: "Account Updated",
@@ -114,6 +136,10 @@ export default function Settings() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      
+      // Refetch fresh data from Supabase after successful update
+      await fetchUserData();
+
       toast({
         title: "Password Changed",
         description: "Your password has been updated successfully.",
@@ -169,6 +195,10 @@ export default function Settings() {
 
       setPin("");
       setConfirmPin("");
+      
+      // Refetch fresh data from Supabase after successful update
+      await fetchUserData();
+
       toast({
         title: "PIN Updated",
         description: isPinActive ? "PIN has been activated." : "PIN has been deactivated.",
