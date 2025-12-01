@@ -46,7 +46,7 @@ export default function Settings() {
     if (!userId) return;
     try {
       console.log(`[Settings] Fetching user data for ${userId}`);
-      const res = await fetch(`/api/users/${userId}`);
+      const res = await fetch(`/api/user?id=${userId}`);
       if (!res.ok) {
         console.error(`[Settings] Fetch failed with status ${res.status}`);
         const errorData = await res.text();
@@ -86,7 +86,7 @@ export default function Settings() {
 
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch(`/api/user?id=${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData)
