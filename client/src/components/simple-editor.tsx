@@ -94,6 +94,21 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     };
   }, [selectedImageId, selectedVideoId]);
 
+  // Global Delete key handler for media deletion
+  useEffect(() => {
+    const handleDeleteKey = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' && (selectedImageId || selectedVideoId)) {
+        e.preventDefault();
+        deleteMedia();
+      }
+    };
+
+    document.addEventListener('keydown', handleDeleteKey);
+    return () => {
+      document.removeEventListener('keydown', handleDeleteKey);
+    };
+  }, [selectedImageId, selectedVideoId]);
+
   // Track all video positions for always-visible resize handles
   useEffect(() => {
     if (!editorRef.current) return;
