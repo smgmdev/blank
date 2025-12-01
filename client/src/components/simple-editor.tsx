@@ -42,7 +42,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
-  const [toolbarFixed, setToolbarFixed] = useState(false);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -76,44 +75,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       return () => observer.disconnect();
     }
   }, [isInitialized, content]);
-
-  // Handle toolbar fixed positioning on scroll
-  useEffect(() => {
-    let scrollParent: Element | null = null;
-
-    const handleScroll = () => {
-      if (!toolbarRef.current) return;
-      
-      // Get toolbar position relative to viewport
-      const toolbarRect = toolbarRef.current.getBoundingClientRect();
-      
-      // If toolbar is above viewport, make it fixed
-      if (toolbarRect.top < 0) {
-        setToolbarFixed(true);
-      } else {
-        setToolbarFixed(false);
-      }
-    };
-
-    // Find the scrollable parent (the main content area)
-    if (containerRef.current) {
-      let parent = containerRef.current.parentElement;
-      while (parent) {
-        const hasScroll = parent.scrollHeight > parent.clientHeight;
-        const overflow = window.getComputedStyle(parent).overflowY;
-        if (hasScroll && (overflow === 'auto' || overflow === 'scroll')) {
-          scrollParent = parent;
-          break;
-        }
-        parent = parent.parentElement;
-      }
-    }
-
-    // Attach listener to scrollable parent or window
-    const target = scrollParent || window;
-    target.addEventListener('scroll', handleScroll, { passive: true });
-    return () => target.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Track resize handle position for images and videos
   useEffect(() => {
@@ -1091,18 +1052,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       <div ref={containerRef}>
         <div 
           ref={toolbarRef}
-          className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 shadow-sm"
-          style={toolbarFixed ? {
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 40,
-            width: '100%',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          } : {
-            position: 'relative'
-          }}
+          className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 shadow-sm sticky top-0 z-40"
         >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
