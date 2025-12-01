@@ -170,8 +170,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     
     // Create image container with visible caption
     const captionHtml = imageSettings.caption ? `<div class="img-caption-text" style="margin-top: 8px; font-size: 0.875rem; color: #666; text-align: center; font-style: italic;">${imageSettings.caption}</div>` : '';
-    const imgContainer = `<div class="img-container" style="display: inline-block; margin: 10px 0; position: relative;">
-      <img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; display: block;" />
+    const imgContainer = `<div class="img-container" style="display: block; margin: 10px 0; text-align: center;">
+      <img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; margin: 0 auto; display: block;" />
       ${captionHtml}
     </div>`;
     
@@ -344,23 +344,35 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     <div className="border border-border rounded-lg overflow-hidden bg-white dark:bg-slate-950">
       <style>{`
         .img-container {
-          display: inline-block;
-          margin: 10px 0;
+          display: block !important;
+          margin: 10px 0 !important;
           position: relative;
         }
         .img-left {
-          text-align: left;
+          text-align: left !important;
+        }
+        .img-left .editor-image {
+          margin: 0 0 !important;
+          display: block !important;
         }
         .img-center {
-          text-align: center;
+          text-align: center !important;
+        }
+        .img-center .editor-image {
+          margin: 0 auto !important;
+          display: block !important;
         }
         .img-right {
-          text-align: right;
+          text-align: right !important;
+        }
+        .img-right .editor-image {
+          margin: 0 0 0 auto !important;
+          display: block !important;
         }
         .editor-image {
-          display: block;
-          max-width: 100%;
-          height: auto;
+          display: block !important;
+          max-width: 100% !important;
+          height: auto !important;
           border-radius: 6px;
           cursor: pointer;
         }
