@@ -1085,7 +1085,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           user-select: none;
         }
       `}</style>
-      <div ref={containerRef}>
+      <div ref={containerRef} style={toolbarIsFixed ? { paddingTop: '52px' } : {}}>
         <div 
           ref={toolbarRef}
           className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 shadow-sm"
