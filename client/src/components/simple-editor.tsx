@@ -35,7 +35,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [handlePos, setHandlePos] = useState({ x: 0, y: 0 });
   const [showImageSettings, setShowImageSettings] = useState(false);
-  const [pendingImageData, setPendingImageData] = useState<string | null>(null);
+  const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -51,7 +51,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
-  // Update resize handle position when image is selected
   useEffect(() => {
     if (!selectedImageId || !editorRef.current) return;
 
@@ -115,11 +114,11 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
   const handleImageInsert = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0];
-    if (file && editorRef.current) {
+    if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        const imgData = event.target?.result as string;
-        setPendingImageData(imgData);
+        const imgSrc = event.target?.result as string;
+        setTempImageSrc(imgSrc);
         setImageSettings({ title: '', caption: '', description: '' });
         setShowImageSettings(true);
       };
@@ -129,23 +128,20 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   };
 
   const insertImageWithSettings = () => {
-    if (!pendingImageData || !editorRef.current) return;
+    if (!tempImageSrc || !editorRef.current) return;
 
     const imgId = 'img-' + Date.now();
     const titleAttr = imageSettings.title ? `data-img-title="${imageSettings.title}"` : 'data-img-title=""';
     const captionAttr = imageSettings.caption ? `data-img-caption="${imageSettings.caption}"` : 'data-img-caption=""';
     const descriptionAttr = imageSettings.description ? `data-img-description="${imageSettings.description}"` : 'data-img-description=""';
     
-    const img = `<img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${pendingImageData}" style="max-width: 100%; height: auto; margin: 10px 5px; border-radius: 6px; cursor: pointer; display: inline-block;" />`;
+    const img = `<img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; margin: 10px 5px; border-radius: 6px; cursor: pointer; display: inline-block;" />`;
     
     document.execCommand('insertHTML', false, img);
-    if (editorRef.current) {
-      updateContent(editorRef.current.innerHTML);
-    }
+    updateContent(editorRef.current.innerHTML);
 
-    setPendingImageData(null);
+    setTempImageSrc('');
     setShowImageSettings(false);
-    setImageSettings({ title: '', caption: '', description: '' });
   };
 
   const handleAddVideo = () => {
@@ -175,7 +171,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const selectImage = (imgId: string) => {
     if (!editorRef.current) return;
 
-    // Deselect previous image
     if (selectedImageId !== imgId) {
       const prevImg = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
       if (prevImg) {
@@ -184,7 +179,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       }
     }
 
-    // Select new image
     const img = editorRef.current.querySelector(`[data-img-id="${imgId}"]`) as HTMLImageElement;
     if (img) {
       img.style.border = '2px solid #3b82f6';
@@ -204,7 +198,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         e.stopPropagation();
       }
     } else {
-      // Deselect if clicking elsewhere
       if (selectedImageId) {
         const img = editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
         if (img) {
@@ -443,20 +436,16 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
       {/* Image Settings Dialog */}
       <Dialog open={showImageSettings} onOpenChange={setShowImageSettings}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Image Settings</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="img-title" className="text-muted-foreground">
+              <Label className="text-xs text-muted-foreground">
                 Title (disabled)
               </Label>
               <Input
-                id="img-title"
-                placeholder="Image title"
-                value={imageSettings.title}
-                onChange={(e) => setImageSettings({ ...imageSettings, title: e.target.value })}
                 disabled
                 className="opacity-50 cursor-not-allowed"
               />
@@ -467,39 +456,35 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
               </Label>
               <Textarea
                 id="img-caption"
-                placeholder="Image caption (shown in WordPress)"
                 value={imageSettings.caption}
                 onChange={(e) => setImageSettings({ ...imageSettings, caption: e.target.value })}
-                className="h-20"
+                className="h-24 resize-none"
+                data-testid="image-caption"
               />
             </div>
             <div>
-              <Label htmlFor="img-description" className="text-muted-foreground">
+              <Label className="text-xs text-muted-foreground">
                 Description (disabled)
               </Label>
               <Textarea
-                id="img-description"
-                placeholder="Image description"
-                value={imageSettings.description}
-                onChange={(e) => setImageSettings({ ...imageSettings, description: e.target.value })}
                 disabled
-                className="h-20 opacity-50 cursor-not-allowed"
+                className="h-24 resize-none opacity-50 cursor-not-allowed"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowImageSettings(false);
-              setPendingImageData(null);
+              setTempImageSrc('');
             }}>Cancel</Button>
-            <Button onClick={insertImageWithSettings}>Add Image</Button>
+            <Button onClick={insertImageWithSettings} data-testid="confirm-image-add">Add Image</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Video Dialog */}
       <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Embed Video</DialogTitle>
           </DialogHeader>
