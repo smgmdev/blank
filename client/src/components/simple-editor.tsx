@@ -84,12 +84,17 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
       const containerRect = containerRef.current.getBoundingClientRect();
       
-      // If container top is above 128px (header + editor header), make toolbar fixed
-      if (containerRect.top < 128) {
+      // Get the editor header element to position toolbar under it
+      const editorHeader = document.querySelector('header.z-10');
+      const headerHeight = editorHeader ? editorHeader.clientHeight : 64;
+      
+      // If container top scrolls above the header, make toolbar fixed under it
+      if (containerRect.top < headerHeight) {
         setIsToolbarSticky(true);
         // Update position and width to match container
         toolbarRef.current.style.left = containerRect.left + 'px';
         toolbarRef.current.style.width = containerRect.width + 'px';
+        toolbarRef.current.style.top = headerHeight + 'px';
       } else {
         setIsToolbarSticky(false);
       }
@@ -1093,7 +1098,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 shadow-md"
           style={isToolbarSticky ? {
             position: 'fixed',
-            top: '128px',
             zIndex: 50,
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
           } : {}}
