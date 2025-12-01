@@ -130,6 +130,15 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const insertImageWithSettings = () => {
     if (!tempImageSrc || !editorRef.current) return;
 
+    // Focus editor and move cursor to end
+    editorRef.current.focus();
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(editorRef.current);
+    range.collapse(false);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
     const imgId = 'img-' + Date.now();
     const titleAttr = imageSettings.title ? `data-img-title="${imageSettings.title}"` : 'data-img-title=""';
     const captionAttr = imageSettings.caption ? `data-img-caption="${imageSettings.caption}"` : 'data-img-caption=""';
@@ -137,8 +146,15 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     
     const img = `<img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; margin: 10px 5px; border-radius: 6px; cursor: pointer; display: inline-block;" />`;
     
-    document.execCommand('insertHTML', false, img);
-    updateContent(editorRef.current.innerHTML);
+    try {
+      document.execCommand('insertHTML', false, img);
+    } catch (err) {
+      console.error('Insert HTML failed:', err);
+    }
+
+    if (editorRef.current) {
+      updateContent(editorRef.current.innerHTML);
+    }
 
     setTempImageSrc('');
     setShowImageSettings(false);
@@ -161,6 +177,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
 
     if (embedCode && editorRef.current) {
+      editorRef.current.focus();
       document.execCommand('insertHTML', false, embedCode);
       updateContent(editorRef.current.innerHTML);
       setVideoUrl('');
