@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TiptapEditor } from "@/components/tiptap-editor";
 import {
   Select,
   SelectContent,
@@ -642,9 +643,19 @@ export default function Editor() {
     });
   };
 
-  const applyFormat = (command: string, value?: string) => {
-    document.execCommand(command, false, value);
-    editorRef.current?.focus();
+  const handleEditorChange = (content: string) => {
+    setFormData({ ...formData, content });
+  };
+
+  const handleImageInsert = (base64: string) => {
+    toast({
+      title: "Image Inserted",
+      description: "Image added to your article. You can drag to reposition and resize."
+    });
+  };
+
+  const handleEditorEmpty = (isEmpty: boolean) => {
+    setIsEditorEmpty(isEmpty);
   };
 
   const isSeoComplete = () => {
@@ -653,77 +664,6 @@ export default function Editor() {
       return formData.seo.focusKeyword.trim().length > 0;
     }
     return false;
-  };
-
-  const handleImageInsertClick = () => {
-    editorImageInputRef.current?.click();
-  };
-
-  const handleEditorImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.currentTarget.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const imgDataUrl = event.target?.result as string;
-          if (editorRef.current) {
-            // Create a wrapper div for the image with caption support
-            const wrapper = document.createElement('div');
-            wrapper.style.margin = '16px 0';
-            wrapper.style.textAlign = 'center';
-            wrapper.setAttribute('data-testid', `image-wrapper-${Date.now()}`);
-            
-            const img = document.createElement('img');
-            img.src = imgDataUrl;
-            img.style.maxWidth = '100%';
-            img.style.height = 'auto';
-            img.style.borderRadius = '8px';
-            img.style.display = 'block';
-            img.style.marginBottom = imageCaption ? '8px' : '0';
-            img.setAttribute('data-testid', 'editor-image');
-            
-            wrapper.appendChild(img);
-            
-            // Add caption if provided
-            if (imageCaption.trim()) {
-              const caption = document.createElement('div');
-              caption.textContent = imageCaption;
-              caption.style.fontSize = '12px';
-              caption.style.color = '#666';
-              caption.style.fontStyle = 'italic';
-              caption.style.marginTop = '4px';
-              caption.setAttribute('data-testid', 'image-caption-text');
-              wrapper.appendChild(caption);
-            }
-            
-            // Insert at cursor position
-            const selection = window.getSelection();
-            if (selection && selection.rangeCount > 0) {
-              const range = selection.getRangeAt(0);
-              range.insertNode(wrapper);
-              range.setEndAfter(wrapper);
-              selection.removeAllRanges();
-              selection.addRange(range);
-            } else {
-              editorRef.current.appendChild(wrapper);
-            }
-            
-            // Trigger input event to update content
-            handleEditorInput();
-            setShowImageDialog(false);
-            setImageCaption("");
-            toast({
-              title: "Image Added",
-              description: imageCaption ? `Image with caption "${imageCaption}" inserted.` : "Image inserted into your article."
-            });
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-    // Reset input
-    e.currentTarget.value = '';
   };
 
   // Validation checks
@@ -1027,178 +967,13 @@ export default function Editor() {
 
               <div className="space-y-2">
                 <Label>Content</Label>
-                <div className="border border-border rounded-lg overflow-hidden">
-                  {/* Advanced Editor Toolbar - Organized and Modern */}
-                  <div className="bg-gradient-to-r from-muted to-muted/80 border-b border-border p-3 space-y-2">
-                    {/* Row 1: Styles and Formatting */}
-                    <div className="flex flex-wrap gap-2">
-                      <div className="flex items-center gap-1 px-2 py-1 bg-background/50 rounded-md border border-border/50">
-                        <select 
-                          className="px-2 py-1 text-sm bg-transparent border-0 hover:bg-background/50 transition-colors focus:outline-none font-medium"
-                          onChange={(e) => applyFormat('formatBlock', e.target.value)}
-                          title="Text style"
-                          data-testid="select-heading"
-                        >
-                          <option value="p">Paragraph</option>
-                          <option value="h2">Heading 2</option>
-                          <option value="h3">Heading 3</option>
-                          <option value="h4">Heading 4</option>
-                        </select>
-                      </div>
-
-                      <div className="flex gap-0.5">
-                        <Button size="sm" variant="outline" onClick={() => applyFormat('bold')} title="Bold" className="h-8 px-2 font-bold" data-testid="button-bold">B</Button>
-                        <Button size="sm" variant="outline" onClick={() => applyFormat('italic')} title="Italic" className="h-8 px-2 italic" data-testid="button-italic">I</Button>
-                        <Button size="sm" variant="outline" onClick={() => applyFormat('underline')} title="Underline" className="h-8 px-2" data-testid="button-underline"><u>U</u></Button>
-                      </div>
-
-                      <Separator orientation="vertical" className="h-6" />
-
-                      <div className="flex gap-0.5">
-                        <Button size="sm" variant="outline" onClick={() => applyFormat('justifyLeft')} title="Align Left" className="h-8 px-2" data-testid="button-align-left"><AlignLeft className="w-4 h-4" /></Button>
-                        <Button size="sm" variant="outline" onClick={() => applyFormat('justifyCenter')} title="Align Center" className="h-8 px-2" data-testid="button-align-center"><AlignCenter className="w-4 h-4" /></Button>
-                        <Button size="sm" variant="outline" onClick={() => applyFormat('justifyRight')} title="Align Right" className="h-8 px-2" data-testid="button-align-right"><AlignRight className="w-4 h-4" /></Button>
-                      </div>
-
-                      <Separator orientation="vertical" className="h-6" />
-
-                      <div className="flex gap-0.5">
-                        <Button size="sm" variant="outline" onClick={() => applyFormat('insertUnorderedList')} title="Bullet List" className="h-8 px-2" data-testid="button-bullet-list"><List className="w-4 h-4" /></Button>
-                        <Button size="sm" variant="outline" onClick={() => applyFormat('insertOrderedList')} title="Numbered List" className="h-8 px-2" data-testid="button-ordered-list">1.</Button>
-                        <Button size="sm" variant="outline" onClick={() => applyFormat('createLink', prompt('Enter URL:') || '')} title="Add Link" className="h-8 px-2" data-testid="button-link"><LinkIcon className="w-4 h-4" /></Button>
-                      </div>
-
-                      <Separator orientation="vertical" className="h-6" />
-
-                      <Button size="sm" variant="outline" onClick={() => setShowImageDialog(true)} title="Insert Image with Caption" className="h-8 px-3 gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200" data-testid="button-insert-image-caption">
-                        <ImageIcon className="w-4 h-4" />
-                        <span className="text-xs font-medium">Photo</span>
-                      </Button>
-                    </div>
-
-                    {/* Row 2: Colors */}
-                    <div className="flex gap-2">
-                      <div className="flex items-center gap-2 px-2 py-1 bg-background/50 rounded-md border border-border/50">
-                        <label className="text-xs font-medium text-muted-foreground">Text:</label>
-                        <input 
-                          type="color" 
-                          defaultValue="#000000"
-                          onChange={(e) => applyFormat('foreColor', e.target.value)}
-                          title="Text Color"
-                          className="h-7 w-7 border border-border rounded cursor-pointer"
-                          data-testid="color-text"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 px-2 py-1 bg-background/50 rounded-md border border-border/50">
-                        <label className="text-xs font-medium text-muted-foreground">Highlight:</label>
-                        <input 
-                          type="color" 
-                          defaultValue="#ffff00"
-                          onChange={(e) => applyFormat('backColor', e.target.value)}
-                          title="Highlight Color"
-                          className="h-7 w-7 border border-border rounded cursor-pointer"
-                          data-testid="color-highlight"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Hidden file input for editor images */}
-                  <input 
-                    ref={editorImageInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleEditorImageSelect}
-                    className="hidden"
-                    data-testid="hidden-image-input"
-                  />
-
-                  {/* Image with Caption Dialog */}
-                  <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-                    <DialogContent className="sm:max-w-md" data-testid="dialog-image-caption">
-                      <DialogHeader>
-                        <DialogTitle>Add Photo to Your Article</DialogTitle>
-                        <DialogDescription>Upload an image and add a caption to make your content more engaging.</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:bg-muted/50 transition-colors cursor-pointer"
-                          onClick={() => editorImageInputRef.current?.click()}
-                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-muted'); }}
-                          onDragLeave={(e) => { e.currentTarget.classList.remove('bg-muted'); }}
-                          onDrop={(e) => { 
-                            e.preventDefault();
-                            const files = e.dataTransfer.files;
-                            if (files[0]) {
-                              editorImageInputRef.current!.files = files;
-                              handleEditorImageSelect({ currentTarget: { files } } as any);
-                            }
-                          }}
-                          data-testid="drop-zone-image"
-                        >
-                          <div className="flex flex-col items-center gap-2">
-                            <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                            <p className="text-sm font-medium">Click to browse or drag & drop</p>
-                            <p className="text-xs text-muted-foreground">JPG, PNG, WEBP (Max 5MB)</p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="caption-input">Image Caption (optional)</Label>
-                          <Input 
-                            id="caption-input"
-                            placeholder="Describe what's in the image..."
-                            value={imageCaption}
-                            onChange={(e) => setImageCaption(e.target.value)}
-                            data-testid="input-photo-caption"
-                            maxLength={100}
-                          />
-                          <p className="text-xs text-muted-foreground">{imageCaption.length}/100</p>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowImageDialog(false)} data-testid="button-cancel-image">Cancel</Button>
-                        <Button onClick={() => editorImageInputRef.current?.click()} data-testid="button-upload-image" className="gap-2">
-                          <UploadCloud className="w-4 h-4" />
-                          Choose Photo
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                  
-                  {/* Rich Text Editor */}
-                  <div
-                    ref={editorRef}
-                    contentEditable
-                    suppressContentEditableWarning
-                    onInput={handleEditorInput}
-                    className="min-h-[400px] p-4 focus:outline-none font-[Helvetica,Arial,sans-serif] text-base leading-relaxed bg-white dark:bg-slate-950"
-                    style={{ 
-                      fontFamily: 'Helvetica, Arial, sans-serif',
-                      color: '#1f2937'
-                    }}
-                    data-placeholder="Start typing here..."
-                  />
-                  <style>{`
-                    [data-placeholder]:empty::before {
-                      content: attr(data-placeholder);
-                      color: #999;
-                      font-style: italic;
-                    }
-                    [data-placeholder]:empty:focus::before {
-                      content: "";
-                    }
-                    img[data-testid="editor-image"] {
-                      cursor: pointer;
-                      border: 1px solid rgba(0,0,0,0.1);
-                      transition: all 0.2s;
-                    }
-                    img[data-testid="editor-image"]:hover {
-                      border-color: #3b82f6;
-                      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
-                    }
-                  `}</style>
-                </div>
-                <p className="text-xs text-muted-foreground">Use the toolbar to format your text with headings, bold, italic, links, lists, and more.</p>
+                <TiptapEditor
+                  content={formData.content}
+                  onChange={handleEditorChange}
+                  onImageInsert={handleImageInsert}
+                  onEmptyChange={handleEditorEmpty}
+                />
+                <p className="text-xs text-muted-foreground">Drag images to reposition them. Use the toolbar for advanced formatting, colors, text alignment, and more.</p>
               </div>
             </CardContent>
           </Card>
