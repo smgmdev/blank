@@ -533,8 +533,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const startWidth = element.offsetWidth;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.clientX - startX;
-      const newWidth = Math.max(100, startWidth + deltaX);
+      const deltaX = startX - moveEvent.clientX;
+      const newWidth = Math.max(100, startWidth - deltaX);
       element.style.width = newWidth + 'px';
       element.style.height = 'auto';
     };
