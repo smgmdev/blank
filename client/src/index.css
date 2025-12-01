@@ -131,21 +131,22 @@
   }
 
   /* Modern compact ordered list styling */
-  [contenteditable] ol {
-    list-style: none;
+  .simple-editor ol {
+    list-style: none !important;
     counter-reset: item;
-    padding-left: 0;
-    margin: 0.5em 0;
+    padding-left: 0 !important;
+    margin: 0.5em 0 !important;
   }
 
-  [contenteditable] ol li {
+  .simple-editor ol li {
     counter-increment: item;
     margin-bottom: 0.25em;
     padding-left: 2em;
     position: relative;
+    list-style: none !important;
   }
 
-  [contenteditable] ol li::before {
+  .simple-editor ol li::before {
     content: counter(item);
     position: absolute;
     left: 0;
@@ -162,7 +163,7 @@
     color: #333;
   }
 
-  [contenteditable] ol li:hover::before {
+  .simple-editor ol li:hover::before {
     background-color: #e0e0e0;
   }
 }

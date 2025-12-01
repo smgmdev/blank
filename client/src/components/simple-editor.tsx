@@ -1078,7 +1078,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         }}
         onClick={handleEditorClick}
         onKeyDown={handleEditorKeyDown}
-        className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed relative"
+        className="simple-editor min-h-[400px] p-4 focus:outline-none text-base leading-relaxed relative"
         style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           outline: 'none',
