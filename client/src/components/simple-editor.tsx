@@ -289,9 +289,10 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     // New image insertion - use DOM methods to ensure proper structure
     const imgId = 'img-' + Date.now();
     
-    // Create container div
+    // Create container div (non-editable to prevent contenteditable from splitting it)
     const containerDiv = document.createElement('div');
     containerDiv.className = 'img-container';
+    containerDiv.setAttribute('contenteditable', 'false');
     containerDiv.style.cssText = 'display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;';
     
     // Create image element
@@ -655,37 +656,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     if (selectedImageId) {
       const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
       if (img) {
-        // Find the parent container
+        // Find and remove the container (which now has contenteditable="false" so it's atomic)
         const container = img.closest('.img-container') as HTMLElement;
-        
-        // Delete the container (which should include the caption as a child)
         if (container) {
           container.remove();
         } else {
-          // If no container, delete just the image
           img.remove();
         }
-        
-        // Extra safety: search the entire editor for any remaining captions 
-        // and delete those too (in case they got separated somehow)
-        const allCaptions = Array.from(editorRef.current.querySelectorAll('.img-caption-text'));
-        allCaptions.forEach(caption => {
-          // Check if this caption is associated with the deleted image
-          // by looking at adjacent elements
-          const prevSibling = caption.previousElementSibling as HTMLElement;
-          if (prevSibling && prevSibling.getAttribute('data-img-id') === selectedImageId) {
-            caption.remove();
-          }
-          // Also check if the caption's parent container previously had our image
-          const parent = caption.parentElement as HTMLElement;
-          if (parent && parent.querySelector(`[data-img-id="${selectedImageId}"]`) === null && 
-              parent.className === 'img-container') {
-            // Only delete if the image is really gone
-            if (!editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`)) {
-              caption.remove();
-            }
-          }
-        });
         
         updateContent(editorRef.current.innerHTML);
         setSelectedImageId(null);
