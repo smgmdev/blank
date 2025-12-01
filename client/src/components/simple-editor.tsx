@@ -518,6 +518,72 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   };
 
+  const handleEditorKeyDown = (e: React.KeyboardEvent) => {
+    // When Enter is pressed on selected image, move cursor after container
+    if ((e.key === 'Enter' || e.key === 'ArrowDown') && selectedImageId && !editorRef.current) return;
+    
+    if (e.key === 'Enter' && (selectedImageId || selectedVideoId)) {
+      if (!editorRef.current) return;
+      
+      e.preventDefault();
+      
+      let container: HTMLElement | null = null;
+      if (selectedImageId) {
+        const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
+        container = img?.closest('.img-container') || null;
+      } else if (selectedVideoId) {
+        const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`);
+        container = video?.closest('.video-container') || null;
+      }
+      
+      if (container) {
+        // Create a new line after the container
+        const newLine = document.createElement('div');
+        newLine.innerHTML = '<br>';
+        container.parentNode?.insertBefore(newLine, container.nextSibling);
+        
+        // Move cursor to the new line
+        const range = document.createRange();
+        const selection = window.getSelection();
+        range.selectNodeContents(newLine);
+        range.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        
+        // Deselect media
+        if (selectedImageId) {
+          const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
+          if (img) {
+            const imgContainer = img.closest('.img-container') as HTMLElement;
+            if (imgContainer) {
+              imgContainer.style.border = 'none';
+              imgContainer.style.boxShadow = 'none';
+            } else {
+              img.style.border = 'none';
+              img.style.boxShadow = 'none';
+            }
+          }
+          setSelectedImageId(null);
+        } else if (selectedVideoId) {
+          const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`);
+          if (video) {
+            const vidContainer = video.closest('.video-container') as HTMLElement;
+            if (vidContainer) {
+              vidContainer.style.border = 'none';
+              vidContainer.style.boxShadow = 'none';
+            } else {
+              video.style.border = 'none';
+              video.style.boxShadow = 'none';
+            }
+          }
+          setSelectedVideoId(null);
+        }
+        
+        updateContent(editorRef.current.innerHTML);
+      }
+    }
+  };
+
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-white dark:bg-slate-950">
       <style>{`
@@ -683,6 +749,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           updateContent(html);
         }}
         onClick={handleEditorClick}
+        onKeyDown={handleEditorKeyDown}
         className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed relative"
         style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
