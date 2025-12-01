@@ -42,7 +42,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
-  const [isToolbarFixed, setIsToolbarFixed] = useState(false);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -77,21 +76,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
-  // Handle sticky toolbar on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!toolbarRef.current) return;
-      
-      const toolbarRect = toolbarRef.current.getBoundingClientRect();
-      // Toolbar should be fixed when it would scroll off the top
-      const shouldBeFixed = toolbarRect.top <= 0;
-      
-      setIsToolbarFixed(shouldBeFixed);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
 
   // Track resize handle position for images and videos
@@ -1070,16 +1054,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       <div ref={containerRef}>
         <div 
           ref={toolbarRef}
-          style={isToolbarFixed ? {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            right: '0',
-            zIndex: 999,
-            width: '100%',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          } : {}}
-          className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 z-40"
+          className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 sticky top-0 z-50 shadow-sm"
         >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
@@ -1175,9 +1150,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         className="simple-editor min-h-[400px] p-4 focus:outline-none text-base leading-relaxed relative"
         style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          outline: 'none',
-          marginTop: isToolbarFixed ? '60px' : '0',
-          transition: 'margin-top 0.2s ease'
+          outline: 'none'
         }}
         data-testid="simple-editor-area"
       />
