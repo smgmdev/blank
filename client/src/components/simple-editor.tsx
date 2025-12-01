@@ -77,31 +77,19 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
-  // Detect scroll and make toolbar sticky
+  // Detect scroll and make toolbar fixed
   useEffect(() => {
     const handleScroll = () => {
       if (!containerRef.current || !toolbarRef.current) return;
 
-      // Get the scrollable parent (main content area)
-      let scrollParent = containerRef.current.parentElement;
-      while (scrollParent && scrollParent.getAttribute('class')?.includes('overflow') === false) {
-        const overflow = window.getComputedStyle(scrollParent).overflowY;
-        if (overflow === 'auto' || overflow === 'scroll') break;
-        scrollParent = scrollParent.parentElement;
-      }
-
-      if (!scrollParent) return;
-
-      // Get container position relative to scroll parent
       const containerRect = containerRef.current.getBoundingClientRect();
-      const scrollParentRect = scrollParent.getBoundingClientRect();
       
-      // Calculate relative position
-      const relativeTop = containerRect.top - scrollParentRect.top;
-      
-      // If container scrolled past top of scroll area, make toolbar sticky
-      if (relativeTop < 0) {
+      // If container top is above 128px (header + editor header), make toolbar fixed
+      if (containerRect.top < 128) {
         setIsToolbarSticky(true);
+        // Update position and width to match container
+        toolbarRef.current.style.left = containerRect.left + 'px';
+        toolbarRef.current.style.width = containerRect.width + 'px';
       } else {
         setIsToolbarSticky(false);
       }
@@ -117,7 +105,12 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
     if (scrollParent) {
       scrollParent.addEventListener('scroll', handleScroll, { passive: true });
-      return () => scrollParent.removeEventListener('scroll', handleScroll);
+      // Also listen to window resize
+      window.addEventListener('resize', handleScroll, { passive: true });
+      return () => {
+        scrollParent.removeEventListener('scroll', handleScroll);
+        window.removeEventListener('resize', handleScroll);
+      };
     }
   }, []);
 
@@ -1094,13 +1087,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           user-select: none;
         }
       `}</style>
-      <div ref={containerRef}>
+      <div ref={containerRef} style={isToolbarSticky ? { paddingTop: '52px' } : {}}>
         <div 
           ref={toolbarRef}
           className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 shadow-md"
           style={isToolbarSticky ? {
-            position: 'sticky',
-            top: 0,
+            position: 'fixed',
+            top: '128px',
             zIndex: 50,
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
           } : {}}
