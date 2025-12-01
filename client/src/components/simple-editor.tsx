@@ -55,6 +55,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       setIsInitialized(true);
       // Attach event listeners to all images and videos for selection
       attachMediaListeners();
+      // Remove list markers
+      setTimeout(() => removeListMarkers(), 0);
     }
   }, [isInitialized, content]);
 
@@ -199,12 +201,47 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     newHistory.push(newContent);
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
+    
+    // Remove list markers from all lists
+    if (editorRef.current) {
+      const lists = editorRef.current.querySelectorAll('ol, ul');
+      lists.forEach(list => {
+        (list as HTMLElement).style.listStyle = 'none';
+        (list as HTMLElement).style.listStyleType = 'none';
+        (list as HTMLElement).style.listStyleImage = 'none';
+        (list as HTMLElement).style.listStylePosition = 'unset';
+      });
+      const items = editorRef.current.querySelectorAll('li');
+      items.forEach(item => {
+        (item as HTMLElement).style.listStyle = 'none';
+        (item as HTMLElement).style.listStyleType = 'none';
+        (item as HTMLElement).style.listStyleImage = 'none';
+      });
+    }
   };
 
   const execCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value);
     if (editorRef.current) {
       updateContent(editorRef.current.innerHTML);
+    }
+  };
+
+  const removeListMarkers = () => {
+    if (editorRef.current) {
+      const lists = editorRef.current.querySelectorAll('ol, ul');
+      lists.forEach(list => {
+        (list as HTMLElement).style.listStyle = 'none';
+        (list as HTMLElement).style.listStyleType = 'none';
+        (list as HTMLElement).style.listStyleImage = 'none';
+        (list as HTMLElement).style.listStylePosition = 'unset';
+      });
+      const items = editorRef.current.querySelectorAll('li');
+      items.forEach(item => {
+        (item as HTMLElement).style.listStyle = 'none';
+        (item as HTMLElement).style.listStyleType = 'none';
+        (item as HTMLElement).style.listStyleImage = 'none';
+      });
     }
   };
 
@@ -216,6 +253,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         editorRef.current.innerHTML = history[newIndex];
         onChange(history[newIndex]);
         attachMediaListeners();
+        removeListMarkers();
       }
     }
   };
@@ -228,6 +266,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         editorRef.current.innerHTML = history[newIndex];
         onChange(history[newIndex]);
         attachMediaListeners();
+        removeListMarkers();
       }
     }
   };
