@@ -44,6 +44,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     caption: '',
     description: ''
   });
+  const savedSelectionRef = useRef<{ anchorNode: Node | null; anchorOffset: number; focusNode: Node | null; focusOffset: number } | null>(null);
 
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
@@ -91,6 +92,22 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       document.removeEventListener('mousemove', updateHandlePosition);
     };
   }, [selectedImageId, selectedVideoId]);
+
+  // Save cursor position when video dialog opens
+  useEffect(() => {
+    if (showVideoDialog && editorRef.current) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        savedSelectionRef.current = {
+          anchorNode: selection.anchorNode,
+          anchorOffset: selection.anchorOffset,
+          focusNode: selection.focusNode,
+          focusOffset: selection.focusOffset
+        };
+      }
+    }
+  }, [showVideoDialog]);
 
   const attachMediaListeners = () => {
     if (!editorRef.current) return;
@@ -298,27 +315,67 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       }
 
       if (embedCode && editorRef.current) {
-        // Focus on editor to respect current cursor position
-        editorRef.current.focus();
-        
         const videoId = 'video-' + Date.now();
-        const videoContainer = `<div class="video-container" style="display: block; margin: 20px 0; text-align: center;">
-          <div class="editor-video" data-video-id="${videoId}" style="display: inline-block; cursor: pointer; position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden; width: 640px; max-width: 100%;">
-            ${embedCode}
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto;" data-video-overlay="${videoId}"></div>
-          </div>
-        </div>`;
+        const videoContainer = document.createElement('div');
+        videoContainer.className = 'video-container';
+        videoContainer.style.display = 'block';
+        videoContainer.style.margin = '20px 0';
+        videoContainer.style.textAlign = 'center';
         
-        try {
-          document.execCommand('insertHTML', false, videoContainer);
-        } catch (err) {
-          console.error('Insert HTML failed:', err);
+        const videoDiv = document.createElement('div');
+        videoDiv.className = 'editor-video';
+        videoDiv.setAttribute('data-video-id', videoId);
+        videoDiv.style.display = 'inline-block';
+        videoDiv.style.cursor = 'pointer';
+        videoDiv.style.position = 'relative';
+        videoDiv.style.border = '2px solid transparent';
+        videoDiv.style.borderRadius = '6px';
+        videoDiv.style.overflow = 'hidden';
+        videoDiv.style.width = '640px';
+        videoDiv.style.maxWidth = '100%';
+        videoDiv.innerHTML = embedCode;
+        
+        const overlay = document.createElement('div');
+        overlay.setAttribute('data-video-overlay', videoId);
+        overlay.style.position = 'absolute';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.pointerEvents = 'auto';
+        videoDiv.appendChild(overlay);
+        
+        videoContainer.appendChild(videoDiv);
+        
+        // Insert at saved cursor position
+        if (savedSelectionRef.current) {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          
+          try {
+            range.setStart(savedSelectionRef.current.anchorNode || editorRef.current, savedSelectionRef.current.anchorOffset);
+            range.collapse(true);
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+            
+            range.insertNode(videoContainer);
+            range.setStartAfter(videoContainer);
+            range.collapse(true);
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+          } catch (err) {
+            // If saved selection is invalid, insert at end
+            editorRef.current.appendChild(videoContainer);
+          }
+        } else {
+          editorRef.current.appendChild(videoContainer);
         }
         
         updateContent(editorRef.current.innerHTML);
         attachMediaListeners();
         setVideoUrl('');
         setShowVideoDialog(false);
+        savedSelectionRef.current = null;
       } else {
         console.warn('Could not extract video ID from URL:', url);
       }
