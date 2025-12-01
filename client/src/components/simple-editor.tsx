@@ -80,15 +80,16 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   // Handle sticky toolbar on scroll
   useEffect(() => {
     const handleScroll = () => {
-      if (!toolbarRef.current || !containerRef.current) return;
+      if (!toolbarRef.current) return;
       
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const shouldBeFixed = containerRect.top < 0;
+      const toolbarRect = toolbarRef.current.getBoundingClientRect();
+      // Toolbar should be fixed when it would scroll off the top
+      const shouldBeFixed = toolbarRect.top <= 0;
       
       setIsToolbarFixed(shouldBeFixed);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
