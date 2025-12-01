@@ -76,23 +76,20 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
-  // Handle sticky toolbar on scroll using IntersectionObserver
+  // Handle sticky toolbar on scroll
   useEffect(() => {
-    if (!toolbarRef.current) return;
+    const handleScroll = () => {
+      if (!toolbarRef.current) return;
+      
+      const rect = toolbarRef.current.getBoundingClientRect();
+      const shouldBeFixed = rect.top <= 0;
+      
+      console.log('Scroll event - toolbar top:', rect.top, 'shouldBeFixed:', shouldBeFixed);
+      setToolbarIsFixed(shouldBeFixed);
+    };
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // When toolbar is not visible at the top of viewport, make it fixed
-        setToolbarIsFixed(!entry.isIntersecting && entry.boundingClientRect.top < 0);
-      },
-      {
-        threshold: [0, 1],
-        rootMargin: '0px'
-      }
-    );
-
-    observer.observe(toolbarRef.current);
-    return () => observer.disconnect();
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Track resize handle position for images and videos
