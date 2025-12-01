@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TiptapEditor } from "@/components/tiptap-editor";
+import { SimpleEditor } from "@/components/simple-editor";
 import {
   Select,
   SelectContent,
@@ -936,13 +936,12 @@ export default function Editor() {
 
               <div className="space-y-2">
                 <Label>Content</Label>
-                <TiptapEditor
+                <SimpleEditor
                   content={formData.content}
                   onChange={handleEditorChange}
-                  onImageInsert={handleImageInsert}
                   onEmptyChange={handleEditorEmpty}
                 />
-                <p className="text-xs text-muted-foreground">Drag images to reposition them. Use the toolbar for advanced formatting, colors, text alignment, and more.</p>
+                <p className="text-xs text-muted-foreground">Use the toolbar above to format your content. Click the image icon to insert photos.</p>
               </div>
             </CardContent>
           </Card>
