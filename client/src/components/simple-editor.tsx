@@ -94,16 +94,12 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     };
   }, [selectedImageId, selectedVideoId]);
 
-  // Global Delete key handler for media deletion (Delete key only, not Backspace)
+  // Global Delete and Backspace key handler for media deletion
   useEffect(() => {
     const handleDeleteKey = (e: KeyboardEvent) => {
-      if (e.key === 'Delete' && (selectedImageId || selectedVideoId)) {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedImageId || selectedVideoId)) {
         e.preventDefault();
         deleteMedia();
-      }
-      // Prevent Backspace from deleting selected media
-      if (e.key === 'Backspace' && (selectedImageId || selectedVideoId)) {
-        e.preventDefault();
       }
     };
 
@@ -662,16 +658,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       if (img) {
         const container = img.closest('.img-container');
         if (container) {
-          // Extract caption if it exists and preserve it as normal text
-          const caption = container.querySelector('.img-caption-text');
-          if (caption) {
-            const captionText = caption.textContent || '';
-            if (captionText.trim()) {
-              // Insert caption text as normal content after container
-              const captionHtml = `<p style="font-style: italic; color: #666; font-size: 0.875rem; text-align: center; margin-top: 8px;">${captionText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`;
-              container.insertAdjacentHTML('afterend', captionHtml);
-            }
-          }
           container.remove();
         } else {
           img.remove();
