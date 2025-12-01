@@ -77,7 +77,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
-  // Detect when toolbar should become fixed
+  // Detect when toolbar should become fixed and track container position
   useEffect(() => {
     const handleScroll = () => {
       if (!toolbarRef.current || !containerRef.current) return;
@@ -89,6 +89,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       // Only make toolbar fixed after it scrolls up past the top of viewport
       if (toolbarTop < 128) {
         setToolbarIsFixed(true);
+        // Update position while fixed
+        toolbarRef.current.style.left = containerRect.left + 'px';
+        toolbarRef.current.style.width = containerRect.width + 'px';
       } else {
         setToolbarIsFixed(false);
       }
@@ -111,6 +114,21 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     scrollParent.addEventListener('scroll', handleScroll, { passive: true });
     return () => scrollParent.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Update toolbar width/position to match container when fixed
+  useEffect(() => {
+    const updateToolbarPosition = () => {
+      if (!toolbarRef.current || !containerRef.current || !toolbarIsFixed) return;
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+      toolbarRef.current.style.left = containerRect.left + 'px';
+      toolbarRef.current.style.width = containerRect.width + 'px';
+    };
+
+    updateToolbarPosition();
+    window.addEventListener('resize', updateToolbarPosition);
+    return () => window.removeEventListener('resize', updateToolbarPosition);
+  }, [toolbarIsFixed]);
 
   // Track resize handle position for images and videos
   useEffect(() => {
@@ -1092,10 +1110,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           style={toolbarIsFixed ? {
             position: 'fixed',
             top: '128px',
-            left: 0,
-            right: 0,
             zIndex: 40,
-            width: '100%',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
           } : {}}
         >
