@@ -94,12 +94,16 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     };
   }, [selectedImageId, selectedVideoId]);
 
-  // Global Delete key handler for media deletion
+  // Global Delete key handler for media deletion (Delete key only, not Backspace)
   useEffect(() => {
     const handleDeleteKey = (e: KeyboardEvent) => {
       if (e.key === 'Delete' && (selectedImageId || selectedVideoId)) {
         e.preventDefault();
         deleteMedia();
+      }
+      // Prevent Backspace from deleting selected media
+      if (e.key === 'Backspace' && (selectedImageId || selectedVideoId)) {
+        e.preventDefault();
       }
     };
 
