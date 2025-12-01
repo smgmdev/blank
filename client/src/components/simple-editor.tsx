@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Bold, Italic, Underline, List, ListOrdered, Heading2, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, Play, Trash2 } from 'lucide-react';
+import { Bold, Italic, Underline, List, ListOrdered, Heading2, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, Play, Trash2, Maximize2 } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import {
@@ -26,6 +26,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const resizeHandleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
@@ -161,33 +162,35 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.classList.contains('editor-image') && selectedImageId) {
-      const img = target as HTMLImageElement;
-      const startX = e.clientX;
-      const startWidth = img.offsetWidth;
-      let isDragging = false;
+  const handleResizeStart = (e: React.MouseEvent) => {
+    if (!selectedImageId || !editorRef.current) return;
+    
+    const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
+    if (!img) return;
 
-      const handleMouseMove = (moveEvent: MouseEvent) => {
-        isDragging = true;
-        const deltaX = moveEvent.clientX - startX;
-        const newWidth = Math.max(100, startWidth + deltaX);
-        img.style.width = newWidth + 'px';
-        img.style.height = 'auto';
-      };
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const startX = e.clientX;
+    const startWidth = img.offsetWidth;
 
-      const handleMouseUp = () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-        if (isDragging && editorRef.current) {
-          updateContent(editorRef.current.innerHTML);
-        }
-      };
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const newWidth = Math.max(100, startWidth + deltaX);
+      img.style.width = newWidth + 'px';
+      img.style.height = 'auto';
+    };
 
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      if (editorRef.current) {
+        updateContent(editorRef.current.innerHTML);
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
 
   const alignImage = (alignment: 'left' | 'center' | 'right') => {
@@ -261,13 +264,34 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           <Play className="w-4 h-4" />
         </Button>
         <div className="w-px h-6 bg-border" />
-        <Button size="sm" variant="outline" onClick={() => alignImage('left')} disabled={!selectedImageId} title="Align Left" className="h-8 px-2">
+        <Button 
+          size="sm" 
+          variant={selectedImageId ? "default" : "outline"} 
+          onClick={() => alignImage('left')} 
+          disabled={!selectedImageId} 
+          title="Align Left" 
+          className="h-8 px-2"
+        >
           <AlignLeft className="w-4 h-4" />
         </Button>
-        <Button size="sm" variant="outline" onClick={() => alignImage('center')} disabled={!selectedImageId} title="Center" className="h-8 px-2">
+        <Button 
+          size="sm" 
+          variant={selectedImageId ? "default" : "outline"} 
+          onClick={() => alignImage('center')} 
+          disabled={!selectedImageId} 
+          title="Center" 
+          className="h-8 px-2"
+        >
           <AlignCenter className="w-4 h-4" />
         </Button>
-        <Button size="sm" variant="outline" onClick={() => alignImage('right')} disabled={!selectedImageId} title="Align Right" className="h-8 px-2">
+        <Button 
+          size="sm" 
+          variant={selectedImageId ? "default" : "outline"} 
+          onClick={() => alignImage('right')} 
+          disabled={!selectedImageId} 
+          title="Align Right" 
+          className="h-8 px-2"
+        >
           <AlignRight className="w-4 h-4" />
         </Button>
         <div className="w-px h-6 bg-border" />
@@ -290,7 +314,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
       {selectedImageId && (
         <div className="px-4 py-2 bg-blue-50 dark:bg-blue-950 text-xs text-blue-700 dark:text-blue-200 border-b border-blue-200">
-          💡 Drag the image to resize. Use alignment buttons to position left, center, or right.
+          💡 Drag the resize icon (top-left) to resize. Use positioning buttons to align.
         </div>
       )}
 
@@ -303,14 +327,40 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           updateContent(html);
         }}
         onClick={handleEditorClick}
-        onMouseDown={handleMouseDown}
-        className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed"
+        className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed relative"
         style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           outline: 'none',
         }}
         data-testid="simple-editor-area"
       />
+
+      {selectedImageId && editorRef.current && (
+        <div
+          ref={resizeHandleRef}
+          onMouseDown={handleResizeStart}
+          style={{
+            position: 'fixed',
+            width: '20px',
+            height: '20px',
+            backgroundColor: '#3b82f6',
+            border: '2px solid white',
+            borderRadius: '4px',
+            cursor: 'nwse-resize',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+            zIndex: 1000,
+            display: (() => {
+              const img = editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
+              if (!img) return 'none';
+              const rect = img.getBoundingClientRect();
+              (resizeHandleRef.current as HTMLDivElement).style.left = (rect.left - 10) + 'px';
+              (resizeHandleRef.current as HTMLDivElement).style.top = (rect.top - 10) + 'px';
+              return 'block';
+            })(),
+          }}
+          title="Drag to resize"
+        />
+      )}
 
       <input
         ref={imageInputRef}
