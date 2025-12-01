@@ -193,8 +193,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const descriptionAttr = imageSettings.description ? `data-img-description="${imageSettings.description}"` : 'data-img-description=""';
     
     // Create image container with visible caption
-    const captionHtml = imageSettings.caption ? `<div class="img-caption-text" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center;">${imageSettings.caption}</div>` : '';
-    const imgContainer = `<div class="img-container" style="display: block; margin: 10px 0; text-align: center;">
+    const captionHtml = imageSettings.caption ? `<div class="img-caption-text" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; max-width: 100%; display: block;">${imageSettings.caption}</div>` : '';
+    const imgContainer = `<div class="img-container" style="display: inline-block; margin: 10px 0; text-align: center;">
       <img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; margin: 0 auto; display: block;" />
       ${captionHtml}
     </div>`;
@@ -484,12 +484,14 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     <div className="border border-border rounded-lg overflow-hidden bg-white dark:bg-slate-950">
       <style>{`
         .img-container {
-          display: block !important;
+          display: inline-block !important;
           margin: 10px 0 !important;
           position: relative;
+          max-width: 100%;
         }
         .img-left {
           text-align: left !important;
+          display: block !important;
         }
         .img-left .editor-image {
           margin: 0 0 !important;
@@ -497,6 +499,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         }
         .img-center {
           text-align: center !important;
+          display: block !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
         }
         .img-center .editor-image {
           margin: 0 auto !important;
@@ -504,6 +509,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         }
         .img-right {
           text-align: right !important;
+          display: block !important;
         }
         .img-right .editor-image {
           margin: 0 0 0 auto !important;
@@ -522,6 +528,11 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           color: #666;
           text-align: center;
           font-style: italic;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          white-space: normal;
+          max-width: 100%;
+          display: block;
         }
         .resize-handle {
           position: absolute;
