@@ -197,7 +197,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const startWidth = img.offsetWidth;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.clientX - startX;
+      // For top-left corner: dragging right shrinks, dragging left expands
+      const deltaX = startX - moveEvent.clientX;
       const newWidth = Math.max(100, startWidth + deltaX);
       img.style.width = newWidth + 'px';
       img.style.height = 'auto';
@@ -221,16 +222,20 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
     if (!img) return;
     
-    // Create or get wrapper
+    // Wrap image if not already wrapped
     let wrapper = img.parentElement;
-    if (!wrapper || wrapper === editorRef.current) {
-      wrapper = document.createElement('div');
-      img.parentNode?.insertBefore(wrapper, img);
-      wrapper.appendChild(img);
+    const isWrapped = wrapper && wrapper !== editorRef.current && wrapper.style.textAlign !== '';
+    
+    if (!isWrapped) {
+      const newWrapper = document.createElement('div');
+      newWrapper.style.display = 'block';
+      newWrapper.style.margin = '10px 0';
+      img.parentNode?.insertBefore(newWrapper, img);
+      newWrapper.appendChild(img);
+      wrapper = newWrapper;
     }
     
-    wrapper.style.margin = '10px 0';
-    
+    // Apply alignment
     if (alignment === 'left') {
       wrapper.style.textAlign = 'left';
     } else if (alignment === 'center') {
@@ -239,7 +244,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       wrapper.style.textAlign = 'right';
     }
     
-    updateContent(editorRef.current.innerHTML);
+    if (editorRef.current) {
+      updateContent(editorRef.current.innerHTML);
+    }
   };
 
   const deleteImage = () => {
