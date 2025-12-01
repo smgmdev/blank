@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import EditorJS from '@editorjs/editorjs';
-import Header from '@editorjs/header';
-import Paragraph from '@editorjs/paragraph';
-import List from '@editorjs/list';
-import Image from '@editorjs/image';
-import Embed from '@editorjs/embed';
-import Table from '@editorjs/table';
-import Code from '@editorjs/code';
-import Quote from '@editorjs/quote';
-import Marker from '@editorjs/marker';
-import InlineCode from '@editorjs/inline-code';
+import { useState, useRef, useEffect } from 'react';
+import { Button } from './ui/button';
+import { Bold, Italic, Underline, List, ListOrdered, Heading2, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, Play } from 'lucide-react';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from './ui/dialog';
 
 interface SimpleEditorProps {
   content: string;
@@ -18,144 +18,204 @@ interface SimpleEditorProps {
 }
 
 export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorProps) {
-  const editorRef = useRef<EditorJS | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isReady, setIsReady] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [showVideoDialog, setShowVideoDialog] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current || isReady) return;
+    if (editorRef.current && !isInitialized) {
+      editorRef.current.innerHTML = content || '';
+      setHistory([content || '']);
+      setHistoryIndex(0);
+      setIsInitialized(true);
+    }
+  }, [isInitialized, content]);
 
-    const initEditor = async () => {
-      try {
-        const editor = new EditorJS({
-          holder: containerRef.current!,
-          tools: {
-            header: Header,
-            paragraph: {
-              class: Paragraph,
-              inlineToolbar: true,
-            },
-            list: {
-              class: List,
-              inlineToolbar: true,
-            },
-            image: {
-              class: Image,
-              config: {
-                uploader: {
-                  async uploadByFile(file: File) {
-                    return new Promise((resolve) => {
-                      const reader = new FileReader();
-                      reader.onload = (e) => {
-                        resolve({
-                          success: 1,
-                          file: {
-                            url: e.target?.result as string,
-                          },
-                        });
-                      };
-                      reader.readAsDataURL(file);
-                    });
-                  },
-                  async uploadByUrl(url: string) {
-                    return {
-                      success: 1,
-                      file: { url },
-                    };
-                  },
-                },
-              },
-            },
-            embed: Embed,
-            table: Table,
-            code: Code,
-            quote: Quote,
-            Marker: Marker,
-            inlineCode: InlineCode,
-          },
-          onReady: () => {
-            editorRef.current = editor;
-            if (content) {
-              try {
-                const parsed = JSON.parse(content);
-                editor.render(parsed);
-              } catch {
-                // If content is not valid JSON, start fresh
-              }
-            }
-          },
-          onChange: async () => {
-            const data = await editor.save();
-            const json = JSON.stringify(data);
-            onChange(json);
-            onEmptyChange(!data.blocks || data.blocks.length === 0);
-          },
-        });
-      } catch (error) {
-        console.error('Editor initialization error:', error);
-      }
-      setIsReady(true);
-    };
+  const updateContent = (newContent: string) => {
+    onChange(newContent);
+    const isEmpty = !newContent || newContent === '' || newContent.replace(/<[^>]*>/g, '').trim() === '';
+    onEmptyChange(isEmpty);
+    
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newContent);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
 
-    initEditor();
+  const execCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      updateContent(editorRef.current.innerHTML);
+    }
+  };
 
-    return () => {
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
       if (editorRef.current) {
-        editorRef.current.destroy();
-        editorRef.current = null;
+        editorRef.current.innerHTML = history[newIndex];
+        onChange(history[newIndex]);
       }
-    };
-  }, [content, onChange, onEmptyChange, isReady]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      if (editorRef.current) {
+        editorRef.current.innerHTML = history[newIndex];
+        onChange(history[newIndex]);
+      }
+    }
+  };
+
+  const handleImageInsert = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0];
+    if (file && editorRef.current) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = `<img src="${event.target?.result}" style="max-width: 100%; height: auto; margin: 10px 0; border-radius: 6px;" />`;
+        document.execCommand('insertHTML', false, img);
+        if (editorRef.current) {
+          updateContent(editorRef.current.innerHTML);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    e.currentTarget.value = '';
+  };
+
+  const handleAddVideo = () => {
+    if (!videoUrl.trim() || !editorRef.current) return;
+
+    let embedCode = '';
+    
+    // YouTube
+    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+      const videoId = videoUrl.includes('youtu.be') 
+        ? videoUrl.split('youtu.be/')[1] 
+        : videoUrl.split('v=')[1];
+      embedCode = `<div style="margin: 20px 0;"><iframe width="100%" height="400" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+    }
+    // Vimeo
+    else if (videoUrl.includes('vimeo.com')) {
+      const videoId = videoUrl.split('vimeo.com/')[1];
+      embedCode = `<div style="margin: 20px 0;"><iframe src="https://player.vimeo.com/video/${videoId}" width="100%" height="400" frameborder="0" allowfullscreen></iframe></div>`;
+    }
+
+    if (embedCode && editorRef.current) {
+      document.execCommand('insertHTML', false, embedCode);
+      updateContent(editorRef.current.innerHTML);
+      setVideoUrl('');
+      setShowVideoDialog(false);
+    }
+  };
 
   return (
-    <div className="editor-container bg-white dark:bg-slate-950 rounded-lg border border-border overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden bg-white dark:bg-slate-950">
+      <div className="bg-muted p-2 border-b border-border flex flex-wrap gap-1">
+        <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
+          <Bold className="w-4 h-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => execCommand('italic')} title="Italic" className="h-8 px-2">
+          <Italic className="w-4 h-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => execCommand('underline')} title="Underline" className="h-8 px-2">
+          <Underline className="w-4 h-4" />
+        </Button>
+        <div className="w-px h-6 bg-border" />
+        <Button size="sm" variant="outline" onClick={() => execCommand('formatBlock', 'h2')} title="Heading" className="h-8 px-2">
+          <Heading2 className="w-4 h-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => execCommand('insertUnorderedList')} title="Bullet List" className="h-8 px-2">
+          <List className="w-4 h-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => execCommand('insertOrderedList')} title="Numbered List" className="h-8 px-2">
+          <ListOrdered className="w-4 h-4" />
+        </Button>
+        <div className="w-px h-6 bg-border" />
+        <Button size="sm" variant="outline" onClick={() => execCommand('createLink', prompt('Enter URL') || '')} title="Link" className="h-8 px-2">
+          <Link className="w-4 h-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => imageInputRef.current?.click()} title="Image" className="h-8 px-2">
+          <ImageIcon className="w-4 h-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setShowVideoDialog(true)} title="Embed Video" className="h-8 px-2">
+          <Play className="w-4 h-4" />
+        </Button>
+        <div className="w-px h-6 bg-border" />
+        <Button size="sm" variant="outline" onClick={() => execCommand('justifyLeft')} title="Align Left" className="h-8 px-2">
+          <AlignLeft className="w-4 h-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => execCommand('justifyCenter')} title="Center" className="h-8 px-2">
+          <AlignCenter className="w-4 h-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => execCommand('justifyRight')} title="Align Right" className="h-8 px-2">
+          <AlignRight className="w-4 h-4" />
+        </Button>
+        <div className="w-px h-6 bg-border" />
+        <Button size="sm" variant="outline" onClick={handleUndo} disabled={historyIndex <= 0} title="Undo" className="h-8 px-2">
+          <Undo2 className="w-4 h-4" />
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleRedo} disabled={historyIndex >= history.length - 1} title="Redo" className="h-8 px-2">
+          <Redo2 className="w-4 h-4" />
+        </Button>
+      </div>
+
       <div
-        ref={containerRef}
-        id="editorjs"
-        className="editor-area p-4"
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={(e) => {
+          const html = (e.currentTarget as HTMLDivElement).innerHTML;
+          updateContent(html);
+        }}
+        className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed"
+        style={{
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          outline: 'none',
+        }}
         data-testid="simple-editor-area"
-        style={{ minHeight: '400px' }}
       />
-      <style>{`
-        .ce-block {
-          margin-bottom: 20px;
-        }
 
-        .ce-toolbar__content,
-        .ce-block__content {
-          max-width: none;
-        }
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageInsert}
+        className="hidden"
+        data-testid="image-input"
+      />
 
-        .ce-editor {
-          background: transparent;
-        }
-
-        .ce-toolbar {
-          background: #f5f5f5;
-          border-bottom: 1px solid #e5e7eb;
-          padding: 8px 12px;
-        }
-
-        .ce-toolbar__settings-btn {
-          opacity: 0.6;
-        }
-
-        .ce-toolbar__settings-btn:hover {
-          opacity: 1;
-        }
-
-        .ce-popover {
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .ce-popover__item-icon {
-          width: 24px;
-          height: 24px;
-        }
-      `}</style>
+      <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Embed Video</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="video-url">Video URL</Label>
+              <Input
+                id="video-url"
+                placeholder="Paste YouTube or Vimeo link"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-2">Works with YouTube and Vimeo links</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowVideoDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddVideo}>Embed</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
