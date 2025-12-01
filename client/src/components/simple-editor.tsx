@@ -127,9 +127,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     };
   }, []);
 
-  // Save cursor position when video dialog opens
+  // Save cursor position when video or image dialog opens
   useEffect(() => {
-    if (showVideoDialog && editorRef.current) {
+    if ((showVideoDialog || showImageSettings) && editorRef.current) {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
@@ -141,7 +141,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         };
       }
     }
-  }, [showVideoDialog]);
+  }, [showVideoDialog, showImageSettings]);
 
   const attachMediaListeners = () => {
     if (!editorRef.current) return;
@@ -272,14 +272,22 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
 
     // New image insertion
-    // Focus editor and move cursor to end
+    // Restore cursor to original position
     editorRef.current.focus();
     const selection = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(editorRef.current);
-    range.collapse(false);
-    selection?.removeAllRanges();
-    selection?.addRange(range);
+    
+    // Try to restore saved selection first, otherwise use current cursor position
+    if (savedSelectionRef.current) {
+      try {
+        const range = document.createRange();
+        range.setStart(savedSelectionRef.current.anchorNode!, savedSelectionRef.current.anchorOffset);
+        range.setEnd(savedSelectionRef.current.focusNode!, savedSelectionRef.current.focusOffset);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      } catch {
+        // Fallback: if saved selection is invalid, use current selection
+      }
+    }
 
     const imgId = 'img-' + Date.now();
     const titleAttr = imageSettings.title ? `data-img-title="${imageSettings.title}"` : 'data-img-title=""';
@@ -306,6 +314,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
     setTempImageSrc('');
     setShowImageSettings(false);
+    savedSelectionRef.current = null;
   };
 
   const openImageSettings = () => {
@@ -360,14 +369,22 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           <br>
         </div>`;
         
-        // Focus editor and move cursor to end
+        // Restore cursor to original position
         editorRef.current.focus();
         const selection = window.getSelection();
-        const range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        selection?.removeAllRanges();
-        selection?.addRange(range);
+        
+        // Try to restore saved selection first, otherwise use current selection
+        if (savedSelectionRef.current) {
+          try {
+            const range = document.createRange();
+            range.setStart(savedSelectionRef.current.anchorNode!, savedSelectionRef.current.anchorOffset);
+            range.setEnd(savedSelectionRef.current.focusNode!, savedSelectionRef.current.focusOffset);
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+          } catch {
+            // Fallback: if saved selection is invalid, use current selection
+          }
+        }
         
         try {
           document.execCommand('insertHTML', false, videoContainer);
