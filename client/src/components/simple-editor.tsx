@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Bold, Italic, Underline, List, ListOrdered, Heading2, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, Play, Trash2 } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,12 @@ interface SimpleEditorProps {
   onEmptyChange: (isEmpty: boolean) => void;
 }
 
+interface ImageSettings {
+  title: string;
+  caption: string;
+  description: string;
+}
+
 export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -27,6 +34,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [handlePos, setHandlePos] = useState({ x: 0, y: 0 });
+  const [showImageSettings, setShowImageSettings] = useState(false);
+  const [pendingImageData, setPendingImageData] = useState<string | null>(null);
+  const [imageSettings, setImageSettings] = useState<ImageSettings>({
+    title: '',
+    caption: '',
+    description: ''
+  });
 
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
@@ -104,16 +118,34 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     if (file && editorRef.current) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        const imgId = 'img-' + Date.now();
-        const img = `<img class="editor-image" data-img-id="${imgId}" src="${event.target?.result}" style="max-width: 100%; height: auto; margin: 10px 5px; border-radius: 6px; cursor: pointer; display: inline-block;" />`;
-        document.execCommand('insertHTML', false, img);
-        if (editorRef.current) {
-          updateContent(editorRef.current.innerHTML);
-        }
+        const imgData = event.target?.result as string;
+        setPendingImageData(imgData);
+        setImageSettings({ title: '', caption: '', description: '' });
+        setShowImageSettings(true);
       };
       reader.readAsDataURL(file);
     }
     e.currentTarget.value = '';
+  };
+
+  const insertImageWithSettings = () => {
+    if (!pendingImageData || !editorRef.current) return;
+
+    const imgId = 'img-' + Date.now();
+    const titleAttr = imageSettings.title ? `data-img-title="${imageSettings.title}"` : 'data-img-title=""';
+    const captionAttr = imageSettings.caption ? `data-img-caption="${imageSettings.caption}"` : 'data-img-caption=""';
+    const descriptionAttr = imageSettings.description ? `data-img-description="${imageSettings.description}"` : 'data-img-description=""';
+    
+    const img = `<img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${pendingImageData}" style="max-width: 100%; height: auto; margin: 10px 5px; border-radius: 6px; cursor: pointer; display: inline-block;" />`;
+    
+    document.execCommand('insertHTML', false, img);
+    if (editorRef.current) {
+      updateContent(editorRef.current.innerHTML);
+    }
+
+    setPendingImageData(null);
+    setShowImageSettings(false);
+    setImageSettings({ title: '', caption: '', description: '' });
   };
 
   const handleAddVideo = () => {
@@ -197,7 +229,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const startWidth = img.offsetWidth;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      // For top-left corner: dragging right shrinks, dragging left expands
       const deltaX = startX - moveEvent.clientX;
       const newWidth = Math.max(100, startWidth + deltaX);
       img.style.width = newWidth + 'px';
@@ -222,10 +253,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
     if (!img) return;
     
-    // Always wrap in a div for consistent alignment
     let wrapper = img.parentElement;
     
-    // Check if already wrapped by looking for img-wrapper class
     if (!wrapper || !wrapper.classList.contains('img-wrapper')) {
       wrapper = document.createElement('div');
       wrapper.classList.add('img-wrapper');
@@ -233,12 +262,10 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       wrapper.appendChild(img);
     }
     
-    // Clear previous alignment classes
     wrapper.classList.remove('img-left', 'img-center', 'img-right');
     wrapper.style.margin = '10px 0';
     wrapper.style.display = 'block';
     
-    // Apply alignment using classes
     if (alignment === 'left') {
       wrapper.classList.add('img-left');
       wrapper.style.textAlign = 'left';
@@ -414,6 +441,63 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         data-testid="image-input"
       />
 
+      {/* Image Settings Dialog */}
+      <Dialog open={showImageSettings} onOpenChange={setShowImageSettings}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Image Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="img-title" className="text-muted-foreground">
+                Title (disabled)
+              </Label>
+              <Input
+                id="img-title"
+                placeholder="Image title"
+                value={imageSettings.title}
+                onChange={(e) => setImageSettings({ ...imageSettings, title: e.target.value })}
+                disabled
+                className="opacity-50 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <Label htmlFor="img-caption">
+                Caption
+              </Label>
+              <Textarea
+                id="img-caption"
+                placeholder="Image caption (shown in WordPress)"
+                value={imageSettings.caption}
+                onChange={(e) => setImageSettings({ ...imageSettings, caption: e.target.value })}
+                className="h-20"
+              />
+            </div>
+            <div>
+              <Label htmlFor="img-description" className="text-muted-foreground">
+                Description (disabled)
+              </Label>
+              <Textarea
+                id="img-description"
+                placeholder="Image description"
+                value={imageSettings.description}
+                onChange={(e) => setImageSettings({ ...imageSettings, description: e.target.value })}
+                disabled
+                className="h-20 opacity-50 cursor-not-allowed"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowImageSettings(false);
+              setPendingImageData(null);
+            }}>Cancel</Button>
+            <Button onClick={insertImageWithSettings}>Add Image</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Dialog */}
       <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
         <DialogContent>
           <DialogHeader>
