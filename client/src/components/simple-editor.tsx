@@ -33,7 +33,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const [handlePos, setHandlePos] = useState({ x: 0, y: 0 });
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
@@ -48,29 +47,23 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       setHistory([content || '']);
       setHistoryIndex(0);
       setIsInitialized(true);
+      // Attach event listeners to all images for selection
+      attachImageListeners();
     }
   }, [isInitialized, content]);
 
-  useEffect(() => {
-    if (!selectedImageId || !editorRef.current) return;
-
-    const updateHandlePosition = () => {
-      const img = editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
-      if (img) {
-        const rect = img.getBoundingClientRect();
-        setHandlePos({ x: rect.left - 10, y: rect.top - 10 });
-      }
-    };
-
-    updateHandlePosition();
-    window.addEventListener('scroll', updateHandlePosition);
-    window.addEventListener('resize', updateHandlePosition);
-
-    return () => {
-      window.removeEventListener('scroll', updateHandlePosition);
-      window.removeEventListener('resize', updateHandlePosition);
-    };
-  }, [selectedImageId]);
+  const attachImageListeners = () => {
+    if (!editorRef.current) return;
+    const images = editorRef.current.querySelectorAll('.editor-image');
+    images.forEach(img => {
+      img.addEventListener('click', (e) => {
+        const imgId = (e.target as HTMLElement).getAttribute('data-img-id');
+        if (imgId) {
+          selectImage(imgId);
+        }
+      });
+    });
+  };
 
   const updateContent = (newContent: string) => {
     onChange(newContent);
@@ -97,6 +90,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       if (editorRef.current) {
         editorRef.current.innerHTML = history[newIndex];
         onChange(history[newIndex]);
+        attachImageListeners();
       }
     }
   };
@@ -108,6 +102,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       if (editorRef.current) {
         editorRef.current.innerHTML = history[newIndex];
         onChange(history[newIndex]);
+        attachImageListeners();
       }
     }
   };
@@ -144,16 +139,22 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const captionAttr = imageSettings.caption ? `data-img-caption="${imageSettings.caption}"` : 'data-img-caption=""';
     const descriptionAttr = imageSettings.description ? `data-img-description="${imageSettings.description}"` : 'data-img-description=""';
     
-    const img = `<img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; margin: 10px 5px; border-radius: 6px; cursor: pointer; display: inline-block;" />`;
+    // Create image container with visible caption
+    const captionHtml = imageSettings.caption ? `<div class="img-caption-text" style="margin-top: 8px; font-size: 0.875rem; color: #666; text-align: center; font-style: italic;">${imageSettings.caption}</div>` : '';
+    const imgContainer = `<div class="img-container" style="display: inline-block; margin: 10px 0; position: relative;">
+      <img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; display: block;" />
+      ${captionHtml}
+    </div>`;
     
     try {
-      document.execCommand('insertHTML', false, img);
+      document.execCommand('insertHTML', false, imgContainer);
     } catch (err) {
       console.error('Insert HTML failed:', err);
     }
 
     if (editorRef.current) {
       updateContent(editorRef.current.innerHTML);
+      attachImageListeners();
     }
 
     setTempImageSrc('');
@@ -188,6 +189,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const selectImage = (imgId: string) => {
     if (!editorRef.current) return;
 
+    // Deselect previous image
     if (selectedImageId !== imgId) {
       const prevImg = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
       if (prevImg) {
@@ -263,28 +265,28 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
     if (!img) return;
     
-    let wrapper = img.parentElement;
+    let container = img.closest('.img-container') as HTMLElement;
     
-    if (!wrapper || !wrapper.classList.contains('img-wrapper')) {
-      wrapper = document.createElement('div');
-      wrapper.classList.add('img-wrapper');
-      img.parentNode?.insertBefore(wrapper, img);
-      wrapper.appendChild(img);
+    if (!container) {
+      container = document.createElement('div');
+      container.classList.add('img-container');
+      img.parentNode?.insertBefore(container, img);
+      container.appendChild(img);
     }
     
-    wrapper.classList.remove('img-left', 'img-center', 'img-right');
-    wrapper.style.margin = '10px 0';
-    wrapper.style.display = 'block';
+    container.classList.remove('img-left', 'img-center', 'img-right');
+    container.style.margin = '10px 0';
+    container.style.display = 'block';
     
     if (alignment === 'left') {
-      wrapper.classList.add('img-left');
-      wrapper.style.textAlign = 'left';
+      container.classList.add('img-left');
+      container.style.textAlign = 'left';
     } else if (alignment === 'center') {
-      wrapper.classList.add('img-center');
-      wrapper.style.textAlign = 'center';
+      container.classList.add('img-center');
+      container.style.textAlign = 'center';
     } else if (alignment === 'right') {
-      wrapper.classList.add('img-right');
-      wrapper.style.textAlign = 'right';
+      container.classList.add('img-right');
+      container.style.textAlign = 'right';
     }
     
     if (editorRef.current) {
@@ -297,7 +299,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     
     const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
     if (img) {
-      img.remove();
+      // Remove the entire container (image + caption)
+      const container = img.closest('.img-container');
+      if (container) {
+        container.remove();
+      } else {
+        img.remove();
+      }
       updateContent(editorRef.current.innerHTML);
       setSelectedImageId(null);
     }
@@ -306,9 +314,10 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-white dark:bg-slate-950">
       <style>{`
-        .img-wrapper {
-          display: block;
+        .img-container {
+          display: inline-block;
           margin: 10px 0;
+          position: relative;
         }
         .img-left {
           text-align: left;
@@ -318,6 +327,33 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         }
         .img-right {
           text-align: right;
+        }
+        .editor-image {
+          display: block;
+          max-width: 100%;
+          height: auto;
+          border-radius: 6px;
+          cursor: pointer;
+        }
+        .img-caption-text {
+          margin-top: 8px;
+          font-size: 0.875rem;
+          color: #666;
+          text-align: center;
+          font-style: italic;
+        }
+        .resize-handle {
+          position: absolute;
+          width: 20px;
+          height: 20px;
+          background-color: #3b82f6;
+          border: 2px solid white;
+          border-radius: 4px;
+          cursor: nwse-resize;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+          top: -10px;
+          left: -10px;
+          user-select: none;
         }
       `}</style>
       <div className="bg-muted p-2 border-b border-border flex flex-wrap gap-1">
@@ -344,7 +380,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         <Button size="sm" variant="outline" onClick={() => execCommand('createLink', prompt('Enter URL') || '')} title="Link" className="h-8 px-2">
           <Link className="w-4 h-4" />
         </Button>
-        <Button size="sm" variant="outline" onClick={() => imageInputRef.current?.click()} title="Image" className="h-8 px-2">
+        <Button size="sm" variant="outline" onClick={() => imageInputRef.current?.click()} title="Image" className="h-8 px-2" data-testid="button-insert-image">
           <ImageIcon className="w-4 h-4" />
         </Button>
         <Button size="sm" variant="outline" onClick={() => setShowVideoDialog(true)} title="Embed Video" className="h-8 px-2">
@@ -401,7 +437,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
       {selectedImageId && (
         <div className="px-4 py-2 bg-blue-50 dark:bg-blue-950 text-xs text-blue-700 dark:text-blue-200 border-b border-blue-200">
-          💡 Drag the resize icon (top-left) to resize. Use positioning buttons to align.
+          💡 Drag the blue handle (top-left corner) to resize. Use positioning buttons to align.
         </div>
       )}
 
@@ -425,19 +461,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       {selectedImageId && (
         <div
           onMouseDown={handleResizeStart}
-          style={{
-            position: 'fixed',
-            width: '20px',
-            height: '20px',
-            backgroundColor: '#3b82f6',
-            border: '2px solid white',
-            borderRadius: '4px',
-            cursor: 'nwse-resize',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-            zIndex: 1000,
-            left: handlePos.x + 'px',
-            top: handlePos.y + 'px',
-          }}
+          className="resize-handle"
           title="Drag to resize"
         />
       )}
