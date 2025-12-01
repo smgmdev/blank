@@ -1339,7 +1339,7 @@ export default function Editor() {
 
 
       {/* Footer Controls */}
-      <div className="fixed bottom-0 left-0 w-full bg-background border-t border-border p-4 z-30 md:pl-64 md:z-20">
+      <div className="fixed bottom-0 left-0 w-full bg-background border-t border-border p-4 z-50 md:pl-64">
         <div className="max-w-4xl mx-auto flex items-center gap-2 px-4 md:px-0 flex-col sm:flex-row justify-end">
           <div className="flex gap-2 w-full sm:w-auto">
             <Button 
