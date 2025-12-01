@@ -16,17 +16,24 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     if (req.method === "GET") {
       const user = await getAppUserById(userId);
       if (!user) return res.status(404).json({ error: "User not found" });
-      return res.json(user);
+      // Transform displayName to fullName for frontend
+      return res.json({
+        ...user,
+        fullName: user.displayName || user.fullName
+      });
     }
     
     if (req.method === "PATCH") {
-      const { displayName, profilePicture, email, password } = req.body;
+      const { displayName, profilePicture, email, password, username, fullName, pin } = req.body;
       const updateData: Record<string, any> = {};
       
       if (displayName) updateData.displayName = displayName;
+      if (fullName) updateData.displayName = fullName; // Store fullName as displayName
       if (profilePicture) updateData.profilePicture = profilePicture;
       if (email) updateData.email = email;
       if (password) updateData.password = password;
+      if (username) updateData.username = username;
+      if (pin !== undefined) updateData.pin = pin; // Allow null to disable PIN
       
       if (Object.keys(updateData).length === 0) {
         return res.status(400).json({ error: "No fields to update" });
