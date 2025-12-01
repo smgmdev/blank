@@ -59,29 +59,28 @@ export function ImageSliderModal({ open, onClose, onInsert }: ImageSliderModalPr
 
     let slidesHtml = '';
     images.forEach((img, idx) => {
-      slidesHtml += `<div class="slider-slide" data-index="${idx}" style="display: ${idx === 0 ? 'block' : 'none'}; position: relative;">`;
-      slidesHtml += `<img src="${img.src}" alt="${img.caption}" class="slider-image" data-title="${img.title}" data-description="${img.description}" style="max-width: 100%; height: auto; border-radius: 8px;"/>`;
-      if (img.caption) {
-        slidesHtml += `<p class="slider-caption" style="text-align: center; margin-top: 8px; font-size: 14px; color: #666;">${img.caption}</p>`;
-      }
+      slidesHtml += `<div class="slider-slide" data-index="${idx}" style="display: ${idx === 0 ? 'flex' : 'none'}; align-items: center; justify-content: center;">`;
+      slidesHtml += `<img src="${img.src}" alt="${img.caption}" class="slider-image" data-title="${img.title}" data-description="${img.description}" style="max-width: 100%; height: auto; border-radius: 12px;"/>`;
       slidesHtml += '</div>';
     });
 
     let dotsHtml = '';
     images.forEach((_, idx) => {
-      dotsHtml += `<span class="slider-dot" data-index="${idx}" style="display: inline-block; width: 10px; height: 10px; margin: 0 5px; background: ${idx === 0 ? '#333' : '#ccc'}; border-radius: 50%; cursor: pointer;"></span>`;
+      dotsHtml += `<span class="slider-dot" data-index="${idx}" style="display: inline-block; width: 8px; height: 8px; margin: 0 4px; background: ${idx === 0 ? '#333' : '#d1d5db'}; border-radius: 50%; cursor: pointer; transition: background 0.3s;"></span>`;
     });
 
-    const sliderHtml = `<div class="image-slider" style="margin: 20px auto; position: relative; border-radius: 8px; overflow: hidden; background: #f9f9f9; padding: 10px; max-width: 600px; border: 2px solid #e5e7eb;">
-      <div class="slider-container" style="position: relative; background: white; border-radius: 8px; overflow: hidden;">
+    const showControls = images.length > 1;
+
+    const sliderHtml = `<div class="image-slider" style="margin: 20px auto; position: relative; border-radius: 16px; overflow: hidden; background: transparent; padding: 0; max-width: 100%; user-select: none;">
+      <div class="slider-container" style="position: relative; background: transparent; border-radius: 16px; overflow: hidden; aspect-ratio: 16/9;">
         ${slidesHtml}
-        <button class="slider-prev" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 20px; transition: background 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.7)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'">❮</button>
-        <button class="slider-next" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 20px; transition: background 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.7)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'">❯</button>
+        ${showControls ? `<button class="slider-prev" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.3); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 24px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; backdrop-filter: blur(4px);" onmouseover="this.style.background='rgba(0,0,0,0.5)'" onmouseout="this.style.background='rgba(0,0,0,0.3)'">‹</button>` : ''}
+        ${showControls ? `<button class="slider-next" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.3); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 24px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; backdrop-filter: blur(4px);" onmouseover="this.style.background='rgba(0,0,0,0.5)'" onmouseout="this.style.background='rgba(0,0,0,0.3)'">›</button>` : ''}
       </div>
-      <div class="slider-dots" style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 0 0 8px 8px;">
+      ${showControls ? `<div class="slider-dots" style="text-align: center; padding: 12px; background: transparent;">
         ${dotsHtml}
-      </div>
-      <div class="slider-resize-handle"></div>
+      </div>` : ''}
+      ${images[0]?.caption ? `<p class="slider-caption" style="text-align: center; margin-top: 8px; font-size: 14px; color: #666; font-weight: 500;">${images[0].caption}</p>` : ''}
     </div>`;
 
     onInsert(sliderHtml);

@@ -17,7 +17,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [sliderModalOpen, setSliderModalOpen] = useState(false);
   const [selectedSlider, setSelectedSlider] = useState<HTMLElement | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [resizing, setResizing] = useState<{id: string; startX: number; startWidth: number} | null>(null);
+  const [resizingId, setResizingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
@@ -28,35 +28,38 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
-  // Handle slider resize
+  // Resize handler
   useEffect(() => {
+    if (!resizingId) return;
+
     const handleMouseMove = (e: MouseEvent) => {
-      if (!resizing || !editorRef.current) return;
+      if (!editorRef.current) return;
       
-      const slider = editorRef.current.querySelector(`[data-slider-id="${resizing.id}"]`) as HTMLElement;
+      const slider = editorRef.current.querySelector(`[data-slider-id="${resizingId}"]`) as HTMLElement;
       if (!slider) return;
 
-      const deltaX = e.clientX - resizing.startX;
-      const newWidth = Math.max(200, resizing.startWidth + deltaX);
+      const handle = slider.querySelector('.slider-resize-handle') as HTMLElement;
+      if (!handle) return;
+
+      const rect = slider.getBoundingClientRect();
+      const newWidth = Math.max(300, e.clientX - rect.left + 20);
       slider.style.maxWidth = newWidth + 'px';
     };
 
     const handleMouseUp = () => {
-      if (resizing && editorRef.current) {
+      if (editorRef.current) {
         updateContent(editorRef.current.innerHTML);
-        setResizing(null);
       }
+      setResizingId(null);
     };
 
-    if (resizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [resizing]);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizingId]);
 
   const updateContent = (newContent: string) => {
     onChange(newContent);
@@ -72,8 +75,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const execCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value);
     if (editorRef.current) {
-      const newContent = editorRef.current.innerHTML;
-      updateContent(newContent);
+      updateContent(editorRef.current.innerHTML);
     }
   };
 
@@ -84,7 +86,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       if (editorRef.current) {
         editorRef.current.innerHTML = history[newIndex];
         onChange(history[newIndex]);
-        editorRef.current.focus();
       }
     }
   };
@@ -96,7 +97,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       if (editorRef.current) {
         editorRef.current.innerHTML = history[newIndex];
         onChange(history[newIndex]);
-        editorRef.current.focus();
       }
     }
   };
@@ -123,20 +123,74 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const sliderId = 'slider-' + Date.now();
     const wrappedSlider = sliderHtml.replace('class="image-slider"', `class="image-slider" data-slider-id="${sliderId}"`);
     
-    // Simply append to the editor's innerHTML
     editorRef.current.innerHTML += wrappedSlider;
     editorRef.current.focus();
     
-    // Move cursor to the end
-    const range = document.createRange();
-    const sel = window.getSelection();
-    range.selectNodeContents(editorRef.current);
-    range.collapse(false);
-    sel?.removeAllRanges();
-    sel?.addRange(range);
-    
     updateContent(editorRef.current.innerHTML);
     setSliderModalOpen(false);
+
+    // Add event listeners to slider buttons
+    setTimeout(() => {
+      setupSliderButtons(sliderId);
+    }, 100);
+  };
+
+  const setupSliderButtons = (sliderId: string) => {
+    if (!editorRef.current) return;
+    
+    const slider = editorRef.current.querySelector(`[data-slider-id="${sliderId}"]`) as HTMLElement;
+    if (!slider) return;
+
+    const prevBtn = slider.querySelector('.slider-prev') as HTMLButtonElement;
+    const nextBtn = slider.querySelector('.slider-next') as HTMLButtonElement;
+    const dots = slider.querySelectorAll('.slider-dot') as NodeListOf<HTMLElement>;
+
+    const slides = slider.querySelectorAll('.slider-slide') as NodeListOf<HTMLElement>;
+    let currentIndex = 0;
+
+    const showSlide = (index: number) => {
+      slides.forEach((s, i) => {
+        s.style.display = i === index ? 'flex' : 'none';
+      });
+      dots.forEach((d, i) => {
+        d.style.background = i === index ? '#333' : '#d1d5db';
+      });
+    };
+
+    if (prevBtn) {
+      prevBtn.onclick = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        currentIndex = (currentIndex - 1 + slides.length) % slides.length;
+        showSlide(currentIndex);
+      };
+    }
+
+    if (nextBtn) {
+      nextBtn.onclick = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        currentIndex = (currentIndex + 1) % slides.length;
+        showSlide(currentIndex);
+      };
+    }
+
+    dots.forEach((dot, index) => {
+      dot.onclick = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        currentIndex = index;
+        showSlide(currentIndex);
+      };
+    });
+
+    // Add resize handle
+    const resizeHandle = slider.querySelector('.slider-resize-handle') as HTMLElement;
+    if (resizeHandle) {
+      resizeHandle.onmousedown = () => {
+        setResizingId(sliderId);
+      };
+    }
   };
 
   const moveSlider = (direction: 'up' | 'down') => {
@@ -288,25 +342,25 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       <style>{`
         .image-slider {
           position: relative;
-          max-width: 600px;
+        }
+        
+        .image-slider:hover .slider-resize-handle {
+          opacity: 1;
         }
         
         .slider-resize-handle {
           position: absolute;
-          right: -8px;
-          bottom: -8px;
-          width: 16px;
-          height: 16px;
+          right: -6px;
+          bottom: -6px;
+          width: 14px;
+          height: 14px;
           background: #3b82f6;
           border: 2px solid white;
           border-radius: 2px;
           cursor: se-resize;
           opacity: 0;
           transition: opacity 0.2s;
-        }
-        
-        .image-slider:hover .slider-resize-handle {
-          opacity: 1;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
       `}</style>
     </div>
