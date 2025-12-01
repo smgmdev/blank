@@ -950,24 +950,24 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
               />
             </div>
           </div>
+          {!imageSettings.caption.trim() && (
+            <div className="text-xs text-red-500 px-0 py-1">
+              *Add caption
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowImageSettings(false);
               setTempImageSrc('');
               setEditingImageId(null);
             }}>Cancel</Button>
-            <div className="flex flex-col items-end gap-2">
-              {!imageSettings.caption.trim() && (
-                <span className="text-xs text-red-500">*Add caption</span>
-              )}
-              <Button 
-                onClick={insertImageWithSettings} 
-                disabled={!imageSettings.caption.trim()}
-                data-testid="confirm-image-add"
-              >
-                {editingImageId ? 'Save' : 'Add Image'}
-              </Button>
-            </div>
+            <Button 
+              onClick={insertImageWithSettings} 
+              disabled={!imageSettings.caption.trim()}
+              data-testid="confirm-image-add"
+            >
+              {editingImageId ? 'Save' : 'Add Image'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
