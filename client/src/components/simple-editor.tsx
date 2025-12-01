@@ -42,7 +42,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
-  const [toolbarIsFixed, setToolbarIsFixed] = useState(false);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -76,59 +75,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       return () => observer.disconnect();
     }
   }, [isInitialized, content]);
-
-  // Detect when toolbar should become fixed and track container position
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!toolbarRef.current || !containerRef.current) return;
-      
-      // Get the container position relative to viewport
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const toolbarTop = containerRect.top;
-      
-      // Only make toolbar fixed after it scrolls up past the top of viewport
-      if (toolbarTop < 128) {
-        setToolbarIsFixed(true);
-        // Update position while fixed
-        toolbarRef.current.style.left = containerRect.left + 'px';
-        toolbarRef.current.style.width = containerRect.width + 'px';
-      } else {
-        setToolbarIsFixed(false);
-      }
-    };
-
-    // Find the scrollable parent and listen to scroll
-    let scrollParent: Element | null = window;
-    if (containerRef.current) {
-      let parent = containerRef.current.parentElement;
-      while (parent) {
-        const overflow = window.getComputedStyle(parent).overflowY;
-        if (overflow === 'auto' || overflow === 'scroll') {
-          scrollParent = parent;
-          break;
-        }
-        parent = parent.parentElement;
-      }
-    }
-
-    scrollParent.addEventListener('scroll', handleScroll, { passive: true });
-    return () => scrollParent.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Update toolbar width/position to match container when fixed
-  useEffect(() => {
-    const updateToolbarPosition = () => {
-      if (!toolbarRef.current || !containerRef.current || !toolbarIsFixed) return;
-
-      const containerRect = containerRef.current.getBoundingClientRect();
-      toolbarRef.current.style.left = containerRect.left + 'px';
-      toolbarRef.current.style.width = containerRect.width + 'px';
-    };
-
-    updateToolbarPosition();
-    window.addEventListener('resize', updateToolbarPosition);
-    return () => window.removeEventListener('resize', updateToolbarPosition);
-  }, [toolbarIsFixed]);
 
   // Track resize handle position for images and videos
   useEffect(() => {
@@ -1103,16 +1049,10 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           user-select: none;
         }
       `}</style>
-      <div ref={containerRef} style={toolbarIsFixed ? { paddingTop: '52px' } : {}}>
+      <div ref={containerRef}>
         <div 
           ref={toolbarRef}
-          className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 shadow-sm"
-          style={toolbarIsFixed ? {
-            position: 'fixed',
-            top: '128px',
-            zIndex: 40,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          } : {}}
+          className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 shadow-sm sticky top-0 z-40"
         >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
