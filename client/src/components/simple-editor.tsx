@@ -42,6 +42,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
+  const [isToolbarSticky, setIsToolbarSticky] = useState(false);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -75,6 +76,50 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       return () => observer.disconnect();
     }
   }, [isInitialized, content]);
+
+  // Detect scroll and make toolbar sticky
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current || !toolbarRef.current) return;
+
+      // Get the scrollable parent (main content area)
+      let scrollParent = containerRef.current.parentElement;
+      while (scrollParent && scrollParent.getAttribute('class')?.includes('overflow') === false) {
+        const overflow = window.getComputedStyle(scrollParent).overflowY;
+        if (overflow === 'auto' || overflow === 'scroll') break;
+        scrollParent = scrollParent.parentElement;
+      }
+
+      if (!scrollParent) return;
+
+      // Get container position relative to scroll parent
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const scrollParentRect = scrollParent.getBoundingClientRect();
+      
+      // Calculate relative position
+      const relativeTop = containerRect.top - scrollParentRect.top;
+      
+      // If container scrolled past top of scroll area, make toolbar sticky
+      if (relativeTop < 0) {
+        setIsToolbarSticky(true);
+      } else {
+        setIsToolbarSticky(false);
+      }
+    };
+
+    // Find scrollable parent and attach listener
+    let scrollParent: any = containerRef.current?.parentElement;
+    while (scrollParent) {
+      const overflow = window.getComputedStyle(scrollParent).overflowY;
+      if (overflow === 'auto' || overflow === 'scroll') break;
+      scrollParent = scrollParent.parentElement;
+    }
+
+    if (scrollParent) {
+      scrollParent.addEventListener('scroll', handleScroll, { passive: true });
+      return () => scrollParent.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
 
   // Track resize handle position for images and videos
   useEffect(() => {
@@ -1049,16 +1094,16 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           user-select: none;
         }
       `}</style>
-      <div ref={containerRef} style={{ position: 'relative' }}>
+      <div ref={containerRef}>
         <div 
           ref={toolbarRef}
           className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 shadow-md"
-          style={{
+          style={isToolbarSticky ? {
             position: 'sticky',
             top: 0,
-            zIndex: 40,
-            willChange: 'transform'
-          }}
+            zIndex: 50,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+          } : {}}
         >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
