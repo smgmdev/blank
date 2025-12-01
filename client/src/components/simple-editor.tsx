@@ -41,7 +41,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
-  const [toolbarIsFixed, setToolbarIsFixed] = useState(false);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -76,21 +75,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
-  // Handle sticky toolbar on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!toolbarRef.current) return;
-      
-      const rect = toolbarRef.current.getBoundingClientRect();
-      const shouldBeFixed = rect.top <= 0;
-      
-      console.log('Scroll event - toolbar top:', rect.top, 'shouldBeFixed:', shouldBeFixed);
-      setToolbarIsFixed(shouldBeFixed);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Track resize handle position for images and videos
   useEffect(() => {
@@ -1067,18 +1051,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       `}</style>
       <div 
         ref={toolbarRef}
-        style={toolbarIsFixed ? {
-          position: 'fixed',
-          top: '0',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '100%',
-          maxWidth: '56rem',
-          zIndex: 50,
-        } : {}}
-        className={`bg-muted p-2 border-b border-border flex flex-wrap gap-1 ${
-          toolbarIsFixed ? '' : 'relative z-40'
-        }`}
+        className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 sticky top-0 z-40"
       >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
