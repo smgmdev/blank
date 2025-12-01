@@ -42,6 +42,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
+  const [toolbarIsFixed, setToolbarIsFixed] = useState(false);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -75,6 +76,41 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       return () => observer.disconnect();
     }
   }, [isInitialized, content]);
+
+  // Detect when toolbar should become fixed
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!toolbarRef.current || !containerRef.current) return;
+      
+      // Get the container position relative to viewport
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const toolbarTop = containerRect.top;
+      
+      // Only make toolbar fixed after it scrolls up past the top of viewport
+      if (toolbarTop < 128) {
+        setToolbarIsFixed(true);
+      } else {
+        setToolbarIsFixed(false);
+      }
+    };
+
+    // Find the scrollable parent and listen to scroll
+    let scrollParent: Element | null = window;
+    if (containerRef.current) {
+      let parent = containerRef.current.parentElement;
+      while (parent) {
+        const overflow = window.getComputedStyle(parent).overflowY;
+        if (overflow === 'auto' || overflow === 'scroll') {
+          scrollParent = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    }
+
+    scrollParent.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollParent.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Track resize handle position for images and videos
   useEffect(() => {
@@ -1053,14 +1089,15 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         <div 
           ref={toolbarRef}
           className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 shadow-sm"
-          style={{
+          style={toolbarIsFixed ? {
             position: 'fixed',
-            top: '64px',
+            top: '128px',
             left: 0,
             right: 0,
             zIndex: 40,
-            width: '100%'
-          }}
+            width: '100%',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          } : {}}
         >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
