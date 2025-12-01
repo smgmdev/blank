@@ -1047,7 +1047,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           user-select: none;
         }
       `}</style>
-      <div className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 sticky top-0 z-50">
+      <div className="bg-muted p-2 border-t border-border flex flex-wrap gap-1 fixed bottom-0 left-0 right-0 z-50 max-w-4xl mx-auto rounded-t-lg">
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
         </Button>
@@ -1139,7 +1139,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         }}
         onClick={handleEditorClick}
         onKeyDown={handleEditorKeyDown}
-        className="simple-editor min-h-[400px] p-4 focus:outline-none text-base leading-relaxed relative"
+        className="simple-editor min-h-[400px] p-4 pb-32 focus:outline-none text-base leading-relaxed relative"
         style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           outline: 'none',
