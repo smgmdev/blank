@@ -1,13 +1,35 @@
 import { getDb, initializeDb } from "../shared/db-client.js";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import * as schema from "../shared/schema.js";
 import type { AppUser, Article, WordPressSite } from "../shared/schema.js";
 
 // Initialize and get the shared database client
 let db: any = null;
+let schemaInitialized = false;
+
+async function initializeSchema() {
+  if (schemaInitialized || !db) return;
+  try {
+    // Create user_sessions table if missing (for Vercel)
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id varchar NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+        expires_at timestamp NOT NULL,
+        created_at timestamp DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    schemaInitialized = true;
+    console.log("[DB Utils] Schema initialized with user_sessions table");
+  } catch (e: any) {
+    console.error("[DB Utils] Failed to initialize schema:", e.message || e);
+  }
+}
+
 try {
   initializeDb();
   db = getDb();
+  initializeSchema().catch(e => console.error("[DB Utils] Schema init error:", e));
 } catch (e) {
   console.error("[DB Utils] Failed to initialize:", e);
 }
