@@ -37,11 +37,6 @@ export function TiptapEditor({ content, onChange, onImageInsert, onEmptyChange }
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-      }),
-      Underline,
       Color,
       Highlight.configure({
         multicolor: true,
