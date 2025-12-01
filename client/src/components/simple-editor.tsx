@@ -634,25 +634,22 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     if (!editorRef.current) return;
     
     if (selectedImageId) {
-      const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
+      const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
       if (img) {
-        const container = img.closest('.img-container');
+        // Always remove the entire img-container (which includes both image and caption)
+        const container = img.closest('.img-container') as HTMLElement;
         if (container) {
           container.remove();
-        } else {
-          img.remove();
         }
         updateContent(editorRef.current.innerHTML);
         setSelectedImageId(null);
       }
     } else if (selectedVideoId) {
-      const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`);
+      const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`) as HTMLElement;
       if (video) {
-        const container = video.closest('.video-container');
+        const container = video.closest('.video-container') as HTMLElement;
         if (container) {
           container.remove();
-        } else {
-          video.remove();
         }
         updateContent(editorRef.current.innerHTML);
         setSelectedVideoId(null);
