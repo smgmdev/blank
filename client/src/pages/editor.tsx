@@ -45,9 +45,7 @@ import {
 export default function Editor() {
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
-  const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editorImageInputRef = useRef<HTMLInputElement>(null);
   const userId = localStorage.getItem('userId');
   const { isPublishing, setIsPublishing } = useStore();
   // Properly extract articleId from URL, handling query strings
@@ -67,8 +65,6 @@ export default function Editor() {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingTags, setLoadingTags] = useState(false);
   const [isEditingDraft, setIsEditingDraft] = useState(false);
-  const [showImageDialog, setShowImageDialog] = useState(false);
-  const [imageCaption, setImageCaption] = useState("");
   
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [formData, setFormData] = useState({
@@ -461,17 +457,6 @@ export default function Editor() {
     }
   };
 
-  const handleEditorInput = () => {
-    if (editorRef.current) {
-      const text = editorRef.current.innerText || editorRef.current.textContent || '';
-      const cleanText = text.replace(/Start typing here\.\.\./, '').trim();
-      setIsEditorEmpty(cleanText.length === 0);
-      setFormData({
-        ...formData,
-        content: editorRef.current.innerHTML
-      });
-    }
-  };
 
   const handleNext = () => {
     if (step === 1 && (!formData.title || !selectedSiteId || isEditorEmpty)) {
