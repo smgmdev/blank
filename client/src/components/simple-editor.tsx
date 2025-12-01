@@ -296,15 +296,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           </div>`;
         }
       }
-      else if (url.includes('vimeo.com')) {
-        // Handle vimeo URLs: https://vimeo.com/123456789
-        const videoId = url.split('vimeo.com/')[1]?.split('?')[0]?.split('/')[0] || '';
-        if (videoId) {
-          embedCode = `<div style="margin: 20px 0; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 6px;">
-            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen></iframe>
-          </div>`;
-        }
-      }
 
       if (embedCode && editorRef.current) {
         // Focus and set cursor to end
@@ -334,6 +325,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         attachMediaListeners();
         setVideoUrl('');
         setShowVideoDialog(false);
+      } else {
+        console.warn('Could not extract video ID from URL:', url);
       }
     } catch (error) {
       console.error('Video embedding error:', error);
@@ -933,11 +926,11 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
               <Label htmlFor="video-url">Video URL</Label>
               <Input
                 id="video-url"
-                placeholder="Paste YouTube or Vimeo link"
+                placeholder="Paste YouTube link"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground mt-2">Works with YouTube and Vimeo links</p>
+              <p className="text-xs text-muted-foreground mt-2">Supports YouTube links</p>
             </div>
           </div>
           <DialogFooter>
