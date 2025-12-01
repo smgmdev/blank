@@ -192,9 +192,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     const captionAttr = imageSettings.caption ? `data-img-caption="${imageSettings.caption}"` : 'data-img-caption=""';
     const descriptionAttr = imageSettings.description ? `data-img-description="${imageSettings.description}"` : 'data-img-description=""';
     
-    // Create image container with visible caption
-    const captionHtml = imageSettings.caption ? `<div class="img-caption-text" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; max-width: 100%; display: block;">${imageSettings.caption}</div>` : '';
-    const imgContainer = `<div class="img-container" style="display: inline-block; margin: 10px 0; text-align: center;">
+    // Create image container with visible caption constrained to image width
+    const captionHtml = imageSettings.caption ? `<div class="img-caption-text" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-break: break-word; overflow-wrap: break-word; word-wrap: break-word; white-space: pre-wrap; width: 100%; box-sizing: border-box;">${imageSettings.caption}</div>` : '';
+    const imgContainer = `<div class="img-container" style="display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;">
       <img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; margin: 0 auto; display: block;" />
       ${captionHtml}
     </div>`;
@@ -528,10 +528,11 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           color: #666;
           text-align: center;
           font-style: italic;
-          word-wrap: break-word;
+          word-break: break-word;
           overflow-wrap: break-word;
-          white-space: normal;
-          max-width: 100%;
+          white-space: pre-wrap;
+          width: 100%;
+          box-sizing: border-box;
           display: block;
         }
         .resize-handle {
