@@ -597,16 +597,20 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           container.classList.remove('img-left', 'img-center', 'img-right');
           container.style.margin = '10px 0';
           container.style.display = 'block';
+          
           if (alignment === 'left') {
             container.classList.add('img-left');
+            container.style.width = '100%';
             container.style.textAlign = 'left';
             if (caption) caption.style.textAlign = 'left';
           } else if (alignment === 'center') {
             container.classList.add('img-center');
+            container.style.width = 'fit-content';
             container.style.textAlign = 'center';
             if (caption) caption.style.textAlign = 'center';
           } else if (alignment === 'right') {
             container.classList.add('img-right');
+            container.style.width = '100%';
             container.style.textAlign = 'right';
             if (caption) caption.style.textAlign = 'right';
           }
@@ -626,14 +630,18 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           container.classList.remove('video-left', 'video-center', 'video-right');
           container.style.margin = '20px 0';
           container.style.display = 'block';
+          
           if (alignment === 'left') {
             container.classList.add('video-left');
+            container.style.width = '100%';
             container.style.textAlign = 'left';
           } else if (alignment === 'center') {
             container.classList.add('video-center');
+            container.style.width = 'fit-content';
             container.style.textAlign = 'center';
           } else if (alignment === 'right') {
             container.classList.add('video-right');
+            container.style.width = '100%';
             container.style.textAlign = 'right';
           }
           updateContent(editorRef.current.innerHTML);
