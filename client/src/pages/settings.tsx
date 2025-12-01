@@ -45,17 +45,23 @@ export default function Settings() {
   const fetchUserData = async () => {
     if (!userId) return;
     try {
+      console.log(`[Settings] Fetching user data for ${userId}`);
       const res = await fetch(`/api/users/${userId}`);
-      if (res.ok) {
-        const userData = await res.json();
-        setEmail(userData.email || "");
-        setUsername(userData.username || "");
-        setFullName(userData.fullName || userData.displayName || "");
-        // Set PIN activation state based on whether PIN is currently set
-        setIsPinActive(!!userData.pin);
+      if (!res.ok) {
+        console.error(`[Settings] Fetch failed with status ${res.status}`);
+        const errorData = await res.text();
+        console.error(`[Settings] Error response:`, errorData);
+        return;
       }
+      const userData = await res.json();
+      console.log(`[Settings] User data received:`, userData);
+      setEmail(userData.email || "");
+      setUsername(userData.username || "");
+      setFullName(userData.fullName || userData.displayName || "");
+      // Set PIN activation state based on whether PIN is currently set
+      setIsPinActive(!!userData.pin);
     } catch (e) {
-      console.debug('Failed to fetch user:', e);
+      console.error('[Settings] Failed to fetch user:', e);
     }
   };
 

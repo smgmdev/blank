@@ -37,13 +37,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       const userId = localStorage.getItem('userId');
       if (userId) {
         fetch(`/api/users/${userId}`)
-          .then(res => res.ok ? res.json() : null)
+          .then(res => {
+            if (!res.ok) {
+              console.error(`User fetch failed with status ${res.status}`);
+              return null;
+            }
+            return res.json();
+          })
           .then(userData => {
             if (userData) {
               setUserInfo(userData);
             }
           })
-          .catch(e => console.debug('User fetch:', e));
+          .catch(e => console.error('User fetch error:', e));
       }
     }
   }, [user, location]);
