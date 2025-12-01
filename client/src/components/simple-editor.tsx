@@ -35,6 +35,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [handlePos, setHandlePos] = useState({ x: 0, y: 0 });
+  const [settingsButtonPos, setSettingsButtonPos] = useState({ x: 0, y: 0 });
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
@@ -70,6 +71,10 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       if (element) {
         const rect = element.getBoundingClientRect();
         setHandlePos({ x: rect.left - 10, y: rect.top - 10 });
+        // Position settings button at top-right corner
+        if (selectedImageId) {
+          setSettingsButtonPos({ x: rect.right - 10, y: rect.top - 10 });
+        }
       }
     };
 
@@ -844,8 +849,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
             cursor: 'pointer',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
             zIndex: 1000,
-            right: '16px',
-            top: handlePos.y + 'px',
+            left: settingsButtonPos.x + 'px',
+            top: settingsButtonPos.y + 'px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
