@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Bold, Italic, Underline, List, ListOrdered, Heading2, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, Play, Trash2 } from 'lucide-react';
+import { Bold, Italic, Underline, List, ListOrdered, Heading2, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, Play, Trash2, Settings } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
@@ -37,6 +37,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [handlePos, setHandlePos] = useState({ x: 0, y: 0 });
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
+  const [editingImageId, setEditingImageId] = useState<string | null>(null);
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -178,6 +179,43 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const insertImageWithSettings = () => {
     if (!tempImageSrc || !editorRef.current) return;
 
+    // If editing an existing image, update its caption
+    if (editingImageId) {
+      const img = editorRef.current.querySelector(`[data-img-id="${editingImageId}"]`) as HTMLImageElement;
+      if (img) {
+        const container = img.closest('.img-container') as HTMLElement;
+        if (container) {
+          // Update data attributes
+          if (imageSettings.title) {
+            img.setAttribute('data-img-title', imageSettings.title);
+          }
+          if (imageSettings.caption) {
+            img.setAttribute('data-img-caption', imageSettings.caption);
+          }
+          if (imageSettings.description) {
+            img.setAttribute('data-img-description', imageSettings.description);
+          }
+          
+          // Remove old caption
+          const oldCaption = container.querySelector('.img-caption-text');
+          if (oldCaption) oldCaption.remove();
+          
+          // Add new caption if exists
+          if (imageSettings.caption) {
+            const captionHtml = `<div class="img-caption-text" contenteditable="false" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-break: break-word; overflow-wrap: break-word; word-wrap: break-word; white-space: pre-wrap; width: 100%; box-sizing: border-box; user-select: none;">${imageSettings.caption}</div>`;
+            container.insertAdjacentHTML('beforeend', captionHtml);
+          }
+          
+          updateContent(editorRef.current.innerHTML);
+          setEditingImageId(null);
+          setShowImageSettings(false);
+          setTempImageSrc('');
+          return;
+        }
+      }
+    }
+
+    // New image insertion
     // Focus editor and move cursor to end
     editorRef.current.focus();
     const selection = window.getSelection();
@@ -212,6 +250,21 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
     setTempImageSrc('');
     setShowImageSettings(false);
+  };
+
+  const openImageSettings = () => {
+    if (!selectedImageId || !editorRef.current) return;
+    
+    const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
+    if (img) {
+      setEditingImageId(selectedImageId);
+      setImageSettings({
+        title: img.getAttribute('data-img-title') || '',
+        caption: img.getAttribute('data-img-caption') || '',
+        description: img.getAttribute('data-img-description') || ''
+      });
+      setShowImageSettings(true);
+    }
   };
 
   const handleAddVideo = () => {
@@ -778,6 +831,32 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         />
       )}
 
+      {selectedImageId && (
+        <button
+          onClick={openImageSettings}
+          style={{
+            position: 'fixed',
+            width: '32px',
+            height: '32px',
+            backgroundColor: '#3b82f6',
+            border: '2px solid white',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+            zIndex: 1000,
+            right: '16px',
+            top: handlePos.y + 'px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0',
+          }}
+          title="Edit caption"
+        >
+          <Settings size={16} color="white" />
+        </button>
+      )}
+
       <input
         ref={imageInputRef}
         type="file"
@@ -829,8 +908,11 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
             <Button variant="outline" onClick={() => {
               setShowImageSettings(false);
               setTempImageSrc('');
+              setEditingImageId(null);
             }}>Cancel</Button>
-            <Button onClick={insertImageWithSettings} data-testid="confirm-image-add">Add Image</Button>
+            <Button onClick={insertImageWithSettings} data-testid="confirm-image-add">
+              {editingImageId ? 'Save' : 'Add Image'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
