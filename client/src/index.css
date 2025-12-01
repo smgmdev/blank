@@ -131,16 +131,17 @@
   }
 }
 
-/* Remove circles/bullets - make markers invisible */
+/* Hide list markers with transparent image */
 ol, ul {
-  list-style: none !important;
+  list-style-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"></svg>') !important;
+  list-style-position: outside !important;
   padding-left: 0 !important;
   margin: 0.5em 0 !important;
 }
 
 ol li, ul li {
-  list-style: none !important;
-  display: block !important;
+  list-style-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"></svg>') !important;
   margin-bottom: 0.25em !important;
   padding-left: 0 !important;
+  margin-left: 0 !important;
 }
