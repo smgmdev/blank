@@ -109,4 +109,24 @@
     position: relative;
     animation: linkedinLoading 2s ease-in-out infinite;
   }
+
+  /* Video and image container styling */
+  .editor-video {
+    position: relative;
+    z-index: 10;
+    pointer-events: auto !important;
+  }
+
+  .video-container {
+    position: relative;
+  }
+
+  .editor-image {
+    position: relative;
+    z-index: 10;
+  }
+
+  .img-container {
+    position: relative;
+  }
 }
