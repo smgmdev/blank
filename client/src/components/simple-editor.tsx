@@ -287,20 +287,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
 
     // New image insertion
-    // Restore cursor to original position
     editorRef.current.focus();
-    const selection = window.getSelection();
     
-    // Try to restore saved selection first
-    if (savedSelectionRef.current && selection) {
-      try {
-        selection.removeAllRanges();
-        selection.addRange(savedSelectionRef.current);
-      } catch {
-        // Fallback: if saved selection is invalid, just use current position
-      }
-    }
-
     const imgId = 'img-' + Date.now();
     const titleAttr = imageSettings.title ? `data-img-title="${imageSettings.title}"` : 'data-img-title=""';
     const captionAttr = imageSettings.caption ? `data-img-caption="${imageSettings.caption}"` : 'data-img-caption=""';
@@ -314,9 +302,20 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     </div>`;
     
     try {
-      document.execCommand('insertHTML', false, imgContainer);
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = imgContainer;
+        range.insertNode(tempDiv.firstChild as Node);
+      } else {
+        // Fallback: append to editor
+        editorRef.current.insertAdjacentHTML('beforeend', imgContainer);
+      }
     } catch (err) {
-      console.error('Insert HTML failed:', err);
+      console.error('Insert image failed:', err);
+      editorRef.current.insertAdjacentHTML('beforeend', imgContainer);
     }
 
     if (editorRef.current) {
