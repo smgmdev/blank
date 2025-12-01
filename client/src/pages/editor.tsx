@@ -146,12 +146,6 @@ export default function Editor() {
   const [categoriesCache, setCategoriesCache] = useState<Record<string, any[]>>({});
   const [tagsCache, setTagsCache] = useState<Record<string, any[]>>({});
 
-  // Update editor HTML whenever formData.content changes (handles both initial load and edits)
-  useEffect(() => {
-    if (editorRef.current && formData.content && step === 1) {
-      editorRef.current.innerHTML = formData.content;
-    }
-  }, [formData.content, step]);
 
   // Load categories and tags when site is selected or draft is loaded
   useEffect(() => {
@@ -200,16 +194,6 @@ export default function Editor() {
   const selectedSite = sites_user.find(s => s.id === selectedSiteId);
   const plugin = selectedSite?.seoPlugin || 'none';
 
-  // Restore editor content when returning to step 1
-  useEffect(() => {
-    if (step === 1 && editorRef.current && formData.content) {
-      editorRef.current.innerHTML = formData.content;
-      // Update empty state
-      const text = editorRef.current.innerText || editorRef.current.textContent || '';
-      const cleanText = text.replace(/Start typing here\.\.\./, '').trim();
-      setIsEditorEmpty(cleanText.length === 0);
-    }
-  }, [step]);
 
   const generateSlug = (title: string) => {
     return title
