@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -23,7 +23,7 @@ interface ImageSliderModalProps {
 export function ImageSliderModal({ open, onClose, onInsert }: ImageSliderModalProps) {
   const [images, setImages] = useState<SliderImage[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const fileInputRef = useState(null)[0];
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0];
@@ -57,25 +57,31 @@ export function ImageSliderModal({ open, onClose, onInsert }: ImageSliderModalPr
   const handleInsert = () => {
     if (images.length === 0) return;
 
-    const slidesHtml = images.map((img, idx) => `
-      <div class="slider-slide" data-index="${idx}" style="display: ${idx === 0 ? 'block' : 'none'};">
-        <img src="${img.src}" alt="${img.caption}" class="slider-image" data-title="${img.title}" data-description="${img.description}" style="max-width: 100%; height: auto; border-radius: 8px;"/>
-        ${img.caption ? `<p class="slider-caption" style="text-align: center; margin-top: 8px; font-size: 14px; color: #666;">${img.caption}</p>` : ''}
-      </div>
-    `).join('');
+    let slidesHtml = '';
+    images.forEach((img, idx) => {
+      slidesHtml += `<div class="slider-slide" data-index="${idx}" style="display: ${idx === 0 ? 'block' : 'none'}; position: relative;">`;
+      slidesHtml += `<img src="${img.src}" alt="${img.caption}" class="slider-image" data-title="${img.title}" data-description="${img.description}" style="max-width: 100%; height: auto; border-radius: 8px;"/>`;
+      if (img.caption) {
+        slidesHtml += `<p class="slider-caption" style="text-align: center; margin-top: 8px; font-size: 14px; color: #666;">${img.caption}</p>`;
+      }
+      slidesHtml += '</div>';
+    });
 
-    const sliderHtml = `
-      <div class="image-slider" style="margin: 20px 0; position: relative; border-radius: 8px; overflow: hidden;">
-        <div class="slider-container" style="position: relative;">
-          ${slidesHtml}
-          <button class="slider-prev" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 10;">❮</button>
-          <button class="slider-next" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 10;">❯</button>
-        </div>
-        <div class="slider-dots" style="text-align: center; padding: 10px; background: #f5f5f5;">
-          ${images.map((_, idx) => `<span class="slider-dot" data-index="${idx}" style="display: inline-block; width: 10px; height: 10px; margin: 0 5px; background: ${idx === 0 ? '#333' : '#ccc'}; border-radius: 50%; cursor: pointer;"></span>`).join('')}
-        </div>
+    let dotsHtml = '';
+    images.forEach((_, idx) => {
+      dotsHtml += `<span class="slider-dot" data-index="${idx}" style="display: inline-block; width: 10px; height: 10px; margin: 0 5px; background: ${idx === 0 ? '#333' : '#ccc'}; border-radius: 50%; cursor: pointer;"></span>`;
+    });
+
+    const sliderHtml = `<div class="image-slider" style="margin: 20px 0; position: relative; border-radius: 8px; overflow: visible; background: #f9f9f9; padding: 10px;">
+      <div class="slider-container" style="position: relative; background: white; border-radius: 8px; overflow: hidden;">
+        ${slidesHtml}
+        <button class="slider-prev" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 20px;">❮</button>
+        <button class="slider-next" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 20px;">❯</button>
       </div>
-    `;
+      <div class="slider-dots" style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 0 0 8px 8px;">
+        ${dotsHtml}
+      </div>
+    </div>`;
 
     onInsert(sliderHtml);
     resetModal();
@@ -97,7 +103,6 @@ export function ImageSliderModal({ open, onClose, onInsert }: ImageSliderModalPr
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Image List */}
           <div className="space-y-2">
             <Label>Images ({images.length})</Label>
             <div className="border border-border rounded-lg p-3 max-h-48 overflow-y-auto">
@@ -124,14 +129,12 @@ export function ImageSliderModal({ open, onClose, onInsert }: ImageSliderModalPr
             </div>
           </div>
 
-          {/* Add Image Button */}
-          <Button onClick={() => document.getElementById('slider-image-input')?.click()} className="w-full gap-2">
+          <Button onClick={() => fileInputRef.current?.click()} className="w-full gap-2">
             <Plus className="w-4 h-4" />
             Add Image
           </Button>
-          <input id="slider-image-input" type="file" accept="image/*" onChange={handleAddImage} className="hidden" />
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAddImage} className="hidden" />
 
-          {/* Image Details Editor */}
           {editingImage && (
             <div className="border border-border rounded-lg p-4 bg-blue-50">
               <h3 className="font-medium mb-3">Image Details</h3>

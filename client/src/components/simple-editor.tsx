@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Bold, Italic, List, Heading2, ImageIcon, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Rows } from 'lucide-react';
 import { ImageSliderModal } from './image-slider-modal';
@@ -16,12 +16,17 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [historyIndex, setHistoryIndex] = useState(0);
   const [sliderModalOpen, setSliderModalOpen] = useState(false);
 
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== content) {
+      editorRef.current.innerHTML = content;
+    }
+  }, [content]);
+
   const updateContent = (newContent: string) => {
     onChange(newContent);
     const isEmpty = !newContent || newContent === '<p></p>' || newContent.replace(/<[^>]*>/g, '').trim() === '';
     onEmptyChange(isEmpty);
     
-    // Add to history
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(newContent);
     setHistory(newHistory);
@@ -75,6 +80,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const handleSliderInsert = (sliderHtml: string) => {
     if (editorRef.current) {
       document.execCommand('insertHTML', false, sliderHtml);
+      editorRef.current.focus();
       updateContent(editorRef.current.innerHTML);
       setSliderModalOpen(false);
     }
@@ -82,7 +88,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-white dark:bg-slate-950">
-      {/* Toolbar */}
       <div className="bg-muted p-3 border-b border-border flex flex-wrap gap-2">
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold (Ctrl+B)" className="h-8 px-2">
           <Bold className="w-4 h-4" />
@@ -129,7 +134,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         </Button>
       </div>
 
-      {/* Editor Area */}
       <div
         ref={editorRef}
         contentEditable
@@ -138,9 +142,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           const html = (e.currentTarget as HTMLDivElement).innerHTML;
           updateContent(html);
         }}
+        onMouseUp={() => editorRef.current?.focus()}
+        onKeyUp={() => editorRef.current?.focus()}
         className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed"
         style={{
           fontFamily: 'system-ui, -apple-system, sans-serif',
+          WebkitUserSelect: 'text',
+          userSelect: 'text'
         }}
         data-testid="simple-editor-area"
       >
