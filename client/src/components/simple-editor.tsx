@@ -662,6 +662,22 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       if (img) {
         const container = img.closest('.img-container');
         if (container) {
+          // Extract caption if it exists and preserve it
+          const caption = container.querySelector('.img-caption-text');
+          if (caption) {
+            const captionText = caption.textContent || '';
+            if (captionText.trim()) {
+              // Create a new paragraph for the caption
+              const p = document.createElement('p');
+              p.textContent = captionText;
+              p.style.fontStyle = 'italic';
+              p.style.color = '#666';
+              p.style.fontSize = '0.875rem';
+              p.style.textAlign = 'center';
+              p.style.marginTop = '8px';
+              container.insertAdjacentElement('afterend', p);
+            }
+          }
           container.remove();
         } else {
           img.remove();
