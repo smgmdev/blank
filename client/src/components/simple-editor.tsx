@@ -79,6 +79,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
   // Handle toolbar fixed positioning on scroll
   useEffect(() => {
+    let scrollParent: Element | null = null;
+
     const handleScroll = () => {
       if (!toolbarRef.current) return;
       
@@ -93,8 +95,24 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Find the scrollable parent (the main content area)
+    if (containerRef.current) {
+      let parent = containerRef.current.parentElement;
+      while (parent) {
+        const hasScroll = parent.scrollHeight > parent.clientHeight;
+        const overflow = window.getComputedStyle(parent).overflowY;
+        if (hasScroll && (overflow === 'auto' || overflow === 'scroll')) {
+          scrollParent = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    }
+
+    // Attach listener to scrollable parent or window
+    const target = scrollParent || window;
+    target.addEventListener('scroll', handleScroll, { passive: true });
+    return () => target.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Track resize handle position for images and videos
