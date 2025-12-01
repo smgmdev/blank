@@ -220,28 +220,36 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   };
 
-  const execCommand = (command: string, value?: string) => {
-    document.execCommand(command, false, value);
-    if (editorRef.current) {
-      updateContent(editorRef.current.innerHTML);
-    }
-  };
-
   const removeListMarkers = () => {
     if (editorRef.current) {
       const lists = editorRef.current.querySelectorAll('ol, ul');
       lists.forEach(list => {
-        (list as HTMLElement).style.listStyle = 'none';
-        (list as HTMLElement).style.listStyleType = 'none';
-        (list as HTMLElement).style.listStyleImage = 'none';
-        (list as HTMLElement).style.listStylePosition = 'unset';
+        const el = list as HTMLElement;
+        el.style.listStyle = 'none !important';
+        el.style.listStyleType = 'none !important';
+        el.style.listStyleImage = 'none !important';
+        el.style.listStylePosition = 'unset !important';
+        el.style.paddingLeft = '0px !important';
+        el.style.marginLeft = '0px !important';
       });
       const items = editorRef.current.querySelectorAll('li');
       items.forEach(item => {
-        (item as HTMLElement).style.listStyle = 'none';
-        (item as HTMLElement).style.listStyleType = 'none';
-        (item as HTMLElement).style.listStyleImage = 'none';
+        const el = item as HTMLElement;
+        el.style.listStyle = 'none !important';
+        el.style.listStyleType = 'none !important';
+        el.style.listStyleImage = 'none !important';
+        el.style.paddingLeft = '0px !important';
+        el.style.marginLeft = '0px !important';
       });
+    }
+  };
+
+  const execCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      // Immediately remove list markers after command
+      setTimeout(() => removeListMarkers(), 0);
+      updateContent(editorRef.current.innerHTML);
     }
   };
 
