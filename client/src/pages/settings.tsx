@@ -15,6 +15,9 @@ export default function Settings() {
   const currentUser = users[0];
   const isAdmin = currentUserRole === 'admin';
   
+  // Get real user ID from localStorage (database ID), not mock store ID
+  const userId = localStorage.getItem('userId') || currentUser?.id;
+  
   // Account fields
   const [email, setEmail] = useState(currentUser?.email || "user@example.com");
   const [username, setUsername] = useState(currentUser?.username || "");
@@ -56,7 +59,7 @@ export default function Settings() {
 
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/users/${currentUser.id}`, {
+      const response = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData)
@@ -100,7 +103,7 @@ export default function Settings() {
 
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/users/${currentUser.id}`, {
+      const response = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: newPassword })
@@ -156,7 +159,7 @@ export default function Settings() {
 
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/users/${currentUser.id}`, {
+      const response = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin: isPinActive ? pin : null })
