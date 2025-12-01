@@ -209,3 +209,24 @@ export async function updateAppUser(userId: string, updates: any): Promise<any> 
   }
   return await getAppUserById(userId);
 }
+
+export async function createUserSession(userId: string, expiresAt: Date): Promise<any> {
+  const database = getDatabase();
+  const { userSessions } = await import("../shared/schema.js");
+  const [session] = await database.insert(userSessions).values({ userId, expiresAt }).returning();
+  if (!session) throw new Error("Failed to create session");
+  return session;
+}
+
+export async function getUserSession(sessionId: string): Promise<any | undefined> {
+  const database = getDatabase();
+  const { userSessions } = await import("../shared/schema.js");
+  const [session] = await database.select().from(userSessions).where(eq(userSessions.id, sessionId));
+  return session;
+}
+
+export async function clearUserSession(sessionId: string): Promise<void> {
+  const database = getDatabase();
+  const { userSessions } = await import("../shared/schema.js");
+  await database.delete(userSessions).where(eq(userSessions.id, sessionId));
+}

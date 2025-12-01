@@ -1485,12 +1485,18 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      // Create session - expires in 7 days
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const session = await storage.createUserSession({ userId: user.id, expiresAt });
+
       res.json({
         id: user.id,
         username: user.username,
         role: user.role,
         email: user.email,
         companyName: user.companyName,
+        sessionId: session.id,
+        pin: user.pin,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to login" });

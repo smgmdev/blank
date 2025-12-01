@@ -48,8 +48,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           return res.status(401).json({ error: "Invalid credentials" });
         }
         
-        // For now, return userId as sessionId (session table support will be added)
-        res.json({ id: user.id, email: user.email, role: user.role, pin: user.pin, sessionId: user.id });
+        // Create session - expires in 7 days
+        const { createUserSession } = await import("./db-utils.js");
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        const session = await createUserSession(user.id, expiresAt);
+        
+        res.json({ id: user.id, email: user.email, role: user.role, pin: user.pin, sessionId: session.id });
       } else if (action === "logout") {
         res.json({ success: true });
       } 
