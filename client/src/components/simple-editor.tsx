@@ -506,25 +506,34 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   };
 
-  const handleResizeStart = (e: React.MouseEvent) => {
-    if (!selectedImageId && !selectedVideoId || !editorRef.current) return;
-    
-    let element: HTMLElement | null = null;
-    if (selectedImageId) {
-      element = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
-    } else if (selectedVideoId) {
-      element = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`) as HTMLElement;
-    }
-    if (!element) return;
-
+  const handleResizeStart = (e: React.MouseEvent, targetVideoId?: string) => {
     e.preventDefault();
     e.stopPropagation();
     
+    let element: HTMLElement | null = null;
+    const currentVideoId = targetVideoId || selectedVideoId;
+    const currentImageId = selectedImageId;
+    
+    if (!editorRef.current) return;
+
+    // Select the video if clicking on its resize handle
+    if (targetVideoId && !selectedVideoId) {
+      selectVideo(targetVideoId);
+    }
+
+    if (currentImageId) {
+      element = editorRef.current.querySelector(`[data-img-id="${currentImageId}"]`) as HTMLElement;
+    } else if (currentVideoId) {
+      element = editorRef.current.querySelector(`[data-video-id="${currentVideoId}"]`) as HTMLElement;
+    }
+    
+    if (!element) return;
+
     const startX = e.clientX;
     const startWidth = element.offsetWidth;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = startX - moveEvent.clientX;
+      const deltaX = moveEvent.clientX - startX;
       const newWidth = Math.max(100, startWidth + deltaX);
       element.style.width = newWidth + 'px';
       element.style.height = 'auto';
@@ -1040,7 +1049,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       {Object.entries(videoHandlePositions).map(([vidId, pos]) => (
         <div
           key={vidId}
-          onMouseDown={handleResizeStart}
+          onMouseDown={(e) => handleResizeStart(e, vidId)}
           style={{
             position: 'fixed',
             width: '20px',
