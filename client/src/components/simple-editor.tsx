@@ -636,7 +636,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         data-testid="simple-editor-area"
       />
 
-      {selectedImageId && (
+      {(selectedImageId || selectedVideoId) && (
         <div
           onMouseDown={handleResizeStart}
           style={{
