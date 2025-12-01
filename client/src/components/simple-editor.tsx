@@ -101,13 +101,20 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     
     const videos = editorRef.current.querySelectorAll('.editor-video');
     videos.forEach(video => {
-      video.addEventListener('click', (e) => {
+      const handleClick = (e: any) => {
         const vidId = (video as HTMLElement).getAttribute('data-video-id');
         if (vidId) {
           setSelectedImageId(null);
           selectVideo(vidId);
         }
-      });
+      };
+      video.addEventListener('click', handleClick);
+      
+      // Also add click handler to the overlay for proper event capture
+      const overlay = video.querySelector(`[data-video-overlay]`);
+      if (overlay) {
+        overlay.addEventListener('click', handleClick);
+      }
     });
   };
 
@@ -253,8 +260,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         
         const videoId = 'video-' + Date.now();
         const videoContainer = `<div class="video-container" style="display: block; margin: 20px 0; text-align: center;">
-          <div class="editor-video" data-video-id="${videoId}" style="display: inline-block; cursor: pointer; position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden;">
+          <div class="editor-video" data-video-id="${videoId}" style="display: inline-block; cursor: pointer; position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden; width: 640px; max-width: 100%;">
             ${embedCode}
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto;" data-video-overlay="${videoId}"></div>
           </div>
         </div>`;
         
