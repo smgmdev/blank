@@ -31,10 +31,10 @@ export async function ensureSchemaColumns() {
       ADD COLUMN IF NOT EXISTS display_name TEXT
     `);
     
-    // Check and create profilePicture column if missing
+    // Check and create pin column if missing
     await db.execute(sql`
       ALTER TABLE app_users 
-      ADD COLUMN IF NOT EXISTS profile_picture TEXT
+      ADD COLUMN IF NOT EXISTS pin VARCHAR(4)
     `);
     
     console.log("[DB] Schema columns verified");

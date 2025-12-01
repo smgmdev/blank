@@ -39,7 +39,11 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       }
       
       const updated = await updateAppUser(userId, updateData);
-      return res.json(updated);
+      // Transform displayName to fullName for frontend
+      return res.json({
+        ...updated,
+        fullName: updated.displayName || updated.fullName
+      });
     }
     
     res.status(405).json({ error: "Method not allowed" });

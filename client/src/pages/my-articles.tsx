@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, ExternalLink, Trash2, Edit, Globe, PenTool, Loader2 } from "lucide-react";
+import { FileText, ExternalLink, Trash2, Edit, Globe, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
