@@ -779,6 +779,12 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-white dark:bg-slate-950">
       <style>{`
+        /* Editor cursor always visible */
+        [contenteditable="true"] {
+          caret-color: #000;
+        }
+        
+        /* Image styles */
         .img-container {
           display: inline-block !important;
           margin: 10px 0 !important;
@@ -836,6 +842,53 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           cursor: pointer;
           user-select: none;
         }
+        
+        /* Video styles */
+        .video-container {
+          display: block !important;
+          margin: 10px 0 !important;
+          position: relative;
+          max-width: 100%;
+          width: fit-content;
+          text-align: center;
+        }
+        .video-left {
+          text-align: left !important;
+          display: block !important;
+        }
+        .video-left .editor-video {
+          margin: 0 0 !important;
+          display: block !important;
+        }
+        .video-center {
+          text-align: center !important;
+          display: block !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
+        }
+        .video-center .editor-video {
+          margin: 0 auto !important;
+          display: block !important;
+        }
+        .video-right {
+          text-align: right !important;
+          display: block !important;
+        }
+        .video-right .editor-video {
+          margin: 0 0 0 auto !important;
+          display: block !important;
+        }
+        .editor-video {
+          display: inline-block !important;
+          cursor: pointer;
+          position: relative;
+          border-radius: 6px;
+          overflow: hidden;
+          width: 640px;
+          max-width: 100%;
+          margin: 0 auto;
+        }
+        
         .resize-handle {
           position: absolute;
           width: 20px;
@@ -883,7 +936,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         <div className="w-px h-6 bg-border" />
         <Button 
           size="sm" 
-          variant={selectedImageId ? "default" : "outline"} 
+          variant={selectedImageId || selectedVideoId ? "default" : "outline"} 
           onClick={() => alignContent('left')} 
           title="Align Left" 
           className="h-8 px-2"
@@ -892,7 +945,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         </Button>
         <Button 
           size="sm" 
-          variant={selectedImageId ? "default" : "outline"} 
+          variant={selectedImageId || selectedVideoId ? "default" : "outline"} 
           onClick={() => alignContent('center')} 
           title="Center" 
           className="h-8 px-2"
@@ -901,7 +954,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         </Button>
         <Button 
           size="sm" 
-          variant={selectedImageId ? "default" : "outline"} 
+          variant={selectedImageId || selectedVideoId ? "default" : "outline"} 
           onClick={() => alignContent('right')} 
           title="Align Right" 
           className="h-8 px-2"
@@ -950,7 +1003,28 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         data-testid="simple-editor-area"
       />
 
-      {(selectedImageId || selectedVideoId) && (
+      {selectedVideoId && (
+        <div
+          onMouseDown={handleResizeStart}
+          style={{
+            position: 'fixed',
+            width: '20px',
+            height: '20px',
+            backgroundColor: '#3b82f6',
+            border: '2px solid white',
+            borderRadius: '4px',
+            cursor: 'nwse-resize',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+            zIndex: 1000,
+            left: handlePos.x + 'px',
+            top: handlePos.y + 'px',
+            opacity: 0.8,
+          }}
+          title="Drag to resize"
+        />
+      )}
+      
+      {selectedImageId && (
         <div
           onMouseDown={handleResizeStart}
           style={{
