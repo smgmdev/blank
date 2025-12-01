@@ -33,6 +33,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [handlePos, setHandlePos] = useState({ x: 0, y: 0 });
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
@@ -51,6 +52,34 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       attachImageListeners();
     }
   }, [isInitialized, content]);
+
+  // Track resize handle position
+  useEffect(() => {
+    if (!selectedImageId || !editorRef.current) return;
+
+    const updateHandlePosition = () => {
+      const img = editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
+      if (img) {
+        const rect = img.getBoundingClientRect();
+        setHandlePos({ x: rect.left - 10, y: rect.top - 10 });
+      }
+    };
+
+    updateHandlePosition();
+    
+    // Update position on scroll and resize
+    window.addEventListener('scroll', updateHandlePosition);
+    window.addEventListener('resize', updateHandlePosition);
+    
+    // Also update while dragging (for resize)
+    document.addEventListener('mousemove', updateHandlePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updateHandlePosition);
+      window.removeEventListener('resize', updateHandlePosition);
+      document.removeEventListener('mousemove', updateHandlePosition);
+    };
+  }, [selectedImageId]);
 
   const attachImageListeners = () => {
     if (!editorRef.current) return;
@@ -461,7 +490,19 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       {selectedImageId && (
         <div
           onMouseDown={handleResizeStart}
-          className="resize-handle"
+          style={{
+            position: 'fixed',
+            width: '20px',
+            height: '20px',
+            backgroundColor: '#3b82f6',
+            border: '2px solid white',
+            borderRadius: '4px',
+            cursor: 'nwse-resize',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+            zIndex: 1000,
+            left: handlePos.x + 'px',
+            top: handlePos.y + 'px',
+          }}
           title="Drag to resize"
         />
       )}
