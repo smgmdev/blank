@@ -1051,10 +1051,18 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           user-select: none;
         }
       `}</style>
-      <div ref={containerRef}>
+      <div ref={containerRef} style={{ paddingTop: '60px' }}>
         <div 
           ref={toolbarRef}
-          className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 sticky top-0 z-50 shadow-sm"
+          className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 z-50 shadow-sm"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            width: '100%',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}
         >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
