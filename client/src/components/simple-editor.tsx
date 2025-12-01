@@ -302,19 +302,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     </div>`;
     
     try {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = imgContainer;
-        range.insertNode(tempDiv.firstChild as Node);
-      } else {
-        // Fallback: append to editor
-        editorRef.current.insertAdjacentHTML('beforeend', imgContainer);
-      }
+      document.execCommand('insertHTML', false, imgContainer);
     } catch (err) {
-      console.error('Insert image failed:', err);
+      console.error('Insert HTML failed:', err);
       editorRef.current.insertAdjacentHTML('beforeend', imgContainer);
     }
 
