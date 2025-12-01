@@ -27,23 +27,27 @@ async function initializeSchema() {
 }
 
 try {
+  console.log("[DB Utils] Module loading - initializing database");
   initializeDb();
   db = getDb();
+  console.log("[DB Utils] Database initialized on module load");
   initializeSchema().catch(e => console.error("[DB Utils] Schema init error:", e));
 } catch (e) {
-  console.error("[DB Utils] Failed to initialize:", e);
+  console.error("[DB Utils] Failed to initialize on module load:", e);
 }
 
 export function getDatabase() {
   if (!db) {
     try {
-      console.log("[DB Utils] Initializing database connection");
+      console.log("[DB Utils] Database null, initializing connection");
       db = getDb();
-      console.log("[DB Utils] Database connection initialized");
+      console.log("[DB Utils] Database connection initialized successfully");
     } catch (e: any) {
-      console.error("[DB Utils] Failed to get database on demand:", e.message || e);
+      console.error("[DB Utils] Failed to get database on demand:", e.message || e, "Stack:", e.stack);
       throw e;
     }
+  } else {
+    console.log("[DB Utils] Database already initialized, reusing connection");
   }
   return db;
 }
@@ -207,10 +211,12 @@ export async function deleteArticle(id: string): Promise<void> {
 export async function getAppUserById(userId: string): Promise<any | undefined> {
   const database = getDatabase();
   try {
+    console.log(`[DB] getAppUserById: Querying user with id=${userId}`);
     const [user] = await database.select().from(schema.appUsers).where(eq(schema.appUsers.id, userId));
+    console.log(`[DB] getAppUserById: Result for ${userId}:`, user ? `Found user ${user.username}` : 'User not found');
     return user;
   } catch (e: any) {
-    console.error("[DB] getAppUserById failed:", e.message || e);
+    console.error("[DB] getAppUserById failed for userId:", userId, "Error:", e.message || e, "Stack:", e.stack);
     throw e;
   }
 }

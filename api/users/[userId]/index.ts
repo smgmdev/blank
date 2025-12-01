@@ -13,28 +13,33 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   const userId = req.query.userId as string;
 
   try {
+    console.log('[API] [users] Handler called, method:', req.method);
     
     if (!userId) {
       console.error('[API] Missing userId in request');
       return res.status(400).json({ error: "userId required" });
     }
 
-    console.log(`[API] Request for userId: ${userId}`);
+    console.log(`[API] [users] Request for userId: ${userId}`);
+    console.log(`[API] [users] Importing db-utils...`);
     const { getAppUserById, updateAppUser } = await import("../../db-utils.js");
+    console.log(`[API] [users] db-utils imported successfully`);
 
     if (req.method === "GET") {
-      console.log(`[API] GET /api/users/${userId}`);
+      console.log(`[API] [users] GET /api/users/${userId}`);
+      console.log(`[API] [users] Calling getAppUserById...`);
       const user = await getAppUserById(userId);
+      console.log(`[API] [users] getAppUserById completed`);
       if (!user) {
-        console.log(`[API] User not found: ${userId}`);
+        console.log(`[API] [users] User not found: ${userId}`);
         return res.status(404).json({ error: "User not found" });
       }
-      console.log(`[API] User found: ${user.username}`);
+      console.log(`[API] [users] User found: ${user.username}`);
       const response = {
         ...user,
         fullName: user.displayName || user.fullName || ""
       };
-      console.log(`[API] Returning user data:`, response);
+      console.log(`[API] [users] Returning user data:`, response);
       return res.json(response);
     }
     
