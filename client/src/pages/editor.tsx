@@ -825,12 +825,12 @@ export default function Editor() {
         <div className="flex items-center justify-between gap-1">
           {steps.map((s, idx) => (
             <div key={s.num} className="flex flex-col items-center gap-2 flex-1">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 flex-shrink-0 ${
+              <div className={`px-3 py-1 rounded-md flex items-center justify-center font-semibold text-sm transition-all duration-300 flex-shrink-0 ${
                 step >= s.num 
                   ? 'bg-blue-600 text-white' 
                   : 'bg-gray-100 text-gray-400 border border-gray-200'
               }`}>
-                {step > s.num ? <CheckCircle2 className="w-5 h-5" /> : s.num}
+                {step > s.num ? <CheckCircle2 className="w-4 h-4" /> : s.num}
               </div>
               <span className={`text-xs font-medium text-center transition-colors duration-300 line-clamp-2 ${step >= s.num ? 'text-blue-600 font-semibold' : 'text-gray-400'}`}>
                 {s.label}
