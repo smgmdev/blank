@@ -132,13 +132,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     if ((showVideoDialog || showImageSettings) && editorRef.current) {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        savedSelectionRef.current = {
-          anchorNode: selection.anchorNode,
-          anchorOffset: selection.anchorOffset,
-          focusNode: selection.focusNode,
-          focusOffset: selection.focusOffset
-        };
+        // Store the range for later restoration
+        try {
+          const range = selection.getRangeAt(0).cloneRange();
+          savedSelectionRef.current = range;
+        } catch {
+          savedSelectionRef.current = null;
+        }
       }
     }
   }, [showVideoDialog, showImageSettings]);
@@ -276,16 +276,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     editorRef.current.focus();
     const selection = window.getSelection();
     
-    // Try to restore saved selection first, otherwise use current cursor position
-    if (savedSelectionRef.current) {
+    // Try to restore saved selection first
+    if (savedSelectionRef.current && selection) {
       try {
-        const range = document.createRange();
-        range.setStart(savedSelectionRef.current.anchorNode!, savedSelectionRef.current.anchorOffset);
-        range.setEnd(savedSelectionRef.current.focusNode!, savedSelectionRef.current.focusOffset);
-        selection?.removeAllRanges();
-        selection?.addRange(range);
+        selection.removeAllRanges();
+        selection.addRange(savedSelectionRef.current);
       } catch {
-        // Fallback: if saved selection is invalid, use current selection
+        // Fallback: if saved selection is invalid, just use current position
       }
     }
 
@@ -373,16 +370,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         editorRef.current.focus();
         const selection = window.getSelection();
         
-        // Try to restore saved selection first, otherwise use current selection
-        if (savedSelectionRef.current) {
+        // Try to restore saved selection first
+        if (savedSelectionRef.current && selection) {
           try {
-            const range = document.createRange();
-            range.setStart(savedSelectionRef.current.anchorNode!, savedSelectionRef.current.anchorOffset);
-            range.setEnd(savedSelectionRef.current.focusNode!, savedSelectionRef.current.focusOffset);
-            selection?.removeAllRanges();
-            selection?.addRange(range);
+            selection.removeAllRanges();
+            selection.addRange(savedSelectionRef.current);
           } catch {
-            // Fallback: if saved selection is invalid, use current selection
+            // Fallback: if saved selection is invalid, just use current position
           }
         }
         
