@@ -288,45 +288,56 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  const alignImage = (alignment: 'left' | 'center' | 'right') => {
-    if (!selectedImageId || !editorRef.current) return;
-    
-    const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
-    if (!img) return;
-    
-    let container = img.closest('.img-container') as HTMLElement;
-    
-    if (!container) {
-      container = document.createElement('div');
-      container.classList.add('img-container');
-      img.parentNode?.insertBefore(container, img);
-      container.appendChild(img);
+  const alignContent = (alignment: 'left' | 'center' | 'right') => {
+    // Check if an image is selected
+    if (selectedImageId && editorRef.current) {
+      const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
+      if (img) {
+        // Align the image
+        let container = img.closest('.img-container') as HTMLElement;
+        
+        if (!container) {
+          container = document.createElement('div');
+          container.classList.add('img-container');
+          img.parentNode?.insertBefore(container, img);
+          container.appendChild(img);
+        }
+        
+        // Get caption if it exists
+        const caption = container.querySelector('.img-caption-text') as HTMLElement;
+        
+        container.classList.remove('img-left', 'img-center', 'img-right');
+        container.style.margin = '10px 0';
+        container.style.display = 'block';
+        
+        if (alignment === 'left') {
+          container.classList.add('img-left');
+          container.style.textAlign = 'left';
+          if (caption) caption.style.textAlign = 'left';
+        } else if (alignment === 'center') {
+          container.classList.add('img-center');
+          container.style.textAlign = 'center';
+          if (caption) caption.style.textAlign = 'center';
+        } else if (alignment === 'right') {
+          container.classList.add('img-right');
+          container.style.textAlign = 'right';
+          if (caption) caption.style.textAlign = 'right';
+        }
+        
+        if (editorRef.current) {
+          updateContent(editorRef.current.innerHTML);
+        }
+        return;
+      }
     }
     
-    // Get caption if it exists
-    const caption = container.querySelector('.img-caption-text') as HTMLElement;
-    
-    container.classList.remove('img-left', 'img-center', 'img-right');
-    container.style.margin = '10px 0';
-    container.style.display = 'block';
-    
-    if (alignment === 'left') {
-      container.classList.add('img-left');
-      container.style.textAlign = 'left';
-      if (caption) caption.style.textAlign = 'left';
-    } else if (alignment === 'center') {
-      container.classList.add('img-center');
-      container.style.textAlign = 'center';
-      if (caption) caption.style.textAlign = 'center';
-    } else if (alignment === 'right') {
-      container.classList.add('img-right');
-      container.style.textAlign = 'right';
-      if (caption) caption.style.textAlign = 'right';
-    }
-    
-    if (editorRef.current) {
-      updateContent(editorRef.current.innerHTML);
-    }
+    // Align text
+    const alignmentMap = {
+      'left': 'justifyLeft',
+      'center': 'justifyCenter',
+      'right': 'justifyRight'
+    };
+    execCommand(alignmentMap[alignment]);
   };
 
   const deleteImage = () => {
@@ -437,8 +448,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         <Button 
           size="sm" 
           variant={selectedImageId ? "default" : "outline"} 
-          onClick={() => alignImage('left')} 
-          disabled={!selectedImageId} 
+          onClick={() => alignContent('left')} 
           title="Align Left" 
           className="h-8 px-2"
         >
@@ -447,8 +457,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         <Button 
           size="sm" 
           variant={selectedImageId ? "default" : "outline"} 
-          onClick={() => alignImage('center')} 
-          disabled={!selectedImageId} 
+          onClick={() => alignContent('center')} 
           title="Center" 
           className="h-8 px-2"
         >
@@ -457,8 +466,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         <Button 
           size="sm" 
           variant={selectedImageId ? "default" : "outline"} 
-          onClick={() => alignImage('right')} 
-          disabled={!selectedImageId} 
+          onClick={() => alignContent('right')} 
           title="Align Right" 
           className="h-8 px-2"
         >
