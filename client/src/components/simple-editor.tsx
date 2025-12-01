@@ -286,33 +286,40 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       }
     }
 
-    // New image insertion - append directly to editor
+    // New image insertion - use DOM methods to ensure proper structure
     const imgId = 'img-' + Date.now();
     
-    // Helper function to escape HTML special characters
-    const escapeHtml = (text: string) => {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    };
+    // Create container div
+    const containerDiv = document.createElement('div');
+    containerDiv.className = 'img-container';
+    containerDiv.style.cssText = 'display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;';
     
-    const escapedCaption = escapeHtml(imageSettings.caption);
-    const escapedTitle = escapeHtml(imageSettings.title);
-    const escapedDescription = escapeHtml(imageSettings.description);
+    // Create image element
+    const img = document.createElement('img');
+    img.className = 'editor-image';
+    img.setAttribute('data-img-id', imgId);
+    img.setAttribute('data-img-title', imageSettings.title);
+    img.setAttribute('data-img-caption', imageSettings.caption);
+    img.setAttribute('data-img-description', imageSettings.description);
+    img.src = tempImageSrc;
+    img.style.cssText = 'max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; margin: 0 auto; display: block;';
     
-    const titleAttr = escapedTitle ? `data-img-title="${escapedTitle}"` : 'data-img-title=""';
-    const captionAttr = escapedCaption ? `data-img-caption="${escapedCaption}"` : 'data-img-caption=""';
-    const descriptionAttr = escapedDescription ? `data-img-description="${escapedDescription}"` : 'data-img-description=""';
+    // Append image to container
+    containerDiv.appendChild(img);
     
-    // Create image container with visible caption
-    const captionHtml = escapedCaption ? `<div class="img-caption-text" contenteditable="false" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-break: break-word; overflow-wrap: break-word; word-wrap: break-word; white-space: pre-wrap; width: 100%; box-sizing: border-box; user-select: none;">${escapedCaption}</div>` : '';
-    const imgContainer = `<div class="img-container" style="display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;">
-      <img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; margin: 0 auto; display: block;" />
-      ${captionHtml}
-    </div>`;
+    // Create and append caption if exists
+    if (imageSettings.caption.trim()) {
+      const captionDiv = document.createElement('div');
+      captionDiv.className = 'img-caption-text';
+      captionDiv.setAttribute('contenteditable', 'false');
+      captionDiv.textContent = imageSettings.caption;
+      captionDiv.style.cssText = 'margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-break: break-word; overflow-wrap: break-word; word-wrap: break-word; white-space: pre-wrap; width: 100%; box-sizing: border-box; user-select: none;';
+      containerDiv.appendChild(captionDiv);
+    }
     
-    // Simply append to the editor
-    editorRef.current.insertAdjacentHTML('beforeend', imgContainer);
+    // Append container to editor
+    editorRef.current.appendChild(containerDiv);
+    
     updateContent(editorRef.current.innerHTML);
     attachMediaListeners();
 
