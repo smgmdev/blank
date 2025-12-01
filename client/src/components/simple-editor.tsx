@@ -42,7 +42,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
-  const [toolbarStyle, setToolbarStyle] = useState<React.CSSProperties>({});
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
     title: '',
     caption: '',
@@ -77,30 +76,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
-  // Handle sticky toolbar on page scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!toolbarRef.current) return;
-      
-      // If page has scrolled down at all, make toolbar fixed at top
-      if (window.scrollY > 0) {
-        setToolbarStyle({
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          width: '100%',
-          zIndex: 999,
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        });
-      } else {
-        setToolbarStyle({});
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Track resize handle position for images and videos
   useEffect(() => {
@@ -1079,7 +1054,11 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         <div 
           ref={toolbarRef}
           className="bg-muted p-2 border-b border-border flex flex-wrap gap-1 z-50 shadow-sm"
-          style={toolbarStyle}
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 50
+          }}
         >
         <Button size="sm" variant="outline" onClick={() => execCommand('bold')} title="Bold" className="h-8 px-2">
           <Bold className="w-4 h-4" />
