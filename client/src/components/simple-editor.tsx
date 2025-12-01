@@ -18,7 +18,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [selectedSlider, setSelectedSlider] = useState<HTMLElement | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize editor content on mount
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
       editorRef.current.innerHTML = content || '';
@@ -88,12 +87,38 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   };
 
   const handleSliderInsert = (sliderHtml: string) => {
-    if (editorRef.current) {
-      document.execCommand('insertHTML', false, sliderHtml);
-      updateContent(editorRef.current.innerHTML);
-      setSliderModalOpen(false);
-      editorRef.current.focus();
+    if (!editorRef.current) return;
+
+    // Ensure editor has focus
+    editorRef.current.focus();
+
+    // Save current selection
+    const selection = window.getSelection();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+
+    // Create a temporary container for the slider
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = sliderHtml;
+    const sliderElement = tempDiv.firstElementChild;
+
+    if (sliderElement && range) {
+      // Insert at the current cursor position
+      range.insertNode(sliderElement);
+      range.setEndAfter(sliderElement);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    } else if (sliderElement) {
+      // Fallback: append to editor
+      editorRef.current.appendChild(sliderElement);
     }
+
+    // Update content after a small delay to ensure DOM is updated
+    setTimeout(() => {
+      if (editorRef.current) {
+        updateContent(editorRef.current.innerHTML);
+        setSliderModalOpen(false);
+      }
+    }, 50);
   };
 
   const moveSlider = (direction: 'up' | 'down') => {
@@ -224,7 +249,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
             setSelectedSlider(null);
           }
         }}
-        className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed whitespace-pre-wrap"
+        className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed"
         style={{
           fontFamily: 'system-ui, -apple-system, sans-serif',
           outline: 'none',
