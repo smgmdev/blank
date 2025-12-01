@@ -24,12 +24,11 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     }
     
     if (req.method === "PATCH") {
-      const { displayName, profilePicture, email, password, username, fullName, pin } = req.body;
+      const { displayName, email, password, username, fullName, pin } = req.body;
       const updateData: Record<string, any> = {};
       
       if (displayName) updateData.displayName = displayName;
       if (fullName) updateData.displayName = fullName; // Store fullName as displayName
-      if (profilePicture) updateData.profilePicture = profilePicture;
       if (email) updateData.email = email;
       if (password) updateData.password = password;
       if (username) updateData.username = username;
