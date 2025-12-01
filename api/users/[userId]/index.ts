@@ -2,14 +2,23 @@ import { VercelRequest, VercelResponse } from "@vercel/node";
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   try {
     const userId = req.query.userId as string;
     
     if (!userId) {
+      console.error('[API] Missing userId in request');
       return res.status(400).json({ error: "userId required" });
     }
 
+    console.log(`[API] Request for userId: ${userId}`);
     const { getAppUserById, updateAppUser } = await import("../../db-utils.js");
 
     if (req.method === "GET") {
@@ -20,11 +29,12 @@ export default async (req: VercelRequest, res: VercelResponse) => {
         return res.status(404).json({ error: "User not found" });
       }
       console.log(`[API] User found: ${user.username}`);
-      // Transform displayName to fullName for frontend
-      return res.json({
+      const response = {
         ...user,
         fullName: user.displayName || user.fullName || ""
-      });
+      };
+      console.log(`[API] Returning user data:`, response);
+      return res.json(response);
     }
     
     if (req.method === "PATCH") {
