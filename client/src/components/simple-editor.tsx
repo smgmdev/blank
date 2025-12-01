@@ -77,24 +77,25 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   }, [isInitialized, content]);
 
-  // Detect scroll and make toolbar fixed
+  // Detect scroll and make toolbar sticky
   useEffect(() => {
     const handleScroll = () => {
       if (!containerRef.current || !toolbarRef.current) return;
 
       const containerRect = containerRef.current.getBoundingClientRect();
+      const toolbarRect = toolbarRef.current.getBoundingClientRect();
       
-      // Get the editor header element to position toolbar under it
+      // Get the editor header element 
       const editorHeader = document.querySelector('header.z-10');
-      const headerHeight = editorHeader ? editorHeader.clientHeight : 64;
+      const headerBottom = editorHeader ? editorHeader.getBoundingClientRect().bottom : 64;
       
-      // If container top scrolls above the header, make toolbar fixed under it
-      if (containerRect.top < headerHeight) {
+      // If toolbar scrolls above the header, make it sticky
+      if (toolbarRect.top < headerBottom) {
         setIsToolbarSticky(true);
         // Update position and width to match container
         toolbarRef.current.style.left = containerRect.left + 'px';
         toolbarRef.current.style.width = containerRect.width + 'px';
-        toolbarRef.current.style.top = headerHeight + 'px';
+        toolbarRef.current.style.top = headerBottom + 'px';
       } else {
         setIsToolbarSticky(false);
       }
@@ -110,8 +111,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
     if (scrollParent) {
       scrollParent.addEventListener('scroll', handleScroll, { passive: true });
-      // Also listen to window resize
       window.addEventListener('resize', handleScroll, { passive: true });
+      // Call once to set initial state
+      handleScroll();
       return () => {
         scrollParent.removeEventListener('scroll', handleScroll);
         window.removeEventListener('resize', handleScroll);
