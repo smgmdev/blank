@@ -36,6 +36,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [handlePos, setHandlePos] = useState({ x: 0, y: 0 });
   const [settingsButtonPos, setSettingsButtonPos] = useState({ x: 0, y: 0 });
+  const [videoHandlePositions, setVideoHandlePositions] = useState<Record<string, { x: number; y: number }>>({});
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
@@ -92,6 +93,39 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       document.removeEventListener('mousemove', updateHandlePosition);
     };
   }, [selectedImageId, selectedVideoId]);
+
+  // Track all video positions for always-visible resize handles
+  useEffect(() => {
+    if (!editorRef.current) return;
+
+    const updateVideoPositions = () => {
+      const videos = editorRef.current?.querySelectorAll('.editor-video');
+      if (!videos) return;
+
+      const positions: Record<string, { x: number; y: number }> = {};
+      videos.forEach(video => {
+        const vidId = (video as HTMLElement).getAttribute('data-video-id');
+        if (vidId) {
+          const rect = video.getBoundingClientRect();
+          positions[vidId] = { x: rect.left - 10, y: rect.top - 10 };
+        }
+      });
+      setVideoHandlePositions(positions);
+    };
+
+    updateVideoPositions();
+    
+    // Update position on scroll and resize
+    window.addEventListener('scroll', updateVideoPositions);
+    window.addEventListener('resize', updateVideoPositions);
+    document.addEventListener('mousemove', updateVideoPositions);
+
+    return () => {
+      window.removeEventListener('scroll', updateVideoPositions);
+      window.removeEventListener('resize', updateVideoPositions);
+      document.removeEventListener('mousemove', updateVideoPositions);
+    };
+  }, []);
 
   // Save cursor position when video dialog opens
   useEffect(() => {
@@ -1003,8 +1037,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         data-testid="simple-editor-area"
       />
 
-      {selectedVideoId && (
+      {Object.entries(videoHandlePositions).map(([vidId, pos]) => (
         <div
+          key={vidId}
           onMouseDown={handleResizeStart}
           style={{
             position: 'fixed',
@@ -1016,13 +1051,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
             cursor: 'nwse-resize',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
             zIndex: 1000,
-            left: handlePos.x + 'px',
-            top: handlePos.y + 'px',
+            left: pos.x + 'px',
+            top: pos.y + 'px',
             opacity: 0.8,
           }}
           title="Drag to resize"
         />
-      )}
+      ))}
       
       {selectedImageId && (
         <div
