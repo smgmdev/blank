@@ -538,7 +538,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
       const newWidth = Math.max(100, startWidth + deltaX);
-      const newHeight = Math.max(100, startHeight - deltaY);
+      const newHeight = Math.max(100, startHeight + deltaY);
       element.style.width = newWidth + 'px';
       element.style.height = newHeight + 'px';
     };
