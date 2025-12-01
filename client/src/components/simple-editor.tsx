@@ -654,19 +654,39 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     
     if (selectedImageId) {
       const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
-      console.log('[deleteMedia] Found img:', !!img, 'selectedImageId:', selectedImageId);
       if (img) {
-        // Always remove the entire img-container (which includes both image and caption)
+        // Find the parent container
         const container = img.closest('.img-container') as HTMLElement;
-        console.log('[deleteMedia] Found container:', !!container);
+        
+        // Delete the container (which should include the caption as a child)
         if (container) {
-          console.log('[deleteMedia] Container HTML before remove:', container.outerHTML.substring(0, 100));
           container.remove();
-          console.log('[deleteMedia] Container removed');
         } else {
-          console.log('[deleteMedia] No container found, img:', img.outerHTML.substring(0, 100));
+          // If no container, delete just the image
           img.remove();
         }
+        
+        // Extra safety: search the entire editor for any remaining captions 
+        // and delete those too (in case they got separated somehow)
+        const allCaptions = Array.from(editorRef.current.querySelectorAll('.img-caption-text'));
+        allCaptions.forEach(caption => {
+          // Check if this caption is associated with the deleted image
+          // by looking at adjacent elements
+          const prevSibling = caption.previousElementSibling as HTMLElement;
+          if (prevSibling && prevSibling.getAttribute('data-img-id') === selectedImageId) {
+            caption.remove();
+          }
+          // Also check if the caption's parent container previously had our image
+          const parent = caption.parentElement as HTMLElement;
+          if (parent && parent.querySelector(`[data-img-id="${selectedImageId}"]`) === null && 
+              parent.className === 'img-container') {
+            // Only delete if the image is really gone
+            if (!editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`)) {
+              caption.remove();
+            }
+          }
+        });
+        
         updateContent(editorRef.current.innerHTML);
         setSelectedImageId(null);
       }
@@ -676,6 +696,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         const container = video.closest('.video-container') as HTMLElement;
         if (container) {
           container.remove();
+        } else {
+          video.remove();
         }
         updateContent(editorRef.current.innerHTML);
         setSelectedVideoId(null);
