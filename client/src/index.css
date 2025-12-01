@@ -131,17 +131,14 @@
   }
 }
 
-/* Modern compact ordered list styling - applies to ALL lists */
+/* Remove circles/bullets - text only */
 ol {
-  list-style-type: decimal !important;
-  list-style-position: inside !important;
+  list-style: none !important;
   padding-left: 0 !important;
   margin: 0.5em 0 !important;
 }
 
 ol li {
-  margin-bottom: 0.35em !important;
-  padding-left: 0.5em !important;
-  font-size: 0.95em !important;
-  list-style: decimal inside !important;
+  margin-bottom: 0.25em !important;
+  padding-left: 0 !important;
 }
