@@ -51,6 +51,8 @@ export default function Settings() {
         setEmail(userData.email || "");
         setUsername(userData.username || "");
         setFullName(userData.fullName || "");
+        // Set PIN activation state based on whether PIN is currently set
+        setIsPinActive(!!userData.pin);
       }
     } catch (e) {
       console.debug('Failed to fetch user:', e);
@@ -437,6 +439,11 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {isPinActive && (
+              <div className="bg-green-50 border border-green-200 rounded-md p-3 text-sm text-green-800">
+                ✓ PIN is currently activated
+              </div>
+            )}
             <div className="flex items-center gap-2 mb-4">
               <input 
                 type="checkbox" 
