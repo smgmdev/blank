@@ -288,12 +288,24 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
     // New image insertion - append directly to editor
     const imgId = 'img-' + Date.now();
-    const titleAttr = imageSettings.title ? `data-img-title="${imageSettings.title}"` : 'data-img-title=""';
-    const captionAttr = imageSettings.caption ? `data-img-caption="${imageSettings.caption}"` : 'data-img-caption=""';
-    const descriptionAttr = imageSettings.description ? `data-img-description="${imageSettings.description}"` : 'data-img-description=""';
+    
+    // Helper function to escape HTML special characters
+    const escapeHtml = (text: string) => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    };
+    
+    const escapedCaption = escapeHtml(imageSettings.caption);
+    const escapedTitle = escapeHtml(imageSettings.title);
+    const escapedDescription = escapeHtml(imageSettings.description);
+    
+    const titleAttr = escapedTitle ? `data-img-title="${escapedTitle}"` : 'data-img-title=""';
+    const captionAttr = escapedCaption ? `data-img-caption="${escapedCaption}"` : 'data-img-caption=""';
+    const descriptionAttr = escapedDescription ? `data-img-description="${escapedDescription}"` : 'data-img-description=""';
     
     // Create image container with visible caption
-    const captionHtml = imageSettings.caption ? `<div class="img-caption-text" contenteditable="false" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-break: break-word; overflow-wrap: break-word; word-wrap: break-word; white-space: pre-wrap; width: 100%; box-sizing: border-box; user-select: none;">${imageSettings.caption}</div>` : '';
+    const captionHtml = escapedCaption ? `<div class="img-caption-text" contenteditable="false" style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic; text-align: center; word-break: break-word; overflow-wrap: break-word; word-wrap: break-word; white-space: pre-wrap; width: 100%; box-sizing: border-box; user-select: none;">${escapedCaption}</div>` : '';
     const imgContainer = `<div class="img-container" style="display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;">
       <img class="editor-image" data-img-id="${imgId}" ${titleAttr} ${captionAttr} ${descriptionAttr} src="${tempImageSrc}" style="max-width: 100%; height: auto; border-radius: 6px; cursor: pointer; margin: 0 auto; display: block;" />
       ${captionHtml}
@@ -635,11 +647,18 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     
     if (selectedImageId) {
       const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
+      console.log('[deleteMedia] Found img:', !!img, 'selectedImageId:', selectedImageId);
       if (img) {
         // Always remove the entire img-container (which includes both image and caption)
         const container = img.closest('.img-container') as HTMLElement;
+        console.log('[deleteMedia] Found container:', !!container);
         if (container) {
+          console.log('[deleteMedia] Container HTML before remove:', container.outerHTML.substring(0, 100));
           container.remove();
+          console.log('[deleteMedia] Container removed');
+        } else {
+          console.log('[deleteMedia] No container found, img:', img.outerHTML.substring(0, 100));
+          img.remove();
         }
         updateContent(editorRef.current.innerHTML);
         setSelectedImageId(null);
