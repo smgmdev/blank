@@ -31,7 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
 
-  // Fetch user info from Supabase
+  // Fetch user info from Supabase - refresh when navigating or user changes
   useEffect(() => {
     if (user) {
       const userId = localStorage.getItem('userId');
@@ -46,7 +46,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           .catch(e => console.debug('User fetch:', e));
       }
     }
-  }, [user]);
+  }, [user, location]);
 
   useEffect(() => {
     if (!user) {
