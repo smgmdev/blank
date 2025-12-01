@@ -1172,6 +1172,7 @@ export async function registerRoutes(
           id: user.id,
           email: user.email,
           role: user.role,
+          pin: user.pin,
           sessionId: sessionId || user.id
         });
       } catch (error) {
