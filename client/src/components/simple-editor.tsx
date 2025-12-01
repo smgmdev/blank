@@ -1188,11 +1188,10 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
               <Label htmlFor="img-caption">
                 Caption (required)
               </Label>
-              <Textarea
+              <Input
                 id="img-caption"
                 value={imageSettings.caption}
                 onChange={(e) => setImageSettings({ ...imageSettings, caption: e.target.value })}
-                className="h-24 resize-none"
                 placeholder="Add a caption for the image..."
                 data-testid="image-caption"
               />
@@ -1201,9 +1200,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
               <Label className="text-xs text-muted-foreground">
                 Description (disabled)
               </Label>
-              <Textarea
+              <Input
                 disabled
-                className="h-24 resize-none opacity-50 cursor-not-allowed"
+                className="opacity-50 cursor-not-allowed"
               />
             </div>
           </div>
