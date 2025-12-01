@@ -143,7 +143,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       if (editorRef.current) {
         editorRef.current.innerHTML = history[newIndex];
         onChange(history[newIndex]);
-        attachImageListeners();
+        attachMediaListeners();
       }
     }
   };
@@ -155,7 +155,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       if (editorRef.current) {
         editorRef.current.innerHTML = history[newIndex];
         onChange(history[newIndex]);
-        attachImageListeners();
+        attachMediaListeners();
       }
     }
   };
@@ -207,7 +207,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
     if (editorRef.current) {
       updateContent(editorRef.current.innerHTML);
-      attachImageListeners();
+      attachMediaListeners();
     }
 
     setTempImageSrc('');
