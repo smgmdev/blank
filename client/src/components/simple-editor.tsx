@@ -57,6 +57,20 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       attachMediaListeners();
       // Remove list markers
       setTimeout(() => removeListMarkers(), 0);
+      
+      // MutationObserver to continuously remove list markers
+      const observer = new MutationObserver(() => {
+        removeListMarkers();
+      });
+      
+      observer.observe(editorRef.current, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style']
+      });
+      
+      return () => observer.disconnect();
     }
   }, [isInitialized, content]);
 
