@@ -33,6 +33,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [handlePos, setHandlePos] = useState({ x: 0, y: 0 });
   const [showImageSettings, setShowImageSettings] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
@@ -48,19 +49,25 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       setHistory([content || '']);
       setHistoryIndex(0);
       setIsInitialized(true);
-      // Attach event listeners to all images for selection
-      attachImageListeners();
+      // Attach event listeners to all images and videos for selection
+      attachMediaListeners();
     }
   }, [isInitialized, content]);
 
-  // Track resize handle position
+  // Track resize handle position for images and videos
   useEffect(() => {
-    if (!selectedImageId || !editorRef.current) return;
+    if (!selectedImageId && !selectedVideoId || !editorRef.current) return;
 
     const updateHandlePosition = () => {
-      const img = editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
-      if (img) {
-        const rect = img.getBoundingClientRect();
+      let element: HTMLElement | null = null;
+      if (selectedImageId) {
+        element = editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
+      } else if (selectedVideoId) {
+        element = editorRef.current?.querySelector(`[data-video-id="${selectedVideoId}"]`) as HTMLElement;
+      }
+      
+      if (element) {
+        const rect = element.getBoundingClientRect();
         setHandlePos({ x: rect.left - 10, y: rect.top - 10 });
       }
     };
@@ -70,8 +77,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     // Update position on scroll and resize
     window.addEventListener('scroll', updateHandlePosition);
     window.addEventListener('resize', updateHandlePosition);
-    
-    // Also update while dragging (for resize)
     document.addEventListener('mousemove', updateHandlePosition);
 
     return () => {
@@ -79,16 +84,28 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       window.removeEventListener('resize', updateHandlePosition);
       document.removeEventListener('mousemove', updateHandlePosition);
     };
-  }, [selectedImageId]);
+  }, [selectedImageId, selectedVideoId]);
 
-  const attachImageListeners = () => {
+  const attachMediaListeners = () => {
     if (!editorRef.current) return;
     const images = editorRef.current.querySelectorAll('.editor-image');
     images.forEach(img => {
       img.addEventListener('click', (e) => {
-        const imgId = (e.target as HTMLElement).getAttribute('data-img-id');
+        const imgId = (img as HTMLElement).getAttribute('data-img-id');
         if (imgId) {
+          setSelectedVideoId(null);
           selectImage(imgId);
+        }
+      });
+    });
+    
+    const videos = editorRef.current.querySelectorAll('.editor-video');
+    videos.forEach(video => {
+      video.addEventListener('click', (e) => {
+        const vidId = (video as HTMLElement).getAttribute('data-video-id');
+        if (vidId) {
+          setSelectedImageId(null);
+          selectVideo(vidId);
         }
       });
     });
@@ -234,13 +251,21 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         selection?.removeAllRanges();
         selection?.addRange(range);
         
+        const videoId = 'video-' + Date.now();
+        const videoContainer = `<div class="video-container" style="display: block; margin: 20px 0; text-align: center;">
+          <div class="editor-video" data-video-id="${videoId}" style="display: inline-block; cursor: pointer; position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden;">
+            ${embedCode}
+          </div>
+        </div>`;
+        
         try {
-          document.execCommand('insertHTML', false, embedCode);
+          document.execCommand('insertHTML', false, videoContainer);
         } catch (err) {
           console.error('Insert HTML failed:', err);
         }
         
         updateContent(editorRef.current.innerHTML);
+        attachMediaListeners();
         setVideoUrl('');
         setShowVideoDialog(false);
       }
@@ -270,6 +295,27 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   };
 
+  const selectVideo = (vidId: string) => {
+    if (!editorRef.current) return;
+
+    // Deselect previous video
+    if (selectedVideoId !== vidId) {
+      const prevVid = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`) as HTMLElement;
+      if (prevVid) {
+        prevVid.style.border = 'none';
+        prevVid.style.boxShadow = 'none';
+      }
+    }
+
+    const video = editorRef.current.querySelector(`[data-video-id="${vidId}"]`) as HTMLElement;
+    if (video) {
+      video.style.border = '2px solid #3b82f6';
+      video.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.1)';
+      video.style.borderRadius = '6px';
+      setSelectedVideoId(vidId);
+    }
+  };
+
   const handleEditorClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.classList.contains('editor-image')) {
@@ -292,22 +338,27 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   };
 
   const handleResizeStart = (e: React.MouseEvent) => {
-    if (!selectedImageId || !editorRef.current) return;
+    if (!selectedImageId && !selectedVideoId || !editorRef.current) return;
     
-    const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
-    if (!img) return;
+    let element: HTMLElement | null = null;
+    if (selectedImageId) {
+      element = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
+    } else if (selectedVideoId) {
+      element = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`) as HTMLElement;
+    }
+    if (!element) return;
 
     e.preventDefault();
     e.stopPropagation();
     
     const startX = e.clientX;
-    const startWidth = img.offsetWidth;
+    const startWidth = element.offsetWidth;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = startX - moveEvent.clientX;
       const newWidth = Math.max(100, startWidth + deltaX);
-      img.style.width = newWidth + 'px';
-      img.style.height = 'auto';
+      element.style.width = newWidth + 'px';
+      element.style.height = 'auto';
     };
 
     const handleMouseUp = () => {
@@ -323,49 +374,66 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   };
 
   const alignContent = (alignment: 'left' | 'center' | 'right') => {
-    // Check if an image is selected
-    if (selectedImageId && editorRef.current) {
-      const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
-      if (img) {
-        // Align the image
-        let container = img.closest('.img-container') as HTMLElement;
-        
-        if (!container) {
-          container = document.createElement('div');
-          container.classList.add('img-container');
-          img.parentNode?.insertBefore(container, img);
-          container.appendChild(img);
-        }
-        
-        // Get caption if it exists
-        const caption = container.querySelector('.img-caption-text') as HTMLElement;
-        
-        container.classList.remove('img-left', 'img-center', 'img-right');
-        container.style.margin = '10px 0';
-        container.style.display = 'block';
-        
-        if (alignment === 'left') {
-          container.classList.add('img-left');
-          container.style.textAlign = 'left';
-          if (caption) caption.style.textAlign = 'left';
-        } else if (alignment === 'center') {
-          container.classList.add('img-center');
-          container.style.textAlign = 'center';
-          if (caption) caption.style.textAlign = 'center';
-        } else if (alignment === 'right') {
-          container.classList.add('img-right');
-          container.style.textAlign = 'right';
-          if (caption) caption.style.textAlign = 'right';
-        }
-        
-        if (editorRef.current) {
+    if (editorRef.current) {
+      if (selectedImageId) {
+        const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
+        if (img) {
+          let container = img.closest('.img-container') as HTMLElement;
+          if (!container) {
+            container = document.createElement('div');
+            container.classList.add('img-container');
+            img.parentNode?.insertBefore(container, img);
+            container.appendChild(img);
+          }
+          const caption = container.querySelector('.img-caption-text') as HTMLElement;
+          container.classList.remove('img-left', 'img-center', 'img-right');
+          container.style.margin = '10px 0';
+          container.style.display = 'block';
+          if (alignment === 'left') {
+            container.classList.add('img-left');
+            container.style.textAlign = 'left';
+            if (caption) caption.style.textAlign = 'left';
+          } else if (alignment === 'center') {
+            container.classList.add('img-center');
+            container.style.textAlign = 'center';
+            if (caption) caption.style.textAlign = 'center';
+          } else if (alignment === 'right') {
+            container.classList.add('img-right');
+            container.style.textAlign = 'right';
+            if (caption) caption.style.textAlign = 'right';
+          }
           updateContent(editorRef.current.innerHTML);
+          return;
         }
-        return;
+      } else if (selectedVideoId) {
+        const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`) as HTMLElement;
+        if (video) {
+          let container = video.closest('.video-container') as HTMLElement;
+          if (!container) {
+            container = document.createElement('div');
+            container.classList.add('video-container');
+            video.parentNode?.insertBefore(container, video);
+            container.appendChild(video);
+          }
+          container.classList.remove('video-left', 'video-center', 'video-right');
+          container.style.margin = '20px 0';
+          container.style.display = 'block';
+          if (alignment === 'left') {
+            container.classList.add('video-left');
+            container.style.textAlign = 'left';
+          } else if (alignment === 'center') {
+            container.classList.add('video-center');
+            container.style.textAlign = 'center';
+          } else if (alignment === 'right') {
+            container.classList.add('video-right');
+            container.style.textAlign = 'right';
+          }
+          updateContent(editorRef.current.innerHTML);
+          return;
+        }
       }
     }
     
-    // Align text
     const alignmentMap = {
       'left': 'justifyLeft',
       'center': 'justifyCenter',
@@ -374,20 +442,33 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     execCommand(alignmentMap[alignment]);
   };
 
-  const deleteImage = () => {
-    if (!selectedImageId || !editorRef.current) return;
+  const deleteMedia = () => {
+    if (!editorRef.current) return;
     
-    const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
-    if (img) {
-      // Remove the entire container (image + caption)
-      const container = img.closest('.img-container');
-      if (container) {
-        container.remove();
-      } else {
-        img.remove();
+    if (selectedImageId) {
+      const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
+      if (img) {
+        const container = img.closest('.img-container');
+        if (container) {
+          container.remove();
+        } else {
+          img.remove();
+        }
+        updateContent(editorRef.current.innerHTML);
+        setSelectedImageId(null);
       }
-      updateContent(editorRef.current.innerHTML);
-      setSelectedImageId(null);
+    } else if (selectedVideoId) {
+      const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`);
+      if (video) {
+        const container = video.closest('.video-container');
+        if (container) {
+          container.remove();
+        } else {
+          video.remove();
+        }
+        updateContent(editorRef.current.innerHTML);
+        setSelectedVideoId(null);
+      }
     }
   };
 
@@ -517,7 +598,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         {selectedImageId && (
           <>
             <div className="w-px h-6 bg-border" />
-            <Button size="sm" variant="outline" onClick={deleteImage} className="h-8 px-2 bg-red-50 hover:bg-red-100">
+            <Button size="sm" variant="outline" onClick={deleteMedia} className="h-8 px-2 bg-red-50 hover:bg-red-100">
               <Trash2 className="w-4 h-4" />
             </Button>
           </>
