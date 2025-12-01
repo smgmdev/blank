@@ -27,6 +27,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
   const [isResizing, setIsResizing] = useState(false);
+  const [resizeStart, setResizeStart] = useState({ x: 0, width: 0 });
 
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
@@ -42,17 +43,103 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     if (!editorRef.current) return;
     const images = editorRef.current.querySelectorAll('img');
     images.forEach(img => {
-      img.addEventListener('click', handleImageClick);
       img.style.cursor = 'pointer';
     });
   };
 
   const handleImageClick = (e: Event) => {
+    e.stopPropagation();
     const img = e.target as HTMLImageElement;
+    
+    // Remove border from previously selected image
+    if (selectedImage && selectedImage !== img) {
+      selectedImage.style.border = 'none';
+      removeResizeHandle();
+    }
+    
     setSelectedImage(img);
     img.style.border = '2px solid #3b82f6';
     img.style.borderRadius = '4px';
+    addResizeHandle(img);
   };
+
+  const addResizeHandle = (img: HTMLImageElement) => {
+    removeResizeHandle();
+    
+    const handle = document.createElement('div');
+    handle.className = 'resize-handle';
+    handle.style.position = 'absolute';
+    handle.style.width = '16px';
+    handle.style.height = '16px';
+    handle.style.backgroundColor = '#3b82f6';
+    handle.style.border = '2px solid white';
+    handle.style.borderRadius = '2px';
+    handle.style.cursor = 'se-resize';
+    handle.style.top = '-8px';
+    handle.style.right = '-8px';
+    handle.style.zIndex = '1000';
+    handle.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+    
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.display = 'inline-block';
+    wrapper.className = 'image-wrapper';
+    
+    img.parentNode?.insertBefore(wrapper, img);
+    wrapper.appendChild(img);
+    wrapper.appendChild(handle);
+    
+    handle.addEventListener('mousedown', handleResizeStart);
+  };
+
+  const removeResizeHandle = () => {
+    const handle = document.querySelector('.resize-handle');
+    if (handle) {
+      handle.removeEventListener('mousedown', handleResizeStart);
+      handle.remove();
+    }
+  };
+
+  const handleResizeStart = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!selectedImage) return;
+    
+    setResizeStart({
+      x: e.clientX,
+      width: selectedImage.offsetWidth
+    });
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!selectedImage) return;
+      
+      const deltaX = e.clientX - resizeStart.x;
+      const newWidth = Math.max(100, resizeStart.width + deltaX);
+      selectedImage.style.width = newWidth + 'px';
+      selectedImage.style.height = 'auto';
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      if (editorRef.current) {
+        updateContent(editorRef.current.innerHTML);
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, resizeStart, selectedImage]);
 
   const updateContent = (newContent: string) => {
     onChange(newContent);
@@ -80,6 +167,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         editorRef.current.innerHTML = history[newIndex];
         onChange(history[newIndex]);
         setupImageListeners();
+        setSelectedImage(null);
       }
     }
   };
@@ -92,6 +180,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         editorRef.current.innerHTML = history[newIndex];
         onChange(history[newIndex]);
         setupImageListeners();
+        setSelectedImage(null);
       }
     }
   };
@@ -101,7 +190,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     if (file && editorRef.current) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        const img = `<img src="${event.target?.result}" style="max-width: 100%; height: auto; margin: 10px 0; border-radius: 6px; cursor: pointer;" />`;
+        const img = `<img src="${event.target?.result}" style="max-width: 100%; height: auto; margin: 10px 0; border-radius: 6px; cursor: pointer;" onclick="void(0);" />`;
         document.execCommand('insertHTML', false, img);
         if (editorRef.current) {
           updateContent(editorRef.current.innerHTML);
@@ -140,31 +229,20 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const alignImage = (alignment: 'left' | 'center' | 'right') => {
     if (!selectedImage) return;
     
-    const wrapper = document.createElement('div');
+    const wrapper = selectedImage.closest('.image-wrapper') || selectedImage.parentElement;
+    if (!wrapper) return;
+    
     wrapper.style.textAlign = alignment;
-    wrapper.style.margin = '10px 0';
-    
-    selectedImage.style.border = '2px solid #3b82f6';
-    selectedImage.style.borderRadius = '4px';
-    selectedImage.style.maxWidth = '100%';
-    
-    if (alignment === 'center') {
-      wrapper.style.display = 'flex';
-      wrapper.style.justifyContent = 'center';
+    if (alignment === 'left') {
+      wrapper.style.marginRight = 'auto';
+    } else if (alignment === 'center') {
+      wrapper.style.marginLeft = 'auto';
+      wrapper.style.marginRight = 'auto';
+      wrapper.style.display = 'block';
+    } else if (alignment === 'right') {
+      wrapper.style.marginLeft = 'auto';
     }
     
-    selectedImage.parentNode?.replaceChild(wrapper, selectedImage);
-    wrapper.appendChild(selectedImage);
-    
-    if (editorRef.current) {
-      updateContent(editorRef.current.innerHTML);
-    }
-  };
-
-  const resizeImage = (newWidth: number) => {
-    if (!selectedImage) return;
-    selectedImage.style.width = newWidth + 'px';
-    selectedImage.style.height = 'auto';
     if (editorRef.current) {
       updateContent(editorRef.current.innerHTML);
     }
@@ -172,30 +250,16 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
   const deleteImage = () => {
     if (!selectedImage) return;
-    selectedImage.remove();
+    const wrapper = selectedImage.closest('.image-wrapper');
+    if (wrapper) {
+      wrapper.remove();
+    } else {
+      selectedImage.remove();
+    }
     setSelectedImage(null);
     if (editorRef.current) {
       updateContent(editorRef.current.innerHTML);
     }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (selectedImage && e.shiftKey) {
-      setIsResizing(true);
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isResizing && selectedImage) {
-      const currentWidth = selectedImage.offsetWidth;
-      const deltaX = e.movementX;
-      const newWidth = Math.max(100, currentWidth + deltaX);
-      resizeImage(newWidth);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsResizing(false);
   };
 
   return (
@@ -251,26 +315,18 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         {selectedImage && (
           <>
             <div className="w-px h-6 bg-border" />
-            <span className="text-xs text-muted-foreground flex items-center px-2">Image selected</span>
-            <Button size="sm" variant="outline" onClick={() => alignImage('left')} className="h-8 px-2">
-              <AlignLeft className="w-4 h-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => alignImage('center')} className="h-8 px-2">
-              <AlignCenter className="w-4 h-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => alignImage('right')} className="h-8 px-2">
-              <AlignRight className="w-4 h-4" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => deleteImage()} className="h-8 px-2 bg-red-50 hover:bg-red-100">
+            <Button size="sm" variant="outline" onClick={deleteImage} className="h-8 px-2 bg-red-50 hover:bg-red-100">
               <Trash2 className="w-4 h-4" />
             </Button>
           </>
         )}
       </div>
 
-      <div className="px-4 pt-2 pb-2 bg-muted text-xs text-muted-foreground border-b border-border">
-        {selectedImage ? '💡 Click on image to select. Hold Shift + drag right to resize. Use alignment buttons above.' : '💡 Click on images to select and adjust alignment'}
-      </div>
+      {selectedImage && (
+        <div className="px-4 py-2 bg-muted text-xs text-muted-foreground border-b border-border">
+          💡 Drag the blue square in the corner to resize. Use alignment buttons to position.
+        </div>
+      )}
 
       <div
         ref={editorRef}
@@ -281,15 +337,15 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           updateContent(html);
           setupImageListeners();
         }}
-        onClick={() => {
-          if (selectedImage && !(event?.target as HTMLImageElement).tagName) {
+        onClick={(e) => {
+          if ((e.target as HTMLElement).tagName === 'IMG') {
+            handleImageClick(e);
+          } else if (selectedImage) {
             selectedImage.style.border = 'none';
+            removeResizeHandle();
             setSelectedImage(null);
           }
         }}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseDown={handleMouseDown}
         className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed"
         style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
