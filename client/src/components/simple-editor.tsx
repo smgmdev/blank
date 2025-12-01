@@ -45,7 +45,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     caption: '',
     description: ''
   });
-  const savedSelectionRef = useRef<{ anchorNode: Node | null; anchorOffset: number; focusNode: Node | null; focusOffset: number } | null>(null);
+  const savedSelectionRef = useRef<Range | null>(null);
 
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
