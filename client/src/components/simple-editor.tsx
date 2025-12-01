@@ -510,21 +510,21 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     e.preventDefault();
     e.stopPropagation();
     
-    let element: HTMLElement | null = null;
-    const currentVideoId = targetVideoId || selectedVideoId;
-    const currentImageId = selectedImageId;
-    
     if (!editorRef.current) return;
 
-    // Select the video if clicking on its resize handle
-    if (targetVideoId && !selectedVideoId) {
-      selectVideo(targetVideoId);
-    }
-
-    if (currentImageId) {
-      element = editorRef.current.querySelector(`[data-img-id="${currentImageId}"]`) as HTMLElement;
-    } else if (currentVideoId) {
-      element = editorRef.current.querySelector(`[data-video-id="${currentVideoId}"]`) as HTMLElement;
+    let element: HTMLElement | null = null;
+    
+    // Determine which element to resize
+    if (targetVideoId) {
+      element = editorRef.current.querySelector(`[data-video-id="${targetVideoId}"]`) as HTMLElement;
+      // Select the video if not already selected
+      if (!selectedVideoId) {
+        selectVideo(targetVideoId);
+      }
+    } else if (selectedImageId) {
+      element = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
+    } else if (selectedVideoId) {
+      element = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`) as HTMLElement;
     }
     
     if (!element) return;
