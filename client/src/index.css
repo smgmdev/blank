@@ -129,4 +129,40 @@
   .img-container {
     position: relative;
   }
+
+  /* Modern compact ordered list styling */
+  [contenteditable] ol {
+    list-style: none;
+    counter-reset: item;
+    padding-left: 0;
+    margin: 0.5em 0;
+  }
+
+  [contenteditable] ol li {
+    counter-increment: item;
+    margin-bottom: 0.25em;
+    padding-left: 2em;
+    position: relative;
+  }
+
+  [contenteditable] ol li::before {
+    content: counter(item);
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4em;
+    height: 1.4em;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: #333;
+  }
+
+  [contenteditable] ol li:hover::before {
+    background-color: #e0e0e0;
+  }
 }
