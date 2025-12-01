@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Bold, Italic, Underline, List, ListOrdered, Heading2, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, Play, Trash2, Maximize2 } from 'lucide-react';
+import { Bold, Italic, Underline, List, ListOrdered, Heading2, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, Play, Trash2 } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import {
@@ -26,7 +26,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const resizeHandleRef = useRef<HTMLDivElement>(null);
+  const [handlePos, setHandlePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (editorRef.current && !isInitialized) {
@@ -36,6 +36,28 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       setIsInitialized(true);
     }
   }, [isInitialized, content]);
+
+  // Update resize handle position when image is selected
+  useEffect(() => {
+    if (!selectedImageId || !editorRef.current) return;
+
+    const updateHandlePosition = () => {
+      const img = editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
+      if (img) {
+        const rect = img.getBoundingClientRect();
+        setHandlePos({ x: rect.left - 10, y: rect.top - 10 });
+      }
+    };
+
+    updateHandlePosition();
+    window.addEventListener('scroll', updateHandlePosition);
+    window.addEventListener('resize', updateHandlePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updateHandlePosition);
+      window.removeEventListener('resize', updateHandlePosition);
+    };
+  }, [selectedImageId]);
 
   const updateContent = (newContent: string) => {
     onChange(newContent);
@@ -335,9 +357,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         data-testid="simple-editor-area"
       />
 
-      {selectedImageId && editorRef.current && (
+      {selectedImageId && (
         <div
-          ref={resizeHandleRef}
           onMouseDown={handleResizeStart}
           style={{
             position: 'fixed',
@@ -349,14 +370,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
             cursor: 'nwse-resize',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
             zIndex: 1000,
-            display: (() => {
-              const img = editorRef.current?.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLImageElement;
-              if (!img) return 'none';
-              const rect = img.getBoundingClientRect();
-              (resizeHandleRef.current as HTMLDivElement).style.left = (rect.left - 10) + 'px';
-              (resizeHandleRef.current as HTMLDivElement).style.top = (rect.top - 10) + 'px';
-              return 'block';
-            })(),
+            left: handlePos.x + 'px',
+            top: handlePos.y + 'px',
           }}
           title="Drag to resize"
         />
