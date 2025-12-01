@@ -131,25 +131,16 @@
   }
 }
 
-/* Remove circles/bullets - text only */
+/* Remove circles/bullets - make markers invisible */
 ol, ul {
   list-style: none !important;
-  list-style-type: none !important;
-  list-style-image: none !important;
-  padding: 0 !important;
+  padding-left: 0 !important;
   margin: 0.5em 0 !important;
 }
 
 ol li, ul li {
   list-style: none !important;
-  list-style-type: none !important;
-  list-style-image: none !important;
+  display: block !important;
   margin-bottom: 0.25em !important;
-  padding: 0 !important;
-}
-
-/* Hide marker completely with ::marker pseudo-element */
-ol li::marker, ul li::marker {
-  display: none !important;
-  content: '' !important;
+  padding-left: 0 !important;
 }
