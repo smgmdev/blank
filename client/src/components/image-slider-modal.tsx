@@ -72,16 +72,16 @@ export function ImageSliderModal({ open, onClose, onInsert }: ImageSliderModalPr
       dotsHtml += `<span class="slider-dot" data-index="${idx}" style="display: inline-block; width: 10px; height: 10px; margin: 0 5px; background: ${idx === 0 ? '#333' : '#ccc'}; border-radius: 50%; cursor: pointer;"></span>`;
     });
 
-    const sliderHtml = `<div class="image-slider" style="margin: 20px 0; position: relative; border-radius: 8px; overflow: visible; background: #f9f9f9; padding: 10px;">
+    const sliderHtml = `<div class="image-slider" contenteditable="false" style="margin: 20px auto; position: relative; border-radius: 8px; overflow: visible; background: #f9f9f9; padding: 10px; width: fit-content; border: 2px solid transparent;">
       <div class="slider-container" style="position: relative; background: white; border-radius: 8px; overflow: hidden;">
         ${slidesHtml}
-        <button class="slider-prev" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 20px;">❮</button>
-        <button class="slider-next" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 20px;">❯</button>
+        <button class="slider-prev" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 20px;" onclick="event.preventDefault(); event.stopPropagation();">❮</button>
+        <button class="slider-next" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; z-index: 10; font-size: 20px;" onclick="event.preventDefault(); event.stopPropagation();">❯</button>
       </div>
       <div class="slider-dots" style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 0 0 8px 8px;">
         ${dotsHtml}
       </div>
-    </div>`;
+    </div><p></p>`;
 
     onInsert(sliderHtml);
     resetModal();

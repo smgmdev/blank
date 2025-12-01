@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Bold, Italic, List, Heading2, ImageIcon, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Rows } from 'lucide-react';
+import { Bold, Italic, List, Heading2, ImageIcon, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Rows, ArrowUp, ArrowDown } from 'lucide-react';
 import { ImageSliderModal } from './image-slider-modal';
 
 interface SimpleEditorProps {
@@ -15,12 +15,23 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const [history, setHistory] = useState<string[]>([content]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [sliderModalOpen, setSliderModalOpen] = useState(false);
+  const [selectedSlider, setSelectedSlider] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== content) {
-      editorRef.current.innerHTML = content;
-    }
-  }, [content]);
+    // Add event listeners for slider controls
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const handleSliderClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.image-slider')) {
+        setSelectedSlider(target.closest('.image-slider'));
+      }
+    };
+
+    editor.addEventListener('click', handleSliderClick);
+    return () => editor.removeEventListener('click', handleSliderClick);
+  }, []);
 
   const updateContent = (newContent: string) => {
     onChange(newContent);
@@ -86,6 +97,38 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   };
 
+  const moveSlider = (direction: 'up' | 'down') => {
+    if (!selectedSlider || !editorRef.current) return;
+    
+    const slider = selectedSlider.closest('.image-slider') as HTMLElement;
+    if (!slider) return;
+
+    if (direction === 'up' && slider.previousElementSibling) {
+      slider.parentElement?.insertBefore(slider, slider.previousElementSibling);
+    } else if (direction === 'down' && slider.nextElementSibling) {
+      slider.parentElement?.insertBefore(slider.nextElementSibling, slider);
+    }
+    
+    updateContent(editorRef.current.innerHTML);
+  };
+
+  const alignSlider = (alignment: 'left' | 'center' | 'right') => {
+    if (!selectedSlider || !editorRef.current) return;
+    
+    const slider = selectedSlider.closest('.image-slider') as HTMLElement;
+    if (!slider) return;
+
+    slider.style.marginLeft = alignment === 'left' ? '0' : alignment === 'center' ? 'auto' : '0';
+    slider.style.marginRight = alignment === 'right' ? '0' : alignment === 'center' ? 'auto' : '0';
+    
+    if (alignment === 'center') {
+      slider.style.display = 'max-content';
+      slider.style.maxWidth = '100%';
+    }
+    
+    updateContent(editorRef.current.innerHTML);
+  };
+
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-white dark:bg-slate-950">
       <div className="bg-muted p-3 border-b border-border flex flex-wrap gap-2">
@@ -132,6 +175,27 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         <Button size="sm" variant="outline" onClick={handleRedo} disabled={historyIndex === history.length - 1} title="Redo" className="h-8 px-2">
           <Redo2 className="w-4 h-4" />
         </Button>
+
+        {selectedSlider && (
+          <>
+            <div className="w-px h-6 bg-border" />
+            <Button size="sm" variant="outline" onClick={() => moveSlider('up')} title="Move Slider Up" className="h-8 px-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200">
+              <ArrowUp className="w-4 h-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => moveSlider('down')} title="Move Slider Down" className="h-8 px-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200">
+              <ArrowDown className="w-4 h-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => alignSlider('left')} title="Align Left" className="h-8 px-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-200">
+              <AlignLeft className="w-4 h-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => alignSlider('center')} title="Center" className="h-8 px-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-200">
+              <AlignCenter className="w-4 h-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => alignSlider('right')} title="Align Right" className="h-8 px-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-200">
+              <AlignRight className="w-4 h-4" />
+            </Button>
+          </>
+        )}
       </div>
 
       <div
@@ -142,17 +206,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           const html = (e.currentTarget as HTMLDivElement).innerHTML;
           updateContent(html);
         }}
-        onMouseUp={() => editorRef.current?.focus()}
-        onKeyUp={() => editorRef.current?.focus()}
         className="min-h-[400px] p-4 focus:outline-none text-base leading-relaxed"
         style={{
           fontFamily: 'system-ui, -apple-system, sans-serif',
-          WebkitUserSelect: 'text',
-          userSelect: 'text'
         }}
         data-testid="simple-editor-area"
       >
-        {content || ''}
+        {content}
       </div>
 
       <input
