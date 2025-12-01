@@ -640,11 +640,31 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       }
       
       if (container) {
-        // Position cursor just before the container to allow Enter to create space above
+        // Create a paragraph before the container if it's at the very top
+        const containerIndex = Array.from(editorRef.current.children).indexOf(container);
+        let targetElement = container;
+        
+        if (containerIndex === 0) {
+          // If container is first, create a paragraph before it
+          const p = document.createElement('p');
+          p.innerHTML = '<br>';
+          editorRef.current.insertBefore(p, container);
+          targetElement = p;
+        }
+        
+        // Position cursor in the element before the container
         const range = document.createRange();
         const selection = window.getSelection();
-        range.setStart(editorRef.current, Array.from(editorRef.current.children).indexOf(container));
-        range.collapse(true);
+        const elementBeforeContainer = (targetElement.previousElementSibling || editorRef.current.firstChild) as Node;
+        
+        if (elementBeforeContainer && elementBeforeContainer !== editorRef.current) {
+          range.selectNodeContents(elementBeforeContainer);
+          range.collapse(false);
+        } else {
+          range.setStart(editorRef.current, 0);
+          range.collapse(true);
+        }
+        
         selection?.removeAllRanges();
         selection?.addRange(range);
         
@@ -670,6 +690,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           }
           setSelectedVideoId(null);
         }
+        
+        updateContent(editorRef.current.innerHTML);
       }
       return;
     }
