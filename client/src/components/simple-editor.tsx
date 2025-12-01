@@ -1149,6 +1149,11 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
             <DialogTitle>Image Settings</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {tempImageSrc && (
+              <div className="flex justify-center">
+                <img src={tempImageSrc} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '6px' }} />
+              </div>
+            )}
             <div>
               <Label className="text-xs text-muted-foreground">
                 Title (disabled)
@@ -1160,13 +1165,14 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
             </div>
             <div>
               <Label htmlFor="img-caption">
-                Caption
+                Caption (required)
               </Label>
               <Textarea
                 id="img-caption"
                 value={imageSettings.caption}
                 onChange={(e) => setImageSettings({ ...imageSettings, caption: e.target.value })}
                 className="h-24 resize-none"
+                placeholder="Add a caption for the image..."
                 data-testid="image-caption"
               />
             </div>
@@ -1182,7 +1188,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           </div>
           {!imageSettings.caption.trim() && (
             <div className="text-xs text-red-500 px-0 py-1">
-              *Add caption
+              *Caption is required to add image
             </div>
           )}
           <DialogFooter>
