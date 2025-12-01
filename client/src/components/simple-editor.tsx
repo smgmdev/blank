@@ -318,6 +318,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         const videoId = 'video-' + Date.now();
         const videoContainer = document.createElement('div');
         videoContainer.className = 'video-container';
+        videoContainer.setAttribute('contenteditable', 'false');
         videoContainer.style.display = 'block';
         videoContainer.style.margin = '20px 0';
         videoContainer.style.textAlign = 'center';
@@ -325,6 +326,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         const videoDiv = document.createElement('div');
         videoDiv.className = 'editor-video';
         videoDiv.setAttribute('data-video-id', videoId);
+        videoDiv.setAttribute('contenteditable', 'false');
         videoDiv.style.display = 'inline-block';
         videoDiv.style.cursor = 'pointer';
         videoDiv.style.position = 'relative';
@@ -668,6 +670,33 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           }
           setSelectedVideoId(null);
         }
+      }
+      return;
+    }
+
+    // Handle ArrowDown on selected video to move cursor after it
+    if (e.key === 'ArrowDown' && selectedVideoId && editorRef.current) {
+      e.preventDefault();
+      
+      const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`);
+      const container = video?.closest('.video-container') as HTMLElement;
+      
+      if (container) {
+        // Position cursor just after the container
+        const range = document.createRange();
+        const selection = window.getSelection();
+        const containerIndex = Array.from(editorRef.current.children).indexOf(container);
+        range.setStart(editorRef.current, containerIndex + 1);
+        range.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        
+        // Deselect video
+        if (container) {
+          container.style.border = 'none';
+          container.style.boxShadow = 'none';
+        }
+        setSelectedVideoId(null);
       }
       return;
     }
