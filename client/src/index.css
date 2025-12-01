@@ -131,46 +131,16 @@
   }
 }
 
-/* Modern compact ordered list styling - OUTSIDE @layer to override defaults */
+/* Modern compact ordered list styling */
 .simple-editor ol {
-  list-style: none !important;
-  counter-reset: item !important;
+  list-style-type: decimal !important;
+  list-style-position: inside !important;
   padding-left: 0 !important;
   margin: 0.5em 0 !important;
 }
 
 .simple-editor ol li {
-  counter-increment: item !important;
-  margin-bottom: 0.25em !important;
-  padding-left: 2em !important;
-  position: relative !important;
-  list-style: none !important;
-  list-style-type: none !important;
-  list-style-image: none !important;
-  list-style-position: unset !important;
-}
-
-.simple-editor ol li::marker {
-  display: none !important;
-}
-
-.simple-editor ol li::before {
-  content: counter(item) !important;
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 1.4em !important;
-  height: 1.4em !important;
-  background-color: #f0f0f0 !important;
-  border-radius: 4px !important;
-  font-size: 0.85em !important;
-  font-weight: 500 !important;
-  color: #333 !important;
-}
-
-.simple-editor ol li:hover::before {
-  background-color: #e0e0e0 !important;
+  margin-bottom: 0.35em !important;
+  padding-left: 0.5em !important;
+  font-size: 0.95em !important;
 }
