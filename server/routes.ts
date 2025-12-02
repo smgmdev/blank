@@ -1430,32 +1430,145 @@ export async function registerRoutes(
         res.status(500).json({ error: error.message });
       }
     } else if (type === "publish") {
-      // Proxy to Vercel publish handler
+      // Publish article to WordPress
       try {
-        const contentHandler = await import("../api/content");
-        const statusCode = { code: 200 };
-        const mockVercelReq = {
-          query: req.query,
-          method: req.method,
-          body: req.body,
-          headers: req.headers,
-          rawBody: req.rawBody
-        } as any;
-        const mockVercelRes = {
-          status: (code: number) => {
-            statusCode.code = code;
-            return mockVercelRes;
+        const { articleId } = req.query;
+        const { siteId, userId, title, content, categories, tags, featuredImageBase64, imageCaption } = req.body;
+        
+        if (!articleId) return res.status(400).json({ error: "articleId required" });
+        if (!siteId || !userId) return res.status(400).json({ error: "siteId and userId required" });
+
+        // Get site and credentials
+        const site = await storage.getWordPressSite(siteId as string);
+        if (!site) return res.status(404).json({ error: "Site not found" });
+
+        const credential = await storage.getUserSiteCredential(userId as string, siteId as string);
+        if (!credential || !credential.isVerified) return res.status(403).json({ error: "Not authenticated" });
+
+        const auth = Buffer.from(`${credential.wpUsername}:${credential.wpPassword}`).toString("base64");
+        
+        let featuredMediaId = null;
+        let featuredImageUrl = null;
+        
+        // Upload featured image if provided
+        if (featuredImageBase64) {
+          try {
+            const base64Data = featuredImageBase64.split(',')[1] || featuredImageBase64;
+            const imageBuffer = Buffer.from(base64Data, 'base64');
+            
+            let ext = "jpg", ct = "image/jpeg";
+            if (featuredImageBase64.includes("png")) { ext = "png"; ct = "image/png"; }
+            else if (featuredImageBase64.includes("webp")) { ext = "webp"; ct = "image/webp"; }
+            else if (featuredImageBase64.includes("gif")) { ext = "gif"; ct = "image/gif"; }
+            
+            const mediaResponse = await fetch(`${site.apiUrl}/wp/v2/media`, {
+              method: "POST",
+              headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": ct,
+                "Content-Disposition": `attachment; filename="featured-image.${ext}"`
+              },
+              body: imageBuffer
+            });
+            
+            if (mediaResponse.ok) {
+              const mediaData = await mediaResponse.json();
+              featuredMediaId = mediaData.id;
+              featuredImageUrl = mediaData.source_url;
+              
+              if (imageCaption) {
+                await fetch(`${site.apiUrl}/wp/v2/media/${featuredMediaId}`, {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Basic ${auth}`,
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({ caption: { raw: imageCaption } })
+                });
+              }
+            }
+          } catch (imgError) {
+            console.error("[Publish] Image upload error:", imgError);
+          }
+        }
+
+        // Create WordPress post
+        const postData: any = {
+          title,
+          content: content || "",
+          status: "publish"
+        };
+
+        if (featuredMediaId) {
+          postData.featured_media = featuredMediaId;
+        }
+
+        // Handle categories
+        if (Array.isArray(categories) && categories.length > 0) {
+          postData.categories = categories;
+        }
+
+        // Handle tags
+        const tagIds: number[] = [];
+        if (Array.isArray(tags)) {
+          for (const tag of tags) {
+            if (typeof tag === 'string') {
+              try {
+                const createTagRes = await fetch(`${site.apiUrl}/wp/v2/tags`, {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Basic ${auth}`,
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({ name: tag })
+                });
+                if (createTagRes.ok) {
+                  const tagData = await createTagRes.json();
+                  tagIds.push(tagData.id);
+                }
+              } catch (e) {
+                console.error(`Failed to create tag "${tag}":`, e);
+              }
+            } else if (typeof tag === 'number') {
+              tagIds.push(tag);
+            }
+          }
+        }
+        if (tagIds.length > 0) {
+          postData.tags = tagIds;
+        }
+
+        const wpPostResponse = await fetch(`${site.apiUrl}/wp/v2/posts`, {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/json"
           },
-          json: (data: any) => {
-            return res.status(statusCode.code).json(data);
-          },
-          statusCode: 200,
-          setHeader: () => {},
-          end: () => {}
-        } as any;
-        await contentHandler.default(mockVercelReq, mockVercelRes);
+          body: JSON.stringify(postData)
+        });
+
+        if (!wpPostResponse.ok) {
+          const error = await wpPostResponse.text();
+          throw new Error(`WordPress API error: ${wpPostResponse.status} - ${error}`);
+        }
+
+        const wpPost = await wpPostResponse.json();
+        
+        // Save publishing record
+        await storage.createArticlePublishing({
+          articleId: articleId as string,
+          siteId: siteId as string,
+          wpPostId: String(wpPost.id),
+          status: "published"
+        });
+
+        res.json({
+          success: true,
+          wpLink: wpPost.link,
+          wpPostId: wpPost.id
+        });
       } catch (error: any) {
-        console.error("Publishing handler error:", error);
+        console.error("Publishing error:", error);
         res.status(500).json({ error: "Publishing failed: " + error.message });
       }
     } else {
