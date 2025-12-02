@@ -258,7 +258,8 @@ export default function Settings() {
             <Input
               id="username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              disabled
+              className="bg-muted cursor-not-allowed"
               placeholder="e.g. john_smith"
             />
           </div>
@@ -268,7 +269,8 @@ export default function Settings() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              disabled
+              className="bg-muted cursor-not-allowed"
               placeholder="your@email.com"
             />
           </div>
