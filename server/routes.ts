@@ -1474,7 +1474,8 @@ export async function registerRoutes(
             if (mediaResponse.ok) {
               const mediaData = await mediaResponse.json();
               featuredMediaId = mediaData.id;
-              featuredImageUrl = mediaData.source_url;
+              featuredImageUrl = mediaData.source_url || mediaData.media_details?.sizes?.full?.source_url || mediaData.guid?.rendered;
+              console.log("[Publish] Image uploaded successfully:", { id: featuredMediaId, url: featuredImageUrl, fullResponse: mediaData });
               
               if (imageCaption) {
                 await fetch(`${site.apiUrl}/wp/v2/media/${featuredMediaId}`, {
@@ -1486,6 +1487,9 @@ export async function registerRoutes(
                   body: JSON.stringify({ caption: { raw: imageCaption } })
                 });
               }
+            } else {
+              const errorText = await mediaResponse.text();
+              console.error("[Publish] Image upload failed:", mediaResponse.status, errorText);
             }
           } catch (imgError) {
             console.error("[Publish] Image upload error:", imgError);
@@ -1554,13 +1558,22 @@ export async function registerRoutes(
 
         const wpPost = await wpPostResponse.json();
         
+        // Prepare tags array with names for storage
+        const tagsForStorage = Array.isArray(tags) ? tags.map((tag: any) => {
+          if (typeof tag === 'object' && tag.name) return tag;
+          if (typeof tag === 'string') return { id: tag, name: tag };
+          if (typeof tag === 'number') return { id: tag, name: `Tag ${tag}` };
+          return tag;
+        }) : null;
+
         // Update article record with published data
+        console.log("[Publish] Saving article with featured image:", featuredImageUrl, "tags:", tagsForStorage);
         await storage.updateArticle(articleId as string, {
           status: "published",
           publishedAt: new Date(),
           featuredImageUrl: featuredImageUrl,
           categories: Array.isArray(categories) ? categories : null,
-          tags: Array.isArray(tags) ? tags : null
+          tags: tagsForStorage
         });
         
         // Save publishing record
