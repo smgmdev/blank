@@ -1039,11 +1039,11 @@ export default function Editor() {
                   ) : (
                     <>
                       <Input 
-                        placeholder="Type tag name and press Enter to add..." 
+                        placeholder="Type tag name and press Enter..." 
                         value={formData.currentTag}
                         onChange={e => setFormData({...formData, currentTag: e.target.value})}
                         onKeyDown={handleAddTag}
-                        className="mt-4"
+                        className="mt-4 text-sm placeholder:text-xs"
                       />
                       {availableTags.length > 0 && formData.currentTag.trim() !== "" && (
                         <div className="text-xs text-muted-foreground mt-2 p-2 border border-border rounded bg-muted/30">
@@ -1073,7 +1073,7 @@ export default function Editor() {
                       )}
                     </>
                   )}
-                  <div className="w-full mt-4 p-2 border border-border rounded-lg bg-muted/30 min-h-10 flex flex-wrap gap-2 items-start content-start">
+                  <div className="w-full mt-3 p-1.5 border border-border rounded-lg bg-muted/30 min-h-7 flex flex-wrap gap-1 items-start content-start">
                     {formData.tags.map(tag => {
                       const tagName = typeof tag === 'number' 
                         ? availableTags.find((t: any) => t.id === tag)?.name || tag
