@@ -1133,10 +1133,10 @@ export default function Editor() {
                 <textarea 
                   value={formData.title}
                   disabled
-                  className="w-full p-3 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed resize-none overflow-hidden text-sm"
+                  className="w-full p-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed resize-none overflow-hidden text-sm"
                   placeholder="Auto-synced from article title"
                   rows={1}
-                  style={{ height: 'auto', minHeight: '2.5rem' }}
+                  style={{ height: 'auto', minHeight: '2rem' }}
                 />
                 <p className="text-xs text-muted-foreground">This is automatically set to match your article title and cannot be edited separately.</p>
               </div>
