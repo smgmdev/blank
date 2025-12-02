@@ -411,10 +411,10 @@ export default function MyArticles() {
               {isRefreshing ? "Syncing..." : "Refresh & Sync"}
             </Button>
             {syncStatus && (
-              <p className="text-xs text-muted-foreground mt-2 pl-4">{syncStatus}</p>
+              <p className="text-xs text-muted-foreground mt-2 pl-12">{syncStatus}</p>
             )}
             {syncError && (
-              <p className="text-xs text-destructive mt-2 pl-4">{syncError}</p>
+              <p className="text-xs text-destructive mt-2 pl-12">{syncError}</p>
             )}
           </div>
           <Link href="/editor">
