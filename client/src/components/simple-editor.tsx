@@ -460,8 +460,22 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     // Append container to editor
     editorRef.current.appendChild(containerDiv);
     
+    // Create a new paragraph after the image for text input
+    const newParagraph = document.createElement('p');
+    newParagraph.innerHTML = '<br>';
+    editorRef.current.appendChild(newParagraph);
+    
     updateContent(editorRef.current.innerHTML);
     attachMediaListeners();
+
+    // Focus editor and position cursor in the new paragraph
+    editorRef.current.focus();
+    const range = document.createRange();
+    const selection = window.getSelection();
+    range.selectNodeContents(newParagraph);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
 
     setTempImageSrc('');
     setShowImageSettings(false);
