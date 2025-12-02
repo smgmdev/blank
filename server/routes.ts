@@ -1432,7 +1432,8 @@ export async function registerRoutes(
     } else if (type === "publish") {
       // Proxy to Vercel publish handler
       try {
-        const contentHandler = await import("../api/content.js");
+        const contentHandler = await import("../api/content");
+        const statusCode = { code: 200 };
         const mockVercelReq = {
           query: req.query,
           method: req.method,
@@ -1441,15 +1442,20 @@ export async function registerRoutes(
           rawBody: req.rawBody
         } as any;
         const mockVercelRes = {
-          status: (code: number) => ({
-            json: (data: any) => res.status(code).json(data)
-          }),
-          json: (data: any) => res.json(data),
+          status: (code: number) => {
+            statusCode.code = code;
+            return mockVercelRes;
+          },
+          json: (data: any) => {
+            return res.status(statusCode.code).json(data);
+          },
           statusCode: 200,
-          setHeader: () => {}
+          setHeader: () => {},
+          end: () => {}
         } as any;
         await contentHandler.default(mockVercelReq, mockVercelRes);
       } catch (error: any) {
+        console.error("Publishing handler error:", error);
         res.status(500).json({ error: "Publishing failed: " + error.message });
       }
     } else {
