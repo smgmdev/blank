@@ -89,7 +89,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       if (now - lastToggleTime < DEBOUNCE_MS) return;
 
       const containerRect = containerRef.current.getBoundingClientRect();
-      const toolbarRect = toolbarRef.current.getBoundingClientRect();
       
       // Get the editor header element 
       const editorHeader = document.querySelector('header.z-10');
@@ -97,16 +96,23 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       
       // Add 5px threshold to prevent flickering at boundary
       const threshold = 5;
-      if (toolbarRect.top < headerBottom - threshold) {
-        setIsToolbarSticky(true);
-        // Update position and width to match container
+      
+      // When NOT sticky: check if container is scrolling above header
+      // When sticky: check if container has scrolled back down past header
+      if (containerRect.top < headerBottom - threshold) {
+        if (!isToolbarSticky) {
+          setIsToolbarSticky(true);
+          lastToggleTime = now;
+        }
+        // Update position while sticky
         toolbarRef.current.style.left = containerRect.left + 'px';
         toolbarRef.current.style.width = containerRect.width + 'px';
         toolbarRef.current.style.top = headerBottom + 'px';
-        lastToggleTime = now;
-      } else if (toolbarRect.top > headerBottom + threshold) {
-        setIsToolbarSticky(false);
-        lastToggleTime = now;
+      } else if (containerRect.top > headerBottom + threshold) {
+        if (isToolbarSticky) {
+          setIsToolbarSticky(false);
+          lastToggleTime = now;
+        }
       }
     };
 
