@@ -1128,7 +1128,7 @@ export default function Editor() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Common SEO Title Field (All plugins) */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label>SEO Title (Auto-synced with Article Title)</Label>
                 <textarea 
                   value={formData.title}
