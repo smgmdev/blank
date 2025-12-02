@@ -1073,7 +1073,7 @@ export default function Editor() {
                       )}
                     </>
                   )}
-                  <div className="w-full mt-3 p-1 border border-border rounded-lg bg-muted/30 min-h-9 flex flex-wrap gap-1 items-center content-center">
+                  <div className="w-full mt-3 p-1 pl-3 border border-border rounded-lg bg-muted/30 min-h-9 flex flex-wrap gap-1 items-center content-center">
                     {formData.tags.map(tag => {
                       const tagName = typeof tag === 'number' 
                         ? availableTags.find((t: any) => t.id === tag)?.name || tag
