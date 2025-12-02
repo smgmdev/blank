@@ -1008,8 +1008,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         
         /* Image styles */
         .img-container {
-          display: inline-block !important;
-          margin: 10px 0 !important;
+          display: block !important;
+          margin: 16px 0 !important;
           position: relative;
           max-width: 100%;
           padding: 4px;
