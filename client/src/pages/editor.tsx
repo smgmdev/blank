@@ -838,7 +838,7 @@ export default function Editor() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20">
+    <div className="max-w-4xl mx-auto space-y-4 pb-20">
       {/* Modern Tab-Style Progress Indicator */}
       <div className="flex gap-2 border-b border-slate-200">
         {steps.map((s) => (
