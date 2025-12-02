@@ -839,6 +839,23 @@ export default function Editor() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
+      {/* Missing Fields Alert - Top */}
+      {((step === 1 && getMissingFieldsStep1().length > 0) || 
+        (step === 2 && getMissingFieldsStep2().length > 0) ||
+        (step === 3 && getMissingFieldsStep3().length > 0)) && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-red-900">Missing required fields:</p>
+            <p className="text-sm text-red-700">
+              {step === 1 && getMissingFieldsStep1().join(", ")}
+              {step === 2 && getMissingFieldsStep2().join(", ")}
+              {step === 3 && getMissingFieldsStep3().join(", ")}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Breadcrumb Style Progress Indicator */}
       <div className="flex items-center justify-center gap-1 flex-wrap">
         {steps.map((s, idx) => (
@@ -875,15 +892,6 @@ export default function Editor() {
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
               <CardDescription>Choose where to publish and write your content with rich formatting.</CardDescription>
-              {getMissingFieldsStep1().length > 0 && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md flex gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-red-900">Missing fields:</p>
-                    <p className="text-sm text-red-700">{getMissingFieldsStep1().join(", ")}</p>
-                  </div>
-                </div>
-              )}
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -992,15 +1000,6 @@ export default function Editor() {
             <CardHeader>
               <CardTitle>Organize Content</CardTitle>
               <CardDescription>Select categories and tags for better discoverability.</CardDescription>
-              {getMissingFieldsStep2().length > 0 && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md flex gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-red-900">Missing fields:</p>
-                    <p className="text-sm text-red-700">{getMissingFieldsStep2().join(", ")}</p>
-                  </div>
-                </div>
-              )}
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid md:grid-cols-[1fr_1fr] gap-6">
@@ -1155,15 +1154,6 @@ export default function Editor() {
               <CardDescription>
                 Optimize your content using the connected site's SEO plugin.
               </CardDescription>
-              {getMissingFieldsStep3().length > 0 && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md flex gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-red-900">Missing fields:</p>
-                    <p className="text-sm text-red-700">{getMissingFieldsStep3().join(", ")}</p>
-                  </div>
-                </div>
-              )}
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Common SEO Title Field (All plugins) */}
