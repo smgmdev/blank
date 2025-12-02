@@ -815,36 +815,33 @@ export default function Editor() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      {/* Bar Segment Progress Indicator */}
-      <div className="space-y-3">
-        {/* Segmented Progress Bar */}
-        <div className="flex gap-1 h-2">
-          {steps.map((s) => (
+      {/* Breadcrumb Style Progress Indicator */}
+      <div className="flex items-center justify-center gap-1 flex-wrap">
+        {steps.map((s, idx) => (
+          <div key={s.num} className="flex items-center gap-1">
+            {/* Step badge */}
             <div
-              key={s.num}
-              className={`flex-1 rounded-full transition-all duration-500 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-300 ${
                 step >= s.num
-                  ? 'bg-gradient-to-r from-blue-500 to-emerald-500'
-                  : 'bg-slate-200'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-200 text-slate-500'
               }`}
-            />
-          ))}
-        </div>
-
-        {/* Step Labels */}
-        <div className="flex items-center justify-between">
-          {steps.map((s) => (
-            <div key={s.num} className="flex flex-col items-center flex-1">
+            >
+              {s.label}
+            </div>
+            
+            {/* Divider arrow */}
+            {idx < steps.length - 1 && (
               <span
-                className={`text-xs font-semibold transition-colors duration-300 ${
-                  step >= s.num ? 'text-blue-600' : 'text-slate-400'
+                className={`transition-colors duration-300 ${
+                  step >= s.num ? 'text-blue-600' : 'text-slate-300'
                 }`}
               >
-                {s.label}
+                →
               </span>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Step 1: Content */}
