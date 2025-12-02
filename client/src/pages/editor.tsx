@@ -1043,7 +1043,7 @@ export default function Editor() {
                         value={formData.currentTag}
                         onChange={e => setFormData({...formData, currentTag: e.target.value})}
                         onKeyDown={handleAddTag}
-                        className="mt-4 text-sm placeholder:text-xs"
+                        className="mt-4 text-sm"
                       />
                       {availableTags.length > 0 && formData.currentTag.trim() !== "" && (
                         <div className="text-xs text-muted-foreground mt-2 p-2 border border-border rounded bg-muted/30">
@@ -1128,15 +1128,15 @@ export default function Editor() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Common SEO Title Field (All plugins) */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>SEO Title (Auto-synced with Article Title)</Label>
                 <textarea 
                   value={formData.title}
                   disabled
                   className="w-full p-3 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed resize-none overflow-hidden text-sm"
                   placeholder="Auto-synced from article title"
-                  rows={2}
-                  style={{ height: 'auto', minHeight: '3rem' }}
+                  rows={1}
+                  style={{ height: 'auto', minHeight: '2.5rem' }}
                 />
                 <p className="text-xs text-muted-foreground">This is automatically set to match your article title and cannot be edited separately.</p>
               </div>
