@@ -815,24 +815,45 @@ export default function Editor() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      {/* Modern Step Indicator */}
-      <div className="space-y-4 px-2">
-        <div className="relative h-1 bg-muted rounded-full overflow-hidden">
-          <div className="absolute inset-y-0 left-0 bg-blue-600 rounded-full transition-all duration-500" 
-            style={{width: `${(step / steps.length) * 100}%`}}
-          />
-        </div>
-        <div className="flex items-center justify-between gap-1">
+      {/* Elegant Step Indicator */}
+      <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200">
+        <div className="flex items-center justify-between">
           {steps.map((s, idx) => (
-            <div key={s.num} className="flex flex-col items-center gap-2 flex-1">
-              <div className={`px-3 py-1 rounded-md flex items-center justify-center font-semibold text-sm transition-all duration-300 flex-shrink-0 ${
-                step >= s.num 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-400 border border-gray-200'
-              }`}>
-                {step > s.num ? <CheckCircle2 className="w-4 h-4" /> : s.num}
+            <div key={s.num} className="flex flex-col items-center flex-1">
+              {/* Step circle and connector */}
+              <div className="flex items-center w-full justify-center mb-3">
+                <div className="flex items-center gap-0 flex-1">
+                  {/* Connecting line (before) */}
+                  {idx > 0 && (
+                    <div className={`flex-1 h-1 mx-1 rounded-full transition-all duration-500 ${
+                      step > s.num ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 'bg-slate-300'
+                    }`} />
+                  )}
+                  
+                  {/* Step circle */}
+                  <div className={`relative w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 flex-shrink-0 shadow-sm ${
+                    step > s.num 
+                      ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white scale-110' 
+                      : step === s.num
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white ring-2 ring-blue-200 scale-110'
+                      : 'bg-slate-200 text-slate-500'
+                  }`}>
+                    {step > s.num ? <CheckCircle2 className="w-5 h-5" /> : s.num}
+                  </div>
+                  
+                  {/* Connecting line (after) */}
+                  {idx < steps.length - 1 && (
+                    <div className={`flex-1 h-1 mx-1 rounded-full transition-all duration-500 ${
+                      step > s.num ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 'bg-slate-300'
+                    }`} />
+                  )}
+                </div>
               </div>
-              <span className={`text-xs font-medium text-center transition-colors duration-300 line-clamp-2 ${step >= s.num ? 'text-blue-600 font-semibold' : 'text-gray-400'}`}>
+              
+              {/* Step label */}
+              <span className={`text-xs font-semibold transition-colors duration-300 ${
+                step >= s.num ? 'text-slate-900' : 'text-slate-500'
+              }`}>
                 {s.label}
               </span>
             </div>
