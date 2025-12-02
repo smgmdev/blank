@@ -250,6 +250,10 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           selectImage(imgId);
         }
       });
+      // Prevent dragging images to avoid duplication
+      img.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+      });
     });
     
     const videos = editorRef.current.querySelectorAll('.editor-video');
@@ -269,6 +273,15 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         overlay.addEventListener('click', handleClick);
       }
     });
+  };
+
+  // Prevent dragging in contenteditable to avoid duplication
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
   };
 
   const updateContent = (newContent: string) => {
@@ -1213,6 +1226,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         }}
         onClick={handleEditorClick}
         onKeyDown={handleEditorKeyDown}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
         className="simple-editor min-h-[400px] p-4 focus:outline-none text-base leading-relaxed relative"
         style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
