@@ -861,7 +861,7 @@ export default function Editor() {
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+              <CardTitle>New Article</CardTitle>
               <CardDescription>Choose where to publish and write your content with rich formatting.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
