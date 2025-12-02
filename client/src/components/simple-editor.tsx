@@ -79,8 +79,14 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
 
   // Detect scroll and make toolbar sticky
   useEffect(() => {
+    let lastToggleTime = 0;
+    const DEBOUNCE_MS = 50;
+
     const handleScroll = () => {
       if (!containerRef.current || !toolbarRef.current) return;
+
+      const now = Date.now();
+      if (now - lastToggleTime < DEBOUNCE_MS) return;
 
       const containerRect = containerRef.current.getBoundingClientRect();
       const toolbarRect = toolbarRef.current.getBoundingClientRect();
@@ -89,15 +95,18 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       const editorHeader = document.querySelector('header.z-10');
       const headerBottom = editorHeader ? editorHeader.getBoundingClientRect().bottom : 64;
       
-      // If toolbar scrolls above the header, make it sticky
-      if (toolbarRect.top < headerBottom) {
+      // Add 5px threshold to prevent flickering at boundary
+      const threshold = 5;
+      if (toolbarRect.top < headerBottom - threshold) {
         setIsToolbarSticky(true);
         // Update position and width to match container
         toolbarRef.current.style.left = containerRect.left + 'px';
         toolbarRef.current.style.width = containerRect.width + 'px';
         toolbarRef.current.style.top = headerBottom + 'px';
-      } else {
+        lastToggleTime = now;
+      } else if (toolbarRect.top > headerBottom + threshold) {
         setIsToolbarSticky(false);
+        lastToggleTime = now;
       }
     };
 
