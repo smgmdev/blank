@@ -36,7 +36,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (user) {
       const userId = localStorage.getItem('userId');
       if (userId) {
-        fetch(`/api/user?id=${userId}`)
+        fetch(`/api/users/${userId}`)
           .then(res => {
             if (!res.ok) {
               console.error(`User fetch failed with status ${res.status}`);
