@@ -46,7 +46,7 @@ export default function Settings() {
     if (!userId) return;
     try {
       console.log(`[Settings] Fetching user data for ${userId}`);
-      const res = await fetch(`/api/user?id=${userId}`);
+      const res = await fetch(`/api/users/${userId}`);
       if (!res.ok) {
         console.error(`[Settings] Fetch failed with status ${res.status}`);
         const errorData = await res.text();
