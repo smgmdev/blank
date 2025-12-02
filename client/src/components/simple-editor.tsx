@@ -777,6 +777,13 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       return;
     }
     
+    // Allow arrow keys to move cursor in normal text - don't prevent default for text input
+    // Only handle arrow keys specially when media is selected
+    if (!selectedImageId && !selectedVideoId && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      // Let default behavior handle cursor movement in text
+      return;
+    }
+    
     // When Enter is pressed on selected image, move cursor after container
     if ((e.key === 'Enter' || e.key === 'ArrowDown') && selectedImageId && !editorRef.current) return;
     
