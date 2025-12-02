@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Bold, Italic, Underline, List, ListOrdered, Heading2, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, Play, Trash2, Settings } from 'lucide-react';
+import { Bold, Italic, Underline, List, ListOrdered, Heading2, Link, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, Image as ImageIcon, Trash2, Settings } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
@@ -32,8 +32,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const isToolbarStickyRef = useRef(false);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
@@ -223,9 +221,9 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     };
   }, []);
 
-  // Save cursor position when video or image dialog opens
+  // Save cursor position when image dialog opens
   useEffect(() => {
-    if ((showVideoDialog || showImageSettings) && editorRef.current) {
+    if (showImageSettings && editorRef.current) {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         // Store the range for later restoration
@@ -237,7 +235,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         }
       }
     }
-  }, [showVideoDialog, showImageSettings]);
+  }, [showImageSettings]);
 
   const attachMediaListeners = () => {
     if (!editorRef.current) return;
@@ -497,78 +495,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
     }
   };
 
-  const handleAddVideo = () => {
-    if (!videoUrl.trim() || !editorRef.current) return;
-
-    let embedCode = '';
-    const url = videoUrl.trim();
-    
-    try {
-      if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        let videoId = '';
-        
-        if (url.includes('youtu.be/')) {
-          // Handle youtu.be short URLs: https://youtu.be/dQw4w9WgXcQ
-          videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
-        } else if (url.includes('v=')) {
-          // Handle youtube.com URLs: https://www.youtube.com/watch?v=dQw4w9WgXcQ
-          videoId = url.split('v=')[1]?.split('&')[0] || '';
-        }
-        
-        if (videoId) {
-          embedCode = `<div style="margin: 20px 0; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 6px;">
-            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
-          </div>`;
-        }
-      }
-
-      if (embedCode && editorRef.current) {
-        const vidId = 'video-' + Date.now();
-        
-        // Use insertHTML just like images for consistent behavior
-        // Container is editable so cursor can be positioned, with empty text nodes for cursor visibility
-        const videoContainer = `<div class="video-container" style="display: block; margin: 10px 0; max-width: 100%; width: fit-content; text-align: center;">
-          <div class="editor-video" data-video-id="${vidId}" contenteditable="false" style="display: inline-block; cursor: pointer; position: relative; border: 2px solid transparent; border-radius: 6px; overflow: hidden; max-width: 100%; margin: 0 auto; width: 640px; height: 360px;">
-            ${embedCode}
-          </div>
-          <br>
-        </div>`;
-        
-        // Restore cursor to original position
-        editorRef.current.focus();
-        const selection = window.getSelection();
-        
-        // Try to restore saved selection first
-        if (savedSelectionRef.current && selection) {
-          try {
-            selection.removeAllRanges();
-            selection.addRange(savedSelectionRef.current);
-          } catch {
-            // Fallback: if saved selection is invalid, just use current position
-          }
-        }
-        
-        try {
-          document.execCommand('insertHTML', false, videoContainer);
-        } catch (err) {
-          console.error('Insert video HTML failed:', err);
-        }
-
-        if (editorRef.current) {
-          updateContent(editorRef.current.innerHTML);
-          attachMediaListeners();
-        }
-
-        setVideoUrl('');
-        setShowVideoDialog(false);
-        savedSelectionRef.current = null;
-      } else {
-        console.warn('Could not extract video ID from URL:', url);
-      }
-    } catch (error) {
-      console.error('Video embedding error:', error);
-    }
-  };
 
   const selectImage = (imgId: string) => {
     if (!editorRef.current) return;
@@ -1175,9 +1101,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         <Button size="sm" variant="outline" onClick={() => imageInputRef.current?.click()} title="Image" className="h-8 px-2" data-testid="button-insert-image">
           <ImageIcon className="w-4 h-4" />
         </Button>
-        <Button size="sm" variant="outline" onClick={() => setShowVideoDialog(true)} title="Embed Video" className="h-8 px-2">
-          <Play className="w-4 h-4" />
-        </Button>
         <div className="w-px h-6 bg-border" />
         <Button 
           size="sm" 
@@ -1393,30 +1316,6 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         </DialogContent>
       </Dialog>
 
-      {/* Video Dialog */}
-      <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Embed Video</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="video-url">Video URL</Label>
-              <Input
-                id="video-url"
-                placeholder="Paste YouTube link"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground mt-2">Supports YouTube links</p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowVideoDialog(false)}>Cancel</Button>
-            <Button onClick={handleAddVideo}>Embed</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
