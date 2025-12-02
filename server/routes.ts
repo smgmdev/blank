@@ -1554,6 +1554,15 @@ export async function registerRoutes(
 
         const wpPost = await wpPostResponse.json();
         
+        // Update article record with published data
+        await storage.updateArticle(articleId as string, {
+          status: "published",
+          publishedAt: new Date(),
+          featuredImageUrl: featuredImageUrl,
+          categories: Array.isArray(categories) ? categories : null,
+          tags: Array.isArray(tags) ? tags : null
+        });
+        
         // Save publishing record
         await storage.createArticlePublishing({
           articleId: articleId as string,
