@@ -258,9 +258,7 @@ export default function Settings() {
             <Input
               id="username"
               value={username}
-              disabled={!isAdmin}
-              className={!isAdmin ? "bg-muted" : ""}
-              onChange={(e) => isAdmin && setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value)}
               placeholder="e.g. john_smith"
             />
           </div>
@@ -270,9 +268,7 @@ export default function Settings() {
               id="email"
               type="email"
               value={email}
-              disabled={!isAdmin}
-              className={!isAdmin ? "bg-muted" : ""}
-              onChange={(e) => isAdmin && setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
             />
           </div>
@@ -281,17 +277,13 @@ export default function Settings() {
             <Input
               id="fullName"
               value={fullName}
-              disabled={!isAdmin}
-              className={!isAdmin ? "bg-muted" : ""}
-              onChange={(e) => isAdmin && setFullName(e.target.value)}
+              onChange={(e) => setFullName(e.target.value)}
               placeholder="e.g. John Smith"
             />
           </div>
-          {isAdmin && (
-            <Button onClick={handleAccountUpdate} disabled={isSaving}>
-              {isSaving ? "Updating..." : "Update"}
-            </Button>
-          )}
+          <Button onClick={handleAccountUpdate} disabled={isSaving}>
+            {isSaving ? "Updating..." : "Update"}
+          </Button>
         </CardContent>
       </Card>
 
