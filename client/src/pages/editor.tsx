@@ -815,40 +815,31 @@ export default function Editor() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      {/* Compact Step Indicator */}
-      <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
-        {/* Connectors row */}
-        <div className="flex items-center justify-between mb-4 px-4">
-          {steps.map((s, idx) => (
-            <div key={`connector-${s.num}`} className="flex-1 flex items-center">
-              {idx > 0 && (
-                <div className={`flex-1 h-0.5 rounded-full transition-all duration-500 ${
-                  step > s.num ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : 'bg-slate-300'
-                }`} />
-              )}
-            </div>
+      {/* Bar Segment Progress Indicator */}
+      <div className="space-y-3">
+        {/* Segmented Progress Bar */}
+        <div className="flex gap-1 h-2">
+          {steps.map((s) => (
+            <div
+              key={s.num}
+              className={`flex-1 rounded-full transition-all duration-500 ${
+                step >= s.num
+                  ? 'bg-gradient-to-r from-blue-500 to-emerald-500'
+                  : 'bg-slate-200'
+              }`}
+            />
           ))}
         </div>
 
-        {/* Steps row */}
-        <div className="flex items-end justify-between gap-2">
+        {/* Step Labels */}
+        <div className="flex items-center justify-between">
           {steps.map((s) => (
             <div key={s.num} className="flex flex-col items-center flex-1">
-              {/* Step circle */}
-              <div className={`relative w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 flex-shrink-0 shadow-sm mb-2 ${
-                step > s.num 
-                  ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white' 
-                  : step === s.num
-                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white ring-2 ring-blue-200'
-                  : 'bg-slate-200 text-slate-500'
-              }`}>
-                {step > s.num ? <CheckCircle2 className="w-4 h-4" /> : s.num}
-              </div>
-              
-              {/* Step label - directly under circle */}
-              <span className={`text-xs font-semibold text-center transition-colors duration-300 line-clamp-2 ${
-                step >= s.num ? 'text-slate-900' : 'text-slate-500'
-              }`}>
+              <span
+                className={`text-xs font-semibold transition-colors duration-300 ${
+                  step >= s.num ? 'text-blue-600' : 'text-slate-400'
+                }`}
+              >
                 {s.label}
               </span>
             </div>
