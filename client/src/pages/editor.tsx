@@ -839,49 +839,20 @@ export default function Editor() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      {/* Missing Fields Alert - Top */}
-      {((step === 1 && getMissingFieldsStep1().length > 0) || 
-        (step === 2 && getMissingFieldsStep2().length > 0) ||
-        (step === 3 && getMissingFieldsStep3().length > 0)) && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-red-900">Missing required fields:</p>
-            <p className="text-sm text-red-700">
-              {step === 1 && getMissingFieldsStep1().join(", ")}
-              {step === 2 && getMissingFieldsStep2().join(", ")}
-              {step === 3 && getMissingFieldsStep3().join(", ")}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Breadcrumb Style Progress Indicator */}
-      <div className="flex items-center justify-center gap-1 flex-wrap">
-        {steps.map((s, idx) => (
-          <div key={s.num} className="flex items-center gap-1">
-            {/* Step badge */}
-            <div
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-300 ${
-                step >= s.num
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-200 text-slate-500'
-              }`}
-            >
-              {s.label}
-            </div>
-            
-            {/* Divider arrow */}
-            {idx < steps.length - 1 && (
-              <span
-                className={`transition-colors duration-300 ${
-                  step >= s.num ? 'text-blue-600' : 'text-slate-300'
-                }`}
-              >
-                →
-              </span>
-            )}
-          </div>
+      {/* Modern Tab-Style Progress Indicator */}
+      <div className="flex gap-2 border-b border-slate-200">
+        {steps.map((s) => (
+          <button
+            key={s.num}
+            onClick={() => setStep(s.num)}
+            className={`px-4 py-3 text-sm font-medium transition-all duration-300 border-b-2 ${
+              step === s.num
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {s.label}
+          </button>
         ))}
       </div>
 
