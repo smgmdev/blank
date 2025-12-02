@@ -29,6 +29,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
   const toolbarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const isToolbarStickyRef = useRef(false);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [videoUrl, setVideoUrl] = useState('');
@@ -100,7 +101,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       // When NOT sticky: check if container is scrolling above header
       // When sticky: check if container has scrolled back down past header
       if (containerRect.top < headerBottom - threshold) {
-        if (!isToolbarSticky) {
+        if (!isToolbarStickyRef.current) {
+          isToolbarStickyRef.current = true;
           setIsToolbarSticky(true);
           lastToggleTime = now;
         }
@@ -109,7 +111,8 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         toolbarRef.current.style.width = containerRect.width + 'px';
         toolbarRef.current.style.top = headerBottom + 'px';
       } else if (containerRect.top > headerBottom + threshold) {
-        if (isToolbarSticky) {
+        if (isToolbarStickyRef.current) {
+          isToolbarStickyRef.current = false;
           setIsToolbarSticky(false);
           lastToggleTime = now;
         }
