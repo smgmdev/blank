@@ -953,7 +953,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
         
         // Deselect media
         if (selectedImageId) {
-          const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
+          const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`) as HTMLElement;
           if (img) {
             const imgContainer = img.closest('.img-container') as HTMLElement;
             if (imgContainer) {
@@ -966,7 +966,7 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
           }
           setSelectedImageId(null);
         } else if (selectedVideoId) {
-          const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`);
+          const video = editorRef.current.querySelector(`[data-video-id="${selectedVideoId}"]`) as HTMLElement;
           if (video) {
             const vidContainer = video.closest('.video-container') as HTMLElement;
             if (vidContainer) {
