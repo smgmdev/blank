@@ -856,6 +856,73 @@ export function SimpleEditor({ content, onChange, onEmptyChange }: SimpleEditorP
       return;
     }
 
+    // Handle ArrowLeft on selected image to move cursor before it
+    if (e.key === 'ArrowLeft' && selectedImageId && editorRef.current) {
+      e.preventDefault();
+      
+      const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
+      const container = img?.closest('.img-container') as HTMLElement;
+      
+      if (container) {
+        // Position cursor just before the container
+        const range = document.createRange();
+        const selection = window.getSelection();
+        const containerIndex = Array.from(editorRef.current.children).indexOf(container);
+        
+        if (containerIndex === 0) {
+          // If image is at the start, create space before it
+          const p = document.createElement('p');
+          p.innerHTML = '<br>';
+          editorRef.current.insertBefore(p, container);
+          range.selectNodeContents(p);
+          range.collapse(true);
+        } else {
+          // Move cursor to end of previous element
+          const elementBefore = editorRef.current.children[containerIndex - 1] as HTMLElement;
+          range.selectNodeContents(elementBefore);
+          range.collapse(false);
+        }
+        
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        
+        // Deselect image
+        if (container) {
+          container.style.border = 'none';
+          container.style.boxShadow = 'none';
+        }
+        setSelectedImageId(null);
+      }
+      return;
+    }
+
+    // Handle ArrowRight on selected image to move cursor after it
+    if (e.key === 'ArrowRight' && selectedImageId && editorRef.current) {
+      e.preventDefault();
+      
+      const img = editorRef.current.querySelector(`[data-img-id="${selectedImageId}"]`);
+      const container = img?.closest('.img-container') as HTMLElement;
+      
+      if (container) {
+        // Position cursor just after the container
+        const range = document.createRange();
+        const selection = window.getSelection();
+        const containerIndex = Array.from(editorRef.current.children).indexOf(container);
+        range.setStart(editorRef.current, containerIndex + 1);
+        range.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        
+        // Deselect image
+        if (container) {
+          container.style.border = 'none';
+          container.style.boxShadow = 'none';
+        }
+        setSelectedImageId(null);
+      }
+      return;
+    }
+
     // Handle ArrowDown on selected video to move cursor after it
     if (e.key === 'ArrowDown' && selectedVideoId && editorRef.current) {
       e.preventDefault();
