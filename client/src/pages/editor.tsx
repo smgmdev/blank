@@ -1073,7 +1073,7 @@ export default function Editor() {
                       )}
                     </>
                   )}
-                  <div className="w-full mt-3 p-1.5 border border-border rounded-lg bg-muted/30 min-h-6 flex flex-wrap gap-1 items-start content-start">
+                  <div className="w-full mt-3 p-1 border border-border rounded-lg bg-muted/30 min-h-9 flex flex-wrap gap-1 items-center content-center">
                     {formData.tags.map(tag => {
                       const tagName = typeof tag === 'number' 
                         ? availableTags.find((t: any) => t.id === tag)?.name || tag
@@ -1096,7 +1096,7 @@ export default function Editor() {
                       );
                     })}
                     {formData.tags.length === 0 && (
-                      <span className="text-xs text-muted-foreground italic py-2">No tags added yet.</span>
+                      <span className="text-xs text-muted-foreground italic">No tags added yet.</span>
                     )}
                   </div>
                 </div>
