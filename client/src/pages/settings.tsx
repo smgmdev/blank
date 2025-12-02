@@ -71,22 +71,20 @@ export default function Settings() {
 
   const handleAccountUpdate = async () => {
     const updateData: any = {};
-    if (username) updateData.username = username;
-    if (email) updateData.email = email;
     if (fullName) updateData.fullName = fullName;
 
     if (Object.keys(updateData).length === 0) {
       toast({
         variant: "destructive",
         title: "No Changes",
-        description: "Please enter at least one field to update.",
+        description: "Please enter a full name to update.",
       });
       return;
     }
 
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/user?id=${userId}`, {
+      const response = await fetch(`/api/users/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData)
